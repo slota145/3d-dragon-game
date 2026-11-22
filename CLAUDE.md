@@ -4,6 +4,7 @@ Gra 3D o smoku w **Godot 4.7** (GDScript, renderer **Mobile**).
 **Platforma docelowa: Android (telefon)** — Windows wstrzymany (`BUILD_WINDOWS` w CI),
 przeniesiemy grę później. Projektuj pod dotyk (gałka, przeciąganie) i wydajność telefonu. Assety 3D są
 generowane **proceduralnie skryptami Blendera (bpy)** i eksportowane do `.glb`.
+**Koncepcja gry: `docs/GAME_DESIGN.md`** (od pisklęcia do postrachu baśniowego królestwa).
 Język dokumentacji i komunikacji z właścicielem: **polski**. Kod, nazwy
 plików, węzłów i zmiennych: **angielski**.
 

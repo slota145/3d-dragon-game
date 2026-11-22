@@ -19,11 +19,11 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Poprawki smoka: nowa głowa (zamknięty pysk, warga zachodzi na żuchwę, mniej i większe zęby,
   kły, nozdrza), grzywa jako równy kołnierz z płytek, naturalnie złożone skrzydła (solver kierunków)
 - ✅ Postawa wywerny: w Idle smok stoi na nadgarstkach złożonych skrzydeł (IK 2-kościowe, kość `Thumb` dla szponów)
-- ❓ **Gatunek i pętla rozgrywki** — np. eksploracja otwartego świata,
-  walka powietrzna, zbieranie skarbów, rozwój smoka od pisklęcia…
-- ❓ **Kamera** — trzecia osoba za smokiem (domyślnie) czy inna
-- ❓ **Platformy docelowe** — PC (Windows/Linux), Web, mobile?
-- ⬜ Krótki dokument koncepcyjny gry (`docs/GAME_DESIGN.md`)
+- ✅ **Gatunek i pętla rozgrywki**: lekki surwiwal w otwartym, baśniowym świecie; od pisklęcia
+  do postrachu królestwa, polowanie, wzrost, skarb, ludzie jako wróg, nowe pokolenie (prestiż)
+- ✅ **Kamera**: trzecia osoba za smokiem
+- ✅ **Platforma**: Android (telefon) najpierw, Windows później
+- ✅ Dokument projektu gry: **`docs/GAME_DESIGN.md`**
 
 ## Faza 2 — Prototyp lotu (vertical slice mechaniki) ⬜
 
@@ -49,23 +49,49 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 > **Priorytet platform:** Android (telefon). Windows wstrzymany do czasu „przeniesienia”
 > (włączenie: `BUILD_WINDOWS: "true"` w `.github/workflows/release.yml`).
 
-## Faza 3 — Świat ⬜
+## Faza 3 — Rdzeń: polowanie i wzrost ⬜
 
-- ⬜ Generator terenu / większa mapa (chunking, LOD)
-- ⬜ Biomy, roślinność (MultiMesh), skały, chmury
-- ⬜ Cykl dnia i nocy, pogoda
-- ⬜ Assety środowiska generowane skryptami (drzewa, skały, budynki, zamki)
+- ⬜ Przycisk **Ugryzienie** (atak na ziemi) + animacja Bite
+- ⬜ Pierwsza zwierzyna (owce, króliki) z prostą SI: pasie się, ucieka przed smokiem
+- ⬜ Jedzenie, **pasek głodu**, zdrowie, HUD
+- ⬜ **Wzrost**: punkty wzrostu z jedzenia, smok płynnie rośnie (skala, kamera, prędkości)
+- ⬜ Sprawdzenie na telefonie: czy polowanie i rośnięcie to frajda?
 
-## Faza 4 — Rozgrywka ⬜
+## Faza 4 — Pisklę i etapy ⬜
 
-- ⬜ Zieje ogniem (VFX cząsteczkowe, obrażenia)
-- ⬜ Przeciwnicy / NPC, cele, zbieranie przedmiotów
-- ⬜ UI: HUD (zdrowie, stamina, mapa), menu główne, pauza
-- ⬜ Zapis gry
+- ⬜ Model **pisklęcia** z generatora (proporcje: duża głowa, krótka szyja, małe skrzydła)
+- ⬜ Etapy Pisklę → Młodzik → Dorosły → Pradawny; odblokowania (lot, ogień, łapanie)
+- ⬜ Wytrzymałość lotu młodzika, wyszarzone przyciski przed odblokowaniem
 
-## Faza 5 — Dopracowanie i wydanie ⬜
+## Faza 5 — Legowisko i świat ⬜
 
-- ⬜ Dźwięk i muzyka
-- ⬜ Optymalizacja (profilowanie, LOD, occlusion culling)
-- ⬜ Eksport buildów (presety eksportu), CI (GitHub Actions: check + build)
-- ⬜ Testy z graczami, poprawki
+- ⬜ Jaskinia-legowisko: sen = zapis + nowy dzień + leczenie; łagodna śmierć
+- ⬜ Złoto i proceduralny stos skarbu; ulepszenia za złoto
+- ⬜ Baśniowy region: teren, las, łąki, farmy, jezioro, góry (assety generowane skryptami)
+- ⬜ Cykl dnia i nocy
+
+## Faza 6 — Ludzie ⬜
+
+- ⬜ Wieśniacy, pasterze, drwale, myśliwi (łuki, sieci, pułapki), wozy kupieckie
+- ⬜ Farmy i wioski; **rozgłos** i odwet
+- ⬜ Danina vs. palenie i łupienie wiosek; odbudowa
+
+## Faza 7 — Ogień i łapanie ⬜
+
+- ⬜ Kula ognia młodzika (czas odnowienia), strumień ognia dorosłego, palenie budynków
+- ⬜ Łapanie w locie (Ugryzienie w powietrzu): niesienie, upuszczanie z wysokości
+
+## Faza 8 — Wielcy przeciwnicy i zamki ⬜
+
+- ⬜ Gryfy (dzikie, w górach), rycerze, balisty
+- ⬜ Zamek: mury, łucznicy, wieże z gryfami, boss: dowódca jeźdźców gryfów, skarbiec
+
+## Faza 9 — Nowe pokolenie ⬜
+
+- ⬜ Składanie jaja, warianty smoka (ognisty / mroźny / burzowy / cieniowy), dziedzictwo
+
+## Faza 10 — Dopracowanie i wydanie ⬜
+
+- ⬜ Dźwięk i muzyka, menu główne, pauza, ustawienia
+- ⬜ Optymalizacja (LOD, MultiMesh, occlusion culling)
+- ⬜ Przeniesienie na Windows (`BUILD_WINDOWS`), testy z graczami
