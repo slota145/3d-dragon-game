@@ -24,13 +24,13 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 |---|---|
 | `project.godot` | konfiguracja projektu, input map |
 | `scenes/` | sceny: `boot.tscn` (start) → `world.tscn` (świat + `dragon_player.tscn` + `hud.tscn`), `dragon_showcase.tscn` |
-| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `follow_camera.gd`, `updater.gd`, `game_version.gd` |
-| `scripts/ui/` | interfejs: `touch_joystick.gd` (gałka), `touch_button.gd` (przyciski Skrzydła/Zryw) |
+| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
+| `scripts/ui/` | interfejs: `touch_joystick.gd` (gałka), `touch_button.gd` (Skrzydła/Zryw/Ugryzienie/Ogień), `stat_bars.gd` (paski) |
 | `scripts/fx/`, `assets/shaders/` | efekty: `dust_burst.gd` (pył), `speed_lines.gdshader` (linie pędu) |
 | `scripts/` | pozostałe (np. `model_showcase.gd`) |
 | `assets/models/` | wygenerowane `.glb` (+ pliki `.import` — commitujemy je) |
 | `assets/textures/`, `materials/`, `audio/` | pozostałe zasoby |
-| `tools/blender/` | generatory assetów (Python + bpy): `gen_dragon.py` (smok), `meshkit.py` (lofty, rury, kolce, płaty, wagi), `common.py` (scena, materiały, render) |
+| `tools/blender/` | generatory assetów (Python + bpy): `gen_dragon.py` (smok), `gen_animals.py` (królik, owca), `meshkit.py` (lofty, rury, kolce, płaty, wagi), `common.py` (scena, materiały, render) |
 | `assets/models/*_import.gd` | skrypty post-importu (materiały, pętle animacji) |
 | `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_updater.gd`) |
 | `export_presets.cfg`, `.github/workflows/release.yml` | eksport Windows; CI buduje `.exe` + łatkę przy wydaniu (`docs/RELEASE.md`) |
@@ -50,7 +50,7 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
    sceny lepiej budować skryptem lub w edytorze. Nie wpisuj ręcznie `uid://` —
    Godot nada je przy imporcie (ścieżki `res://` wystarczą).
 5. Aktualizuj `ROADMAP.md`, gdy zadanie zostaje ukończone lub zmienia się plan.
-6. Po zmianach w sterowaniu uruchom `tools/test_walk.gd` i `tools/test_flight.gd`
+6. Po zmianach w sterowaniu uruchom `tools/test_walk.gd`, `tools/test_flight.gd` i `tools/test_hunt.gd`
    (test lotu sprawdza całą specyfikację sterowania właściciela — patrz nagłówek
    `scripts/game/dragon_controller.gd`). Parametry lotu są w `@export` (grupy w inspektorze).
    Nazwa klasy nie może kolidować z klasą Godota (np. `VirtualJoystick` istnieje w 4.7).
@@ -60,8 +60,9 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 
 ## Konwencje 3D
 
-- **Skala:** 1 jednostka = 1 metr. Smok: ~12 m długości (z ogonem), ~16,6 m
-  rozpiętości skrzydeł, ~3,5 m do czubka głowy.
+- **Skala:** 1 jednostka = 1 metr. Model smoka 1:1: ~12 m długości (z ogonem), ~16,6 m
+  rozpiętości skrzydeł. W grze rozmiar zmienia się płynnie (`DragonStats.size`, start 2,4 m);
+  kontroler skaluje węzeł `Visual`, kolizję, prędkości i kamerę.
 - **Orientacja:** w Blenderze model patrzy w **−Y**, Z w górę → po eksporcie
   glTF patrzy w **+Z** w Godocie (`Vector3.MODEL_FRONT`). Przy `look_at()`
   używaj `use_model_front = true`.

@@ -21,6 +21,8 @@ Sterowanie:
   w powietrzu tap = machnięcie w górę (z gałką w przód: w przód i w górę), trzymanie = zawis
 - **Zryw** (przycisk obok Skrzydeł, Shift, X na padzie): na ziemi trzymaj = bieg;
   w locie = potężne machnięcie, które mocno przyspiesza w kierunku dzioba
+- **Ugryzienie** (F, B na padzie): atak z doskokiem w stronę najbliższej ofiary; zabita ofiara jest zjadana
+- **Ogień** (R, Y na padzie): odblokuje się później
 - **kamera:** przeciąganie ekranu (PPM, Q/E, prawa gałka pada)
 
 ## Uruchomienie ze źródeł

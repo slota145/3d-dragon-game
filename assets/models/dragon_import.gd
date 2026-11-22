@@ -1,11 +1,11 @@
 @tool
 extends EditorScenePostImport
-## Post-import dla dragon.glb:
+## Post-import dla modeli (.glb): smok, zwierzęta:
 ## - wszystkie materiały używają koloru wierzchołków (losowa jasność ścianek = efekt "ciosanego" low-poly),
 ## - błona skrzydeł renderowana dwustronnie,
 ## - animacje Idle, Walk, Fly, Glide i Dive zapętlone.
 
-const LOOPING := ["Idle", "Walk", "Fly", "Glide", "Dive"]  # TakeOff i Roar bez pętli
+const LOOPING := ["Idle", "Walk", "Run", "Fly", "Glide", "Dive", "Eat"]  # TakeOff i Roar bez pętli
 
 
 func _post_import(scene: Node) -> Object:

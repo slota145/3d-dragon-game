@@ -51,11 +51,12 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 
 ## Faza 3 — Rdzeń: polowanie i wzrost ⬜
 
-- ⬜ Przycisk **Ugryzienie** (atak na ziemi) + animacja Bite
-- ⬜ Pierwsza zwierzyna (owce, króliki) z prostą SI: pasie się, ucieka przed smokiem
-- ⬜ Jedzenie, **pasek głodu**, zdrowie, HUD
-- ⬜ **Płynny wzrost**: każde jedzenie od razu powiększa smoka (skala, kamera, prędkości),
-  progi rozmiaru → wyższe stadium (efekt + odblokowania), pasek wzrostu w HUD
+- ✅ Przycisk **Ugryzienie** (atak na ziemi, celowanie + doskok) + animacje Bite i Eat
+- ✅ Pierwsza zwierzyna (króliki, owce; `gen_animals.py`) z prostą SI: pasie się, ucieka przed smokiem
+- ✅ Jedzenie, **pasek głodu**, zdrowie, HUD (paski, napisy, 4 przyciski — Ogień zablokowany)
+- ✅ **Płynny wzrost** (trawienie): jedzenie powiększa smoka (skala, kamera, prędkości),
+  progi rozmiaru → wyższe stadium (napis + odblokowania; Młodzik = lot), pasek wzrostu w HUD
+- ✅ Start jako pisklę (2,4 m) bez lotu
 - ⬜ Sprawdzenie na telefonie: czy polowanie i rośnięcie to frajda?
 
 ## Faza 4 — Pisklę i etapy ⬜

@@ -26,6 +26,8 @@ extends Node3D
 
 ## 0..1 — ustawiane co klatkę przez świat (z DragonController.speed_effect).
 var effect: float = 0.0
+## Skala smoka (rozmiar / rozmiar modelu) — odległość i wysokość kamery rosną razem ze smokiem.
+var size_k: float = 1.0
 
 @onready var _arm: SpringArm3D = $SpringArm3D
 @onready var _cam: Camera3D = $SpringArm3D/Camera3D
@@ -69,14 +71,17 @@ func _process(delta: float) -> void:
 	else:
 		_idle_time += delta
 	var flying: bool = target.has_method("is_flying") and target.is_flying()
-	_arm.spring_length = lerpf(_arm.spring_length, flight_distance if flying else distance, clampf(1.5 * delta, 0.0, 1.0))
+	var zoom := clampf(0.15 + 0.85 * size_k, 0.3, 1.8)
+	var flight_zoom := maxf(zoom, 0.55)
+	_arm.spring_length = lerpf(_arm.spring_length, flight_distance * flight_zoom if flying else distance * zoom,
+		clampf(1.5 * delta, 0.0, 1.0))
 	var body := target as CharacterBody3D
 	var delay := flight_align_delay if flying else auto_align_delay
 	var align_speed := flight_align_speed if flying else auto_align_speed
 	if _idle_time > delay and body and Vector2(body.velocity.x, body.velocity.z).length() > 0.3:
 		var behind := target.global_rotation.y + PI
 		_yaw = rotate_toward(_yaw, behind, align_speed * delta)
-	var goal := target.global_position + Vector3.UP * (flight_height if flying else height)
+	var goal := target.global_position + Vector3.UP * (flight_height * flight_zoom if flying else height * zoom)
 	var follow := flight_follow_speed if flying else follow_speed
 	global_position = global_position.lerp(goal, clampf(follow * delta, 0.0, 1.0))
 	rotation = Vector3(_pitch, _yaw, 0.0)

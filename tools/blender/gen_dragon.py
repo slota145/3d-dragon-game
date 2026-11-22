@@ -874,6 +874,49 @@ def pose_leap(t: float):
     return rots, {"Hips": V(0, 0, -0.35 * ease(0.0, 0.06) * (1 - push) + 0.2 * push)}
 
 
+def pose_bite(t: float):
+    """Ugryzienie: zamach (głowa w górę, paszcza się otwiera), wypad szyją w przód i w dół,
+    kłapnięcie (~0.55), powrót. Skrzydła oparte o ziemię."""
+    def ease(a: float, b: float) -> float:
+        x = clampf01((t - a) / (b - a))
+        return x * x * (3 - 2 * x)
+    wind = ease(0.0, 0.25) * (1 - ease(0.3, 0.45))
+    lunge = ease(0.28, 0.48) * (1 - ease(0.65, 1.0))
+    jaw = ease(0.05, 0.3) * (1 - ease(0.5, 0.58))
+    rots = standing_wings()
+    rots.update({
+        "Chest": [(AX, 0.05 * lunge)],
+        "Neck1": [(AX, -0.12 * wind + 0.22 * lunge)],
+        "Neck2": [(AX, -0.1 * wind + 0.18 * lunge)],
+        "Neck3": [(AX, -0.06 * wind + 0.12 * lunge)],
+        "Neck4": [(AX, 0.1 * lunge)],
+        "Head": [(AX, -0.25 * wind + 0.05 * lunge)],
+        "Jaw": [(AX, 0.75 * jaw)],
+    })
+    for k in range(1, 7):
+        rots[f"Tail{k}"] = [(AX, 0.03 * wind - 0.03 * lunge), (AZ, 0.04 * lunge * math.sin(k))]
+    return rots, {"Hips": V(0, -0.35 * lunge, -0.08 * lunge)}
+
+
+def pose_eat(t: float):
+    """Jedzenie: głowa przy ziemi, trzy kłapnięcia z szarpnięciem głową na boki."""
+    ph = 2 * math.pi * t
+    chew = 0.5 + 0.5 * math.sin(ph * 3)
+    rots = standing_wings()
+    rots.update({
+        "Chest": [(AX, 0.06)],
+        "Neck1": [(AX, 0.28)],
+        "Neck2": [(AX, 0.24)],
+        "Neck3": [(AX, 0.16 + 0.03 * math.sin(ph * 3))],
+        "Neck4": [(AX, 0.14)],
+        "Head": [(AX, 0.18 + 0.06 * math.sin(ph * 3 + 1.0)), (AZ, 0.12 * math.sin(ph * 1.5))],
+        "Jaw": [(AX, 0.45 * chew)],
+    })
+    for k in range(1, 7):
+        rots[f"Tail{k}"] = [(AZ, 0.06 * math.sin(ph - k * 0.5))]
+    return rots, {"Hips": V(0, -0.15, -0.12)}
+
+
 def pose_takeoff(t: float):
     """Start: przysiad na tylnych łapach ze skrzydłami w górze (0–0.35), wybicie z łap
     i potężne machnięcie w dół (0.35–0.6), wyprost w locie (0.6–1)."""
@@ -1014,6 +1057,8 @@ def build_animations(arm) -> None:
     make_action(arm, "Glide", 96, pose_glide)
     make_action(arm, "Dive", 24, pose_dive)
     make_action(arm, "TakeOff", 24, pose_takeoff, step=1, loop=False)
+    make_action(arm, "Bite", 12, pose_bite, step=1, loop=False)
+    make_action(arm, "Eat", 30, pose_eat, step=1)
     make_action(arm, "Walk", WALK_FRAMES, pose_walk)
     make_action(arm, "Run", RUN_FRAMES, pose_run, step=1)
     make_action(arm, "Leap", LEAP_FRAMES, pose_leap, step=1, loop=False)

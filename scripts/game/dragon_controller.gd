@@ -15,12 +15,18 @@ extends CharacterBody3D
 ##
 ## Przycisk „Zryw” (akcja `dash`): na ziemi trzymanie = bieg, w powietrzu = potężne machnięcie
 ## mocno zwiększające prędkość w kierunku dzioba (z czasem odnowienia).
+##
+## Przycisk „Ugryzienie” (akcja `bite`): kłapnięcie z lekkim celowaniem w najbliższą ofiarę;
+## zabita ofiara jest zjadana (głód + wzrost w DragonStats).
+## Rozmiar smoka (DragonStats.size) skaluje model, kolizję, prędkości i skoki. Pisklę nie lata.
 
 signal took_off
 signal launched  ## wybicie przy starcie (pył)
 signal landed(impact: float)
 signal flapped
 signal dashed
+signal bit
+signal killed_prey(prey: Prey)
 
 enum State { GROUND, AIR }
 
@@ -85,6 +91,20 @@ enum State { GROUND, AIR }
 @export var max_dash_speed: float = 75.0
 @export var dash_cooldown: float = 1.4
 
+@export_group("Ugryzienie i jedzenie")
+@export var bite_cooldown: float = 0.55
+## Moment kłapnięcia w animacji Bite (s).
+@export var bite_hit_time: float = 0.22
+## Odległość pyska od środka smoka (dorosły, m) i promień trafienia.
+@export var bite_reach: float = 4.6
+@export var bite_radius: float = 1.6
+## Obrażenia pisklęcia; rosną z rozmiarem.
+@export var bite_damage: float = 1.0
+## Doskok przy ugryzieniu w stronę celu (m/s, dorosły; skaluje się jak ruch).
+@export var bite_lunge: float = 7.0
+@export var eat_time: float = 1.3
+@export var fluff_color: Color = Color(0.97, 0.95, 0.9)
+
 @export var joystick: TouchJoystick
 @export var camera: Node3D
 
@@ -108,13 +128,46 @@ var _hopping: bool = false
 var speed_effect: float = 0.0
 var _dash_boost: float = 0.0
 
+var _bite_cd: float = 0.0
+var _bite_t: float = 99.0
+var _bite_pending: bool = false
+var _eating: float = 0.0
+var _k: float = 1.0  # skala smoka (rozmiar / rozmiar modelu)
+var _base_shape_size: Vector3
+var _base_shape_pos: Vector3
+
+@onready var stats: DragonStats = $Stats
 @onready var _visual: Node3D = $Visual
+@onready var _collision: CollisionShape3D = $Collision
 @onready var _anim: AnimationPlayer = find_child("AnimationPlayer", true, false)
 
 
 func _ready() -> void:
+	_collision.shape = _collision.shape.duplicate()
+	_base_shape_size = (_collision.shape as BoxShape3D).size
+	_base_shape_pos = _collision.position
+	stats.size_changed.connect(_apply_size)
+	_apply_size(stats.size)
 	if _anim:
 		_anim.play("Idle")
+
+
+## Skala smoka: model i kolizja (prędkości i skoki liczone są na bieżąco z _k).
+func _apply_size(size: float) -> void:
+	_k = size / stats.model_size
+	_visual.scale = Vector3.ONE * _k
+	_visual.position.y = 2.0 * _k
+	(_collision.shape as BoxShape3D).size = _base_shape_size * _k
+	_collision.position = _base_shape_pos * _k
+
+
+## Skala ruchu na ziemi: mały smok jest wolniejszy, ale nie proporcjonalnie (wykładnik < 1).
+func _move_k() -> float:
+	return pow(_k, 0.35)
+
+
+func size_k() -> float:
+	return _k
 
 
 func is_flying() -> bool:
@@ -130,6 +183,18 @@ func _physics_process(delta: float) -> void:
 	_since_dash += delta
 	_takeoff_time += delta
 	_dash_boost = maxf(0.0, _dash_boost - delta * 1.2)
+	_bite_cd = maxf(0.0, _bite_cd - delta)
+	_bite_t += delta
+	if _bite_pending and _bite_t >= bite_hit_time:
+		_bite_pending = false
+		_bite_hit()
+	if _eating > 0.0:
+		_eating -= delta
+		pressed = false
+		held = false
+		stick = Vector2.ZERO
+	elif state == State.GROUND and Input.is_action_just_pressed("bite") and _bite_cd <= 0.0:
+		_start_bite()
 	if state == State.GROUND:
 		_process_ground(delta, stick, pressed, held)
 	else:
@@ -171,8 +236,9 @@ func _process_ground(delta: float, stick: Vector2, pressed: bool, held: bool) ->
 		rotation.y = rotate_toward(rotation.y, atan2(wish.x, wish.z), turn_speed * delta)
 		var facing := _facing_flat()
 		var align := clampf(facing.dot(wish.normalized()), 0.0, 1.0)
-		var top := sprint_speed if Input.is_action_pressed("dash") else walk_speed
-		var accel := acceleration * (2.5 if top > walk_speed else 1.0)
+		var sprinting := Input.is_action_pressed("dash")
+		var top := (sprint_speed if sprinting else walk_speed) * _move_k()
+		var accel := acceleration * (2.5 if sprinting else 1.0) * _move_k()
 		flat = flat.move_toward(facing * top * minf(1.0, wish.length()) * align, accel * delta)
 	else:
 		flat = flat.move_toward(Vector3.ZERO, deceleration * delta)
@@ -188,7 +254,10 @@ func _process_ground(delta: float, stick: Vector2, pressed: bool, held: bool) ->
 		if held:
 			_charge += delta
 			if _charge >= takeoff_hold_time:
-				_take_off(stick)
+				if stats.can_fly():
+					_take_off(stick)
+				else:
+					_jump(wish)  # pisklę jeszcze nie lata — tylko skacze
 		else:
 			_jump(wish)
 
@@ -203,11 +272,11 @@ func _jump(wish: Vector3) -> void:
 	if amount > 0.2:  # sus do przodu po łuku
 		rotation.y = atan2(wish.x, wish.z)
 		var dir := _facing_flat()
-		velocity.x = dir.x * leap_forward * amount
-		velocity.z = dir.z * leap_forward * amount
-		velocity.y = lerpf(jump_speed, leap_up, amount)
+		velocity.x = dir.x * leap_forward * amount * sqrt(_k)
+		velocity.z = dir.z * leap_forward * amount * sqrt(_k)
+		velocity.y = lerpf(jump_speed, leap_up, amount) * _move_k()
 	else:
-		velocity.y = jump_speed
+		velocity.y = jump_speed * _move_k()
 	_enter_air()
 	_hopping = true
 	if _anim:
@@ -242,7 +311,7 @@ func _process_air(delta: float, stick: Vector2, pressed: bool, held: bool) -> vo
 	_air_time += delta
 	_since_flap += delta
 	if _hopping:
-		if pressed or Input.is_action_just_pressed("dash"):
+		if stats.can_fly() and (pressed or Input.is_action_just_pressed("dash")):
 			_hopping = false  # machnięcie w trakcie susu = przejście do lotu
 		else:
 			_process_hop(delta)
@@ -379,6 +448,68 @@ func _update_visual(delta: float, stick: Vector2) -> void:
 	_visual.rotation.z = _bank
 
 
+# --- Ugryzienie i jedzenie -----------------------------------------------------
+
+func _mouth_position() -> Vector3:
+	return global_position + _facing_flat() * (bite_reach * _k) + Vector3.UP * (1.2 * _k)
+
+
+func _start_bite() -> void:
+	_bite_cd = bite_cooldown
+	_bite_t = 0.0
+	_bite_pending = true
+	# lekkie celowanie: obróć się do najbliższej żywej ofiary w stożku przed pyskiem
+	var best: Prey = null
+	var best_d := (bite_reach + 4.0) * _k + 2.0
+	for node in get_tree().get_nodes_in_group("prey"):
+		var prey := node as Prey
+		if not prey or not prey.is_alive():
+			continue
+		var to := prey.global_position - global_position
+		to.y = 0.0
+		var d := to.length()
+		if d < best_d and _facing_flat().dot(to.normalized()) > 0.35:
+			best = prey
+			best_d = d
+	if best:
+		var to := best.global_position - global_position
+		to.y = 0.0
+		rotation.y = atan2(to.x, to.z)
+		# doskok: tym mocniejszy, im dalej jest ofiara (ale nie dalej niż do pyska)
+		var gap := maxf(0.0, to.length() - bite_reach * _k)
+		var lunge := minf(bite_lunge * _move_k(), gap / bite_hit_time + 2.0)
+		velocity.x = to.normalized().x * lunge
+		velocity.z = to.normalized().z * lunge
+	if _anim:
+		_anim.play("Bite", 0.08)
+		_anim.speed_scale = 1.0
+	bit.emit()
+
+
+func _bite_hit() -> void:
+	var mouth := _mouth_position()
+	var reach := bite_radius * _k + 1.0
+	var damage := bite_damage * pow(stats.size / stats.start_size, 0.8)
+	for node in get_tree().get_nodes_in_group("prey"):
+		var prey := node as Prey
+		if not prey or not prey.is_alive():
+			continue
+		var d := Vector2(prey.global_position.x - mouth.x, prey.global_position.z - mouth.z).length()
+		if d < reach + prey.radius and absf(prey.global_position.y - global_position.y) < 2.0 + 2.0 * _k:
+			if prey.take_bite(damage):
+				_eat(prey)
+				return
+
+
+func _eat(prey: Prey) -> void:
+	_eating = eat_time
+	velocity.x = 0.0
+	velocity.z = 0.0
+	prey.consume(_mouth_position() + Vector3.DOWN * 0.6 * _k, eat_time * 0.8, fluff_color)
+	stats.eat(prey.food, prey.body_size, prey.display_name)
+	killed_prey.emit(prey)
+
+
 func _start_flap_anim() -> void:
 	if _anim:
 		_anim.play("Fly", 0.1)
@@ -398,12 +529,17 @@ func _update_animation(held: bool) -> void:
 		return
 	if state == State.GROUND:
 		var speed := Vector2(velocity.x, velocity.z).length()
+		if _eating > 0.0:
+			_play(&"Eat", 0.25, 1.0)
+			return
+		if _bite_t < 0.5:
+			return  # Bite gra do końca
 		if _charge >= 0.0:
 			return  # przysiad (TakeOff) gra od naciśnięcia
-		elif speed > walk_speed * 1.4:
-			_play(&"Run", 0.3, clampf(speed / run_anim_speed, 0.5, 1.6))
-		elif speed > 0.12:
-			_play(&"Walk", 0.35, clampf(speed / walk_anim_speed, 0.4, 2.0))
+		elif speed > walk_speed * _move_k() * 1.4:
+			_play(&"Run", 0.3, clampf(speed / (run_anim_speed * _k), 0.5, 2.2))
+		elif speed > 0.12 * _k:
+			_play(&"Walk", 0.35, clampf(speed / (walk_anim_speed * _k), 0.4, 3.0))
 		else:
 			_play(&"Idle", 0.5, 1.0)
 		return

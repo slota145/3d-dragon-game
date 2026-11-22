@@ -19,6 +19,9 @@ func _init() -> void:
 	_p = world.get_node("DragonPlayer")
 	var anim: AnimationPlayer = _p.find_child("AnimationPlayer", true, false)
 	_p.flapped.connect(func() -> void: _flaps += 1)
+	_p.stats.set_size(12.0)  # test lotu: dorosły smok
+	_p.stats.hunger = 100.0
+	await _frames(5)
 
 	print("0) Zryw na ziemi (trzymanie) = bieg")
 	Input.action_press("dash")

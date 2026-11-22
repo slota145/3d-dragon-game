@@ -3,7 +3,8 @@ extends RefCounted
 ## Jednorazowa chmura pyłu (low-poly „kłęby”) rozchodząca się pierścieniem od punktu na ziemi.
 
 
-static func spawn(parent: Node, at: Vector3, strength: float = 1.0) -> void:
+static func spawn(parent: Node, at: Vector3, strength: float = 1.0,
+		color: Color = Color(0.6, 0.53, 0.41)) -> void:
 	var p := CPUParticles3D.new()
 	p.one_shot = true
 	p.amount = int(clampf(40.0 * strength, 10.0, 70.0))
@@ -12,7 +13,7 @@ static func spawn(parent: Node, at: Vector3, strength: float = 1.0) -> void:
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
 	p.emission_ring_axis = Vector3.UP
 	p.emission_ring_radius = 3.5 * sqrt(strength)
-	p.emission_ring_inner_radius = 1.5
+	p.emission_ring_inner_radius = 1.5 * minf(1.0, strength)
 	p.emission_ring_height = 0.4
 	p.direction = Vector3.UP
 	p.spread = 60.0
@@ -31,12 +32,12 @@ static func spawn(parent: Node, at: Vector3, strength: float = 1.0) -> void:
 	grow.add_point(Vector2(1.0, 1.3))
 	p.scale_amount_curve = grow
 	var ramp := Gradient.new()
-	ramp.set_color(0, Color(0.6, 0.53, 0.41, 0.65))
-	ramp.set_color(1, Color(0.6, 0.53, 0.41, 0.0))
+	ramp.set_color(0, Color(color, 0.65))
+	ramp.set_color(1, Color(color, 0.0))
 	p.color_ramp = ramp
 	var mesh := SphereMesh.new()
-	mesh.radius = 0.6
-	mesh.height = 1.1
+	mesh.radius = 0.6 * clampf(strength, 0.15, 1.5)
+	mesh.height = 1.1 * clampf(strength, 0.15, 1.5)
 	mesh.radial_segments = 6
 	mesh.rings = 3
 	var mat := StandardMaterial3D.new()
