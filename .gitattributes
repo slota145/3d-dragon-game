@@ -1,0 +1,11 @@
+# Normalizacja końców linii
+* text=auto eol=lf
+
+# Binarne assety
+*.glb binary
+*.blend binary
+*.png binary
+*.jpg binary
+*.ogg binary
+*.wav binary
+*.vox binary

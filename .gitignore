@@ -1,0 +1,23 @@
+# Godot 4
+.godot/
+/android/
+*.translation
+export_presets.cfg.bak
+
+# Builds
+/build/
+
+# Narzędzia lokalne (venv z Blenderem jako modułem Pythona)
+.venv-tools/
+__pycache__/
+*.pyc
+
+# Blender autosave / backup
+*.blend1
+*.blend2
+
+# OS / edytory
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
