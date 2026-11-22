@@ -18,6 +18,10 @@ func _ready() -> void:
 	_player.stats.ate.connect(func(_meal: float, prey_name: String, growth: float) -> void:
 		_toast("%s · +%s" % [prey_name, ("%d cm" % roundi(growth * 100.0)) if growth < 1.0 else ("%.1f m" % growth)]))
 	_player.stats.died.connect(_on_died)
+	_player.exhausted.connect(func() -> void:
+		if Time.get_ticks_msec() - _exhausted_msg > 2500:
+			_exhausted_msg = Time.get_ticks_msec()
+			_toast("Brak sił! Szybuj w dół i odpocznij na ziemi"))
 	_spawner.dragon = _player
 	_spawner.populate()
 	_update_buttons()
@@ -28,6 +32,7 @@ func _ready() -> void:
 
 
 var _flash: float = 0.0
+var _exhausted_msg: int = -100000
 var _effect: float = 0.0
 
 
@@ -88,5 +93,7 @@ func _process(delta: float) -> void:
 	(lines.material as ShaderMaterial).set_shader_parameter("flash", _flash)
 	var v := _player.velocity
 	var mode := "lot" if _player.is_flying() else "ziemia"
-	_hud.get_node("Status").text = "%s · wys. %d m · %d km/h" % [mode, int(_player.global_position.y),
+	var status: Label = _hud.get_node("Status")
+	status.position.y = 184.0 if _player.stats.can_fly() else 150.0  # pod paskiem siły lotu
+	status.text = "%s · wys. %d m · %d km/h" % [mode, int(_player.global_position.y),
 		int(v.length() * 3.6)]

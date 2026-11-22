@@ -19,6 +19,10 @@ extends CharacterBody3D
 ## Przycisk „Ugryzienie” (akcja `bite`): kłapnięcie z lekkim celowaniem w najbliższą ofiarę;
 ## zabita ofiara jest zjadana (głód + wzrost w DragonStats).
 ## Rozmiar smoka (DragonStats.size) skaluje model, kolizję, prędkości i skoki. Pisklę nie lata.
+##
+## WYTRZYMAŁOŚĆ LOTU (DragonStats.stamina): start, machnięcia, zawis i zryw w powietrzu
+## zużywają siłę, szybowanie tylko trochę, nurkowanie wcale; odnawia się na ziemi. Bez sił
+## smok może już tylko szybować w dół. Młodzik męczy się szybko, dorosły prawie wcale.
 
 signal took_off
 signal launched  ## wybicie przy starcie (pył)
@@ -27,6 +31,7 @@ signal flapped
 signal dashed
 signal bit
 signal killed_prey(prey: Prey)
+signal exhausted  ## próba machnięcia / startu bez siły lotu
 
 enum State { GROUND, AIR }
 
@@ -90,6 +95,15 @@ enum State { GROUND, AIR }
 @export var dash_impulse: float = 22.0
 @export var max_dash_speed: float = 75.0
 @export var dash_cooldown: float = 1.4
+
+@export_group("Wytrzymałość lotu (koszty młodzika)")
+@export var stamina_takeoff: float = 14.0
+@export var stamina_flap: float = 8.0
+## Zawis / ciągłe machanie (pkt/s).
+@export var stamina_hover: float = 13.0
+@export var stamina_dash: float = 16.0
+## Szybowanie (pkt/s; nurkowanie nic nie kosztuje).
+@export var stamina_glide: float = 0.8
 
 @export_group("Ugryzienie i jedzenie")
 @export var bite_cooldown: float = 0.55
@@ -207,6 +221,8 @@ func _physics_process(delta: float) -> void:
 		stick = Vector2.ZERO
 	elif state == State.GROUND and Input.is_action_just_pressed("bite") and _bite_cd <= 0.0:
 		_start_bite()
+	if state == State.AIR and not _hopping and stats.stamina <= 0.0:
+		held = false  # bez sił skrzydła już tylko niosą — szybowanie (tap -> sygnał exhausted)
 	if state == State.GROUND:
 		_process_ground(delta, stick, pressed, held)
 	else:
@@ -272,15 +288,18 @@ func _process_ground(delta: float, stick: Vector2, pressed: bool, held: bool) ->
 		if held:
 			_charge += delta
 			if _charge >= takeoff_hold_time:
-				if stats.can_fly():
+				if stats.can_fly() and stats.use_stamina(stamina_takeoff):
 					_take_off(stick)
 				else:
+					if stats.can_fly():
+						exhausted.emit()
 					_jump(wish)  # pisklę jeszcze nie lata — tylko skacze
 		else:
 			_jump(wish)
 
 	if state == State.GROUND:
 		velocity.y -= gravity * delta
+		stats.rest(delta)
 	move_and_slide()
 
 
@@ -329,7 +348,7 @@ func _process_air(delta: float, stick: Vector2, pressed: bool, held: bool) -> vo
 	_air_time += delta
 	_since_flap += delta
 	if _hopping:
-		if stats.can_fly() and (pressed or Input.is_action_just_pressed("dash")):
+		if stats.can_fly() and stats.stamina > 0.0 and (pressed or Input.is_action_just_pressed("dash")):
 			_hopping = false  # machnięcie w trakcie susu = przejście do lotu
 		else:
 			_process_hop(delta)
@@ -359,13 +378,19 @@ func _process_air(delta: float, stick: Vector2, pressed: bool, held: bool) -> vo
 		_flap_buffered = false
 		_flap(fwd)
 	if Input.is_action_just_pressed("dash") and _dash_cd <= 0.0:
-		_dash()
+		if stats.use_stamina(stamina_dash):
+			_dash()
+		else:
+			exhausted.emit()
 	if held:
 		_flap_timer -= delta
 		if _flap_timer <= 0.0:
 			_flap_timer = flap_interval  # rytm machania w zawisie (animacja Fly w pętli)
+		stats.use_stamina(stamina_hover * delta)
 		_hover(delta, fwd)
 	else:
+		if pitch > deg_to_rad(-20.0):
+			stats.use_stamina(stamina_glide * delta)
 		_glide(delta)
 
 	move_and_slide()
@@ -397,6 +422,10 @@ func _process_hop(delta: float) -> void:
 
 
 func _flap(fwd: float) -> void:
+	if not stats.use_stamina(stamina_flap):
+		_flap_buffered = false
+		exhausted.emit()
+		return
 	_since_flap = 0.0
 	_flap_cd = flap_cooldown
 	flapped.emit()

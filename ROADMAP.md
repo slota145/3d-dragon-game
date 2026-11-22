@@ -67,7 +67,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   wg `DragonStats.youth()` — duża głowa z krótkim pyszczkiem, krótka szyja, małe skrzydła, krótszy ogon
 - ✅ Przybliżanie kamery (0.6.1): szczypanie dwoma palcami, kółko myszy — oglądanie smoka z bliska
 - ⬜ Etapy Pisklę → Młodzik → Dorosły → Pradawny; odblokowania (lot, ogień, łapanie)
-- ⬜ Wytrzymałość lotu młodzika, wyszarzone przyciski przed odblokowaniem
+- ✅ Wytrzymałość lotu (0.6.2): pasek „Siła lotu”; start, machanie, zawis, zryw zużywają siłę,
+  szybowanie trochę, nurkowanie wcale; odnowa na ziemi; zużycie maleje z rozmiarem (dorosły prawie bez limitu)
+- ⬜ Wyszarzone przyciski przed odblokowaniem + animacja i napis przy odblokowaniu
 
 ## Faza 5 — Legowisko i świat ⬜
 

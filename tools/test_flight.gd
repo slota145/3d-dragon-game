@@ -185,9 +185,45 @@ func _init() -> void:
 		if not _p.is_flying():
 			break
 	_check(not _p.is_flying(), "wylądował (y=%.1f)" % _p.global_position.y)
+	await _test_stamina()
 
 	print("WYNIK: ", "OK" if _fails == 0 else "%d błędów" % _fails)
 	quit(1 if _fails else 0)
+
+
+## Wytrzymałość lotu młodzika: zawis wyczerpuje siły, bez sił tylko szybowanie, odnowa na ziemi.
+func _test_stamina() -> void:
+	print("10) Wytrzymałość lotu młodzika")
+	var st := _p.stats
+	st.set_size(4.5)
+	st.stamina = 100.0
+	await _seconds(1.0)
+	var adult_mult := 0.0
+	Input.action_press("flap")
+	await _seconds(0.6)  # przytrzymanie = start
+	_check(_p.is_flying(), "młodzik wystartował")
+	_check(st.stamina < 100.0, "start kosztuje siłę (%.0f)" % st.stamina)
+	var t := 0.0
+	while st.stamina > 0.0 and t < 20.0:
+		await _seconds(0.25)
+		t += 0.25
+	_check(st.stamina <= 0.0, "zawis wyczerpał siły w %.1f s" % t)
+	_check(t > 4.0 and t < 15.0, "czas zawisu młodzika rozsądny (%.1f s)" % t)
+	var y_ex := _p.global_position.y
+	await _shot("stamina_empty.png")
+	await _seconds(1.0)
+	_check(_p.global_position.y < y_ex - 0.5, "bez sił smok opada mimo trzymania (%.1f -> %.1f m)" % [y_ex, _p.global_position.y])
+	Input.action_release("flap")
+	var waited := 0.0
+	while _p.is_flying() and waited < 20.0:
+		await _seconds(0.25)
+		waited += 0.25
+	_check(not _p.is_flying(), "wylądował")
+	await _seconds(2.0)
+	_check(st.stamina > 20.0, "odpoczynek na ziemi odnawia siły (%.0f)" % st.stamina)
+	st.set_size(12.0)
+	adult_mult = st.stamina_drain_mult()
+	_check(adult_mult < 0.1, "dorosły męczy się dużo wolniej (mnożnik %.3f)" % adult_mult)
 
 
 func _flat(v: Vector3) -> Vector3:

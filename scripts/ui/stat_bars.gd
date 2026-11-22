@@ -1,6 +1,7 @@
 class_name StatBars
 extends Control
-## Paski: zdrowie, głód i wzrost (do następnego stadium) + nazwa stadium i rozmiar.
+## Paski: zdrowie, głód, wzrost (do następnego stadium) i siła lotu (gdy smok lata)
+## + nazwa stadium i rozmiar.
 
 var stats: DragonStats
 
@@ -34,3 +35,11 @@ func _draw() -> void:
 	y += H + GAP
 	var next_name: String = DragonStats.STAGE_NAMES[stats.stage + 1] if stats.stage + 1 < DragonStats.STAGE_NAMES.size() else "max"
 	_bar(y, stats.stage_progress(), Color(0.35, 0.8, 0.35), "Wzrost → %s (%.0f m)" % [next_name, stats.next_stage_size()])
+	if stats.can_fly():
+		y += H + GAP
+		var st := stats.stamina / 100.0
+		var col := Color(0.4, 0.75, 1.0)
+		if st < 0.25:  # mało sił — pasek miga
+			var blink := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 90.0)
+			col = Color(1.0, 0.35, 0.25).lerp(Color(1, 0.8, 0.7), blink * 0.5)
+		_bar(y, st, col, "Siła lotu" if st > 0.0 else "Brak sił — wyląduj, by odpocząć")

@@ -28,12 +28,23 @@ const STAGE_MIN_SIZE := [0.0, 4.0, 9.0, 16.0]
 ## Ile głodu zaspokaja 1 punkt jedzenia.
 @export var hunger_per_food: float = 12.0
 @export var starve_damage: float = 2.0
+@export_group("Wytrzymałość lotu")
+## Odnowa siły lotu na ziemi (pkt/s) i opóźnienie po lądowaniu (s).
+@export var stamina_regen: float = 22.0
+@export var stamina_regen_delay: float = 0.6
+## Zużycie siły maleje z rozmiarem: mnożnik = (4 m / rozmiar)^wykładnik — młodzik
+## męczy się szybko, dorosły prawie wcale.
+@export var stamina_exponent: float = 2.5
+@export_group("")
 @export var regen: float = 1.5
 
 var size: float = 2.4
 var health: float = 100.0
 var hunger: float = 70.0
 var stage: int = Stage.HATCHLING
+## Siła lotu 0..100: machanie, zawis, zryw i start ją zużywają; odnawia się na ziemi.
+var stamina: float = 100.0
+var _regen_wait: float = 0.0
 ## Wzrost czekający na „strawienie” (m).
 var pending_growth: float = 0.0
 
@@ -103,6 +114,29 @@ func set_size(s: float) -> void:
 		stage = new_stage
 		if up:
 			stage_changed.emit(stage, stage_name())
+
+
+## Mnożnik zużycia siły lotu (1 = świeży młodzik 4 m).
+func stamina_drain_mult() -> float:
+	return clampf(pow(STAGE_MIN_SIZE[Stage.JUVENILE] / size, stamina_exponent), 0.03, 1.0)
+
+
+## Zużyj siłę lotu (koszt dla młodzika; skalowany rozmiarem). Zwraca false, gdy brak sił.
+func use_stamina(cost: float) -> bool:
+	var c := cost * stamina_drain_mult()
+	_regen_wait = stamina_regen_delay
+	if stamina <= 0.0 or (cost > 0.0 and stamina < c * 0.5):
+		return false
+	stamina = maxf(0.0, stamina - c)
+	return true
+
+
+## Odnowa siły (na ziemi) — woła kontroler co klatkę fizyki.
+func rest(delta: float) -> void:
+	if _regen_wait > 0.0:
+		_regen_wait -= delta
+		return
+	stamina = minf(100.0, stamina + stamina_regen * delta)
 
 
 func damage(amount: float) -> void:
