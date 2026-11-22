@@ -38,6 +38,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ⬜ Kolejne animacje: chód, start/lądowanie, zianie ogniem, obrót w locie
 - ⬜ Teren testowy: wzgórza, góry, woda (heightmap lub generator)
 
+> **Priorytet platform:** Android (telefon). Windows wstrzymany do czasu „przeniesienia”
+> (włączenie: `BUILD_WINDOWS: "true"` w `.github/workflows/release.yml`).
+
 ## Faza 3 — Świat ⬜
 
 - ⬜ Generator terenu / większa mapa (chunking, LOD)

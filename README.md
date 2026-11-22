@@ -10,9 +10,8 @@ w **Blenderze** (skrypty Pythona).
 - **Android:** [⬇ DragonGame.apk](https://github.com/slota145/3d-dragon-game/releases/latest/download/DragonGame.apk)
   — otwórz link na telefonie, zezwól przeglądarce na instalację aplikacji z nieznanych źródeł.
   Wymaga 64-bitowego telefonu (arm64) z Vulkanem (praktycznie każdy z ostatnich lat).
-- **Windows:** [⬇ DragonGame.exe](https://github.com/slota145/3d-dragon-game/releases/latest/download/DragonGame.exe)
-  — jeden plik, bez instalacji. Windows może ostrzec o nieznanym wydawcy
-  (plik nie jest podpisany): „Więcej informacji” → „Uruchom mimo to”.
+- **Windows:** wstrzymany — na razie rozwijamy wersję na telefon (ostatni build: v0.2.0 na
+  [stronie wydania](https://github.com/slota145/3d-dragon-game/releases/tag/v0.2.0)).
 
 Gra sama sprawdza aktualizacje na GitHubie (przycisk w prawym górnym rogu).
 

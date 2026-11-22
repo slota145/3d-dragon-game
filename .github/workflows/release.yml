@@ -32,6 +32,8 @@ concurrency:
 
 env:
   GODOT_VERSION: "4.7.2"
+  # Na razie rozwijamy wersję na telefon; Windows włączymy później ("true").
+  BUILD_WINDOWS: "false"
 
 jobs:
   build:
@@ -124,16 +126,22 @@ jobs:
         if: steps.ver.outputs.mode != 'skip'
         run: |
           ~/godot/godot --headless --path . --import || true
-          mkdir -p build/windows
-          ~/godot/godot --headless --path . --export-release "Windows Desktop" build/windows/DragonGame.exe
-          ~/godot/godot --headless --path . --export-pack "Windows Desktop" "build/game-${GODOT_VERSION}.pck"
+          FILES=()
+          if [ "$BUILD_WINDOWS" = "true" ]; then
+            mkdir -p build/windows
+            ~/godot/godot --headless --path . --export-release "Windows Desktop" build/windows/DragonGame.exe
+            ~/godot/godot --headless --path . --export-pack "Windows Desktop" "build/game-${GODOT_VERSION}.pck"
+            FILES+=(build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck")
+          fi
           mkdir -p build/android
           ~/godot/godot --headless --path . --export-release "Android" build/android/DragonGame.apk
           ~/godot/godot --headless --path . --export-pack "Android" "build/game-${GODOT_VERSION}-android.pck"
-          for f in build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck" build/android/DragonGame.apk "build/game-${GODOT_VERSION}-android.pck"; do
+          FILES+=(build/android/DragonGame.apk "build/game-${GODOT_VERSION}-android.pck")
+          for f in "${FILES[@]}"; do
             test -s "$f" || { echo "Brak pliku $f"; exit 1; }
           done
-          ls -la build build/windows build/android
+          printf '%s\n' "${FILES[@]}" > build/files.txt
+          ls -la build/*
 
       - name: Publikacja wydania
         if: steps.ver.outputs.mode == 'create'
@@ -144,15 +152,14 @@ jobs:
           {
             echo "Automatyczne wydanie z commita ${GITHUB_SHA::7}."
             echo
-            echo "**Pobierz:** \`DragonGame.exe\` (Windows) lub \`DragonGame.apk\` (Android) poniżej."
-            echo "Windows może ostrzec o nieznanym wydawcy — „Więcej informacji” → „Uruchom mimo to”."
+            echo "**Pobierz:** \`DragonGame.apk\` poniżej (Android)."
             echo "Android: zezwól przeglądarce na instalację aplikacji z nieznanych źródeł."
             echo
             echo "Ostatnie zmiany:"
             git log -n 10 --pretty='- %s'
           } > notes.md
-          gh release create "$TAG" build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck" \
-            build/android/DragonGame.apk "build/game-${GODOT_VERSION}-android.pck" \
+          mapfile -t FILES < build/files.txt
+          gh release create "$TAG" "${FILES[@]}" \
             --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md
 
       - name: Dołączenie plików do istniejącego wydania
@@ -161,5 +168,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.ver.outputs.tag }}
         run: |
-          gh release upload "$TAG" build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck" \
-            build/android/DragonGame.apk "build/game-${GODOT_VERSION}-android.pck" --clobber
+          mapfile -t FILES < build/files.txt
+          gh release upload "$TAG" "${FILES[@]}" --clobber

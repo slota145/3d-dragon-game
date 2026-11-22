@@ -1,6 +1,8 @@
 # CLAUDE.md — wskazówki dla agentów AI
 
-Gra 3D o smoku w **Godot 4.7** (GDScript, renderer Forward+). Assety 3D są
+Gra 3D o smoku w **Godot 4.7** (GDScript, renderer **Mobile**).
+**Platforma docelowa: Android (telefon)** — Windows wstrzymany (`BUILD_WINDOWS` w CI),
+przeniesiemy grę później. Projektuj pod dotyk (gałka, przeciąganie) i wydajność telefonu. Assety 3D są
 generowane **proceduralnie skryptami Blendera (bpy)** i eksportowane do `.glb`.
 Język dokumentacji i komunikacji z właścicielem: **polski**. Kod, nazwy
 plików, węzłów i zmiennych: **angielski**.
@@ -84,7 +86,7 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 ## Środowisko (chmura / headless)
 
 - Godot: `/usr/local/bin/godot` (4.7.2). Blender: moduł `bpy` 5.3 w `.venv-tools/`.
-- Brak GPU: zrzuty ekranu idą przez Xvfb + Vulkan lavapipe (Forward+, wolne,
+- Brak GPU: zrzuty ekranu idą przez Xvfb + Vulkan lavapipe (renderer Mobile jak na telefonie, wolne,
   ale wierne). Fallback: `GODOT_DRIVER=opengl3 tools/screenshot.sh ...`.
 - Komunikaty `ALSA`/`audio driver` w logach są niegroźne (brak karty dźwiękowej).
 - Komunikaty `Draco/MeshOptimizer not available` z bpy są niegroźne.
