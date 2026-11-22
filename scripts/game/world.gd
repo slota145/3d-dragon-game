@@ -17,6 +17,7 @@ var day: int = 1
 ## Złoto na stosie w legowisku (skarb).
 var treasure: int = 0
 var _finds: GoldFinds
+var _hoard: HoardMenu
 var _gold_label: Label
 var _lair: Lair
 var _day_night: DayNight
@@ -58,6 +59,16 @@ func _ready() -> void:
 	add_child(_finds)
 	_finds.picked.connect(_on_gold_picked)
 	_build_gold_label()
+	_hoard = HoardMenu.new()
+	_hoard.name = "HoardMenu"
+	_hoard.stats = _player.stats
+	_hoard.get_treasure = func() -> int: return treasure
+	_hoard.spend = spend_treasure
+	add_child(_hoard)
+	_hoard.woke.connect(_wake)
+	_player.stats.upgraded.connect(func(id: String, _lvl: int) -> void:
+		if id == "eye":
+			_finds.refresh_beams())
 	_day_night.dusk.connect(func() -> void:
 		if not _lair.is_inside(_player.global_position):
 			_toast("Zapada zmrok — wróć do legowiska i prześpij noc"))
@@ -229,7 +240,7 @@ func _build_sleep_ui() -> void:
 	_sleep_button.offset_top = -150
 	_sleep_button.offset_bottom = -54
 	_sleep_button.visible = false
-	_sleep_button.pressed.connect(sleep)
+	_sleep_button.pressed.connect(sleep.bind(false))
 	_hud.add_child(_sleep_button)
 
 
@@ -237,15 +248,40 @@ func can_sleep() -> bool:
 	return not _sleeping and not _intro and not _player.is_flying() and _lair.is_inside(_player.global_position)
 
 
-## Sen: ściemnienie, leczenie, odnowa sił, przewinięcie do rana (7:00), zapis.
-func sleep() -> void:
+## Zapłać ze stosu skarbu (ulepszenia „snu na skarbie”); stos od razu maleje.
+func spend_treasure(cost: int) -> bool:
+	if cost > treasure:
+		return false
+	treasure -= cost
+	_lair.pile.set_gold(treasure)
+	return true
+
+
+## Sen: ściemnienie → „Sen na skarbie” (ulepszenia za złoto) → rano: leczenie, odnowa sił,
+## nowy dzień, zapis. `skip_hoard` = bez okna ulepszeń (testy).
+func sleep(skip_hoard: bool = false) -> void:
 	if not can_sleep():
 		return
 	_sleeping = true
 	_sleep_button.visible = false
 	_player.set_physics_process(false)
+	_day_night.paused = true
 	var tw := create_tween()
-	tw.tween_property(_fade, "color:a", 1.0, 0.8)
+	tw.tween_property(_fade, "color:a", 0.85, 0.8)
+	if skip_hoard:
+		tw.tween_callback(_wake)
+	else:
+		tw.tween_callback(_hoard.open)
+
+
+func is_sleeping() -> bool:
+	return _sleeping
+
+
+func _wake() -> void:
+	_day_night.paused = not use_save
+	var tw := create_tween()
+	tw.tween_property(_fade, "color:a", 1.0, 0.3)
 	tw.tween_callback(func() -> void:
 		if _day_night.hour >= 7.0:
 			day += 1  # po północy dzień już się zmienił — śpisz tylko do rana

@@ -84,7 +84,8 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Złoto i proceduralny stos skarbu (0.7.2, `gen_treasure.py`): błyszczące znaleziska na łące
   (co dzień nowe), skrytki-skrzynie na szczytach skalnych słupów (tylko lotem); złoto niesione →
   odkładane na stos w komorze; śmierć = utrata połowy niesionego; licznik w HUD
-- ⬜ Ulepszenia za złoto (twardsze łuski, siła lotu, regeneracja…)
+- ✅ Ulepszenia za złoto (0.7.3) — „sen na skarbie”: przy śnie smok wtapia złoto ze stosu w ciało
+  (stos maleje); Twarde łuski (łuski złocieją), Silne skrzydła, Smocze zdrowie, Bystre oko; po 3 poziomy
 - ⬜ Baśniowy region **~4 × 4 km, gęsty** (zasada 20 s, węzły POI, punkty orientacyjne;
   `docs/GAME_DESIGN.md` → Skala i gęstość): teren, las, łąki, farmy, jezioro, góry
 - ⬜ Strumieniowanie świata kawałkami, LOD, MultiMesh (wydajność na telefonie)

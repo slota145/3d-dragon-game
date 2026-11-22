@@ -87,9 +87,29 @@ func _spawn(id: String, kind: String, pos: Vector3, value: int, yaw: float) -> v
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	cyl.material = mat
 	beam.mesh = cyl
+	beam.name = "Beam"
 	beam.position.y = cyl.height / 2.0
 	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(beam)
+	_scale_beam(beam)
+
+
+## „Bystre oko”: dłuższe słupy światła nad złotem.
+func eye_level() -> int:
+	return dragon.stats.level("eye") if dragon else 0
+
+
+func refresh_beams() -> void:
+	for f in get_children():
+		var beam := f.get_node_or_null("Beam") as MeshInstance3D
+		if beam:
+			_scale_beam(beam)
+
+
+func _scale_beam(beam: MeshInstance3D) -> void:
+	var k := 1.0 + 0.8 * eye_level()
+	beam.scale = Vector3(1.0 + 0.3 * eye_level(), k, 1.0 + 0.3 * eye_level())
+	beam.position.y = (beam.mesh as CylinderMesh).height * k / 2.0
 
 
 func _process(delta: float) -> void:
@@ -103,7 +123,7 @@ func _process(delta: float) -> void:
 	if _check_t > 0.0 or not dragon:
 		return
 	_check_t = 0.1
-	var reach := 1.2 + dragon.stats.size * 0.3
+	var reach := 1.2 + dragon.stats.size * 0.3 + 0.6 * eye_level()
 	var dp := dragon.global_position
 	for f: Node3D in get_children():
 		if f.is_queued_for_deletion():

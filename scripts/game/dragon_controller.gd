@@ -165,6 +165,9 @@ func _ready() -> void:
 	if skel:
 		_proportions = DragonProportions.new()
 		skel.add_child(_proportions)
+	stats.upgraded.connect(func(id: String, lvl: int) -> void:
+		if id == "scales":
+			_apply_scale_tint(lvl))
 	stats.size_changed.connect(_apply_size)
 	_apply_size(stats.size)
 	if _anim:
@@ -180,6 +183,23 @@ func _apply_size(size: float) -> void:
 	_collision.position = _base_shape_pos * _k
 	if _proportions:
 		_proportions.youth = stats.youth()
+
+
+## „Twarde łuski”: złoto wtopione w łuski — z każdym poziomem łuski bardziej złocą się i błyszczą.
+func _apply_scale_tint(lvl: int) -> void:
+	for mi: MeshInstance3D in _visual.find_children("*", "MeshInstance3D", true, false):
+		for i in mi.mesh.get_surface_count():
+			var base := mi.mesh.surface_get_material(i) as StandardMaterial3D
+			if base == null or not base.resource_name.ends_with("Scales"):
+				continue
+			if lvl <= 0:
+				mi.set_surface_override_material(i, null)
+				continue
+			var mat := base.duplicate() as StandardMaterial3D
+			mat.albedo_color = base.albedo_color.lerp(Color(0.85, 0.62, 0.22), 0.13 * lvl)
+			mat.metallic = 0.18 * lvl
+			mat.roughness = 1.0 - 0.15 * lvl
+			mi.set_surface_override_material(i, mat)
 
 
 ## Skala ruchu na ziemi: mały smok jest wolniejszy, ale nie proporcjonalnie (wykładnik < 1).

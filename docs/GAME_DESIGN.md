@@ -134,6 +134,10 @@ Cel: świat jest **na tyle duży, żeby lot był przyjemnością**, ale **nigdy 
 - **Stos złota rośnie wizualnie** (generowany proceduralnie z monet, kielichów, koron).
 - Złoto to **prestiż i ulepszenia legowiska oraz smoka**: twardsze łuski, większy zasięg
   ognia, szybsza regeneracja, większa pojemność skarbca.
+- **Lore ulepszeń — „sen na skarbie”** (decyzja właściciela): smoki śpią na swoim skarbie,
+  a złoto i klejnoty wtapiają się w ich łuski i skrzydła. Ulepszenia kupuje się przy śnie
+  w legowisku; stos naprawdę maleje, a łuski z każdym poziomem „Twardych łusek” złocieją.
+  Na start: Twarde łuski, Silne skrzydła, Smocze zdrowie, Bystre oko (po 3 poziomy).
 
 ## Nowe pokolenie (prestiż jak w grach idle)
 

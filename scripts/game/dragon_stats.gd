@@ -46,6 +46,10 @@ var stage: int = Stage.HATCHLING
 var stamina: float = 100.0
 ## Złoto niesione przy sobie (odkłada się na stos w legowisku; po śmierci część przepada).
 var gold: int = 0
+## Poziomy ulepszeń za złoto („sen na skarbie”): id -> poziom (patrz Upgrades).
+var upgrades: Dictionary = {}
+
+signal upgraded(id: String, level: int)
 var _regen_wait: float = 0.0
 ## Wzrost czekający na „strawienie” (m).
 var pending_growth: float = 0.0
@@ -118,9 +122,20 @@ func set_size(s: float) -> void:
 			stage_changed.emit(stage, stage_name())
 
 
-## Mnożnik zużycia siły lotu (1 = świeży młodzik 4 m).
+func level(id: String) -> int:
+	return int(upgrades.get(id, 0))
+
+
+## Kup kolejny poziom ulepszenia (koszt płaci świat ze stosu skarbu).
+func upgrade(id: String) -> void:
+	upgrades[id] = mini(level(id) + 1, Upgrades.MAX_LEVEL)
+	upgraded.emit(id, level(id))
+
+
+## Mnożnik zużycia siły lotu (1 = świeży młodzik 4 m); „Silne skrzydła” go zmniejszają.
 func stamina_drain_mult() -> float:
-	return clampf(pow(STAGE_MIN_SIZE[Stage.JUVENILE] / size, stamina_exponent), 0.03, 1.0)
+	var wings := 1.0 - 0.2 * level("wings")
+	return clampf(pow(STAGE_MIN_SIZE[Stage.JUVENILE] / size, stamina_exponent), 0.03, 1.0) * wings
 
 
 ## Zużyj siłę lotu (koszt dla młodzika; skalowany rozmiarem). Zwraca false, gdy brak sił.
@@ -138,7 +153,7 @@ func rest(delta: float) -> void:
 	if _regen_wait > 0.0:
 		_regen_wait -= delta
 		return
-	stamina = minf(100.0, stamina + stamina_regen * delta)
+	stamina = minf(100.0, stamina + stamina_regen * (1.0 + 0.25 * level("wings")) * delta)
 
 
 ## Wczytanie stanu z zapisu: bez napisów o nowym stadium.
@@ -148,6 +163,11 @@ func restore(data: Dictionary) -> void:
 	hunger = float(data.get("hunger", 70.0))
 	stamina = float(data.get("stamina", 100.0))
 	gold = int(data.get("gold", 0))
+	upgrades.clear()
+	var up: Dictionary = data.get("upgrades", {})
+	for id in up:
+		upgrades[id] = int(up[id])
+		upgraded.emit(id, int(up[id]))
 	size = clampf(float(data.get("size", start_size)), 0.5, max_size)
 	stage = stage_for(size)
 	size_changed.emit(size)
@@ -155,7 +175,7 @@ func restore(data: Dictionary) -> void:
 
 func to_save() -> Dictionary:
 	return {"size": size, "pending_growth": pending_growth, "health": health, "hunger": hunger,
-		"stamina": stamina, "gold": gold}
+		"stamina": stamina, "gold": gold, "upgrades": upgrades.duplicate()}
 
 
 ## Natychmiastowa zmiana rozmiaru (narzędzia dewelopera): bez trawienia zaległego wzrostu.
@@ -167,7 +187,7 @@ func set_size_instant(s: float) -> void:
 func damage(amount: float) -> void:
 	if health <= 0.0:
 		return
-	health = maxf(0.0, health - amount)
+	health = maxf(0.0, health - amount * (1.0 - 0.15 * level("scales")))
 	if health <= 0.0:
 		died.emit()
 
@@ -182,8 +202,8 @@ func _process(delta: float) -> void:
 		var step := minf(pending_growth, maxf(digest_speed * size / 4.0, pending_growth * 1.2) * delta)
 		pending_growth -= step
 		set_size(size + step)
-	hunger = maxf(0.0, hunger - hunger_decay * delta)
+	hunger = maxf(0.0, hunger - hunger_decay * (1.0 - 0.12 * level("vitality")) * delta)
 	if hunger <= 0.0:
 		damage(starve_damage * delta)
 	elif hunger > 50.0 and health > 0.0:
-		health = minf(100.0, health + regen * delta)
+		health = minf(100.0, health + regen * (1.0 + 0.5 * level("vitality")) * delta)
