@@ -25,7 +25,7 @@ liczy się wydajność, czytelność sylwetki z daleka i spójność setek asset
 i ewentualnie lekkim toon shaderem lub obrysem. Przykłady klimatu: *Grow
 Home*, *Journey*, *A Short Hike* (wersja 3D). Uzasadnienie:
 
-1. Agent zrobi w nim najwięcej i najlepiej (pipeline już działa, patrz placeholder).
+1. Agent zrobi w nim najwięcej i najlepiej (pipeline już działa, patrz model smoka).
 2. Najlepsza wydajność przy dużym świecie oglądanym z lotu ptaka.
 3. Łatwo podnieść jakość później: shader toon, obrys, gradient na materiałach,
    bez wymiany wszystkich modeli.
@@ -35,5 +35,8 @@ Home*, *Journey*, *A Short Hike* (wersja 3D). Uzasadnienie:
 
 ## Decyzja
 
-❓ Do podjęcia przez właściciela projektu. Po decyzji zaktualizować sekcję
-„Konwencje 3D” w `CLAUDE.md` i `ROADMAP.md`.
+✅ **Stylizowany low-poly** (listopad 2026). Pierwszy docelowy asset — smok
+na podstawie referencji (szary, kremowa grzywa, czerwony pysk):
+
+![Smok — ryk](img/dragon_roar.png)
+![Smok — lot](img/dragon_fly.png)

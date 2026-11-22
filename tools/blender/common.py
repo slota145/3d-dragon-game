@@ -132,7 +132,8 @@ def export_glb(path: pathlib.Path) -> None:
 
 def render_preview(path: pathlib.Path, target=(0, 0, 1), distance: float = 8.0,
                    azimuth_deg: float = 35.0, elevation_deg: float = 20.0,
-                   resolution=(800, 600)) -> None:
+                   resolution=(800, 600), exposure: float = 0.0,
+                   background=(0.55, 0.7, 0.85)) -> None:
     """Szybki render podglądowy (Workbench, CPU) do weryfikacji wizualnej."""
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_WORKBENCH"
@@ -142,7 +143,8 @@ def render_preview(path: pathlib.Path, target=(0, 0, 1), distance: float = 8.0,
     scene.render.resolution_x, scene.render.resolution_y = resolution
     scene.render.film_transparent = False
     world = bpy.data.worlds.get("World") or bpy.data.worlds.new("World")
-    world.color = (0.55, 0.7, 0.85)
+    world.color = background
+    scene.view_settings.exposure = exposure
     scene.world = world
 
     az, el = math.radians(azimuth_deg), math.radians(elevation_deg)

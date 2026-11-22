@@ -3,7 +3,7 @@
 Gra 3D o smoku tworzona w **Godot 4.7**, z assetami generowanymi proceduralnie
 w **Blenderze** (skrypty Pythona).
 
-![Scena testowa](docs/img/godot_main_scene.png)
+![Smok](docs/img/dragon_roar.png)
 
 ## Uruchomienie
 
@@ -14,7 +14,7 @@ w **Blenderze** (skrypty Pythona).
 
 ```bash
 tools/setup.sh   # Godot, Blender (bpy) w .venv-tools, xvfb/mesa
-.venv-tools/bin/python tools/blender/gen_dragon_placeholder.py   # -> assets/models/*.glb
+.venv-tools/bin/python tools/blender/gen_dragon.py   # -> assets/models/dragon.glb (model + rig + animacje)
 tools/check.sh   # weryfikacja projektu bez ekranu
 ```
 

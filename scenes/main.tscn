@@ -1,7 +1,8 @@
 [gd_scene load_steps=8 format=3]
 
-[ext_resource type="PackedScene" path="res://assets/models/dragon_placeholder.glb" id="1_dragon"]
+[ext_resource type="PackedScene" path="res://assets/models/dragon.glb" id="1_dragon"]
 [ext_resource type="Script" path="res://scripts/turntable.gd" id="2_turntable"]
+[ext_resource type="Script" path="res://scripts/autoplay_animation.gd" id="3_autoplay"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
 sky_top_color = Color(0.32, 0.52, 0.8, 1)
@@ -47,6 +48,9 @@ script = ExtResource("2_turntable")
 
 [node name="Dragon" parent="Turntable" instance=ExtResource("1_dragon")]
 
+[node name="AutoPlay" type="Node" parent="Turntable/Dragon"]
+script = ExtResource("3_autoplay")
+
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 4.5, 11)
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 8, 22)
 fov = 50.0

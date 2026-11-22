@@ -9,4 +9,4 @@ FRAMES="${3:-30}"
 mkdir -p "$(dirname "$OUT")"
 exec xvfb-run -a -s "-screen 0 1920x1080x24" \
   godot --path . --rendering-driver "${GODOT_DRIVER:-vulkan}" --resolution 1280x720 \
-  --script res://tools/screenshot.gd -- "$SCENE" "$OUT" "$FRAMES"
+  --script res://tools/screenshot.gd -- "$SCENE" "$OUT" "$FRAMES" "${@:4}"

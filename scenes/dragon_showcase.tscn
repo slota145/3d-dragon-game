@@ -1,0 +1,50 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/model_showcase.gd" id="1_showcase"]
+[ext_resource type="PackedScene" path="res://assets/models/dragon.glb" id="2_dragon"]
+
+[sub_resource type="Environment" id="Environment_studio"]
+background_mode = 1
+background_color = Color(0.36, 0.355, 0.35, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.82, 0.84, 0.88, 1)
+ambient_light_energy = 0.9
+tonemap_mode = 4
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 1.5
+glow_enabled = true
+glow_intensity = 0.25
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+size = Vector2(80, 80)
+
+[node name="DragonShowcase" type="Node3D" node_paths=PackedStringArray("model")]
+script = ExtResource("1_showcase")
+model = NodePath("Dragon")
+animation = &"Roar"
+freeze_at = 1.25
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_studio")
+
+[node name="KeyLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.454519, 0.541675, 0, 0.766044, 0.642788, -0.707107, -0.454519, 0.541675, 0, 10, 0)
+light_color = Color(1, 0.96, 0.9, 1)
+light_energy = 1.6
+shadow_enabled = true
+directional_shadow_max_distance = 60.0
+
+[node name="RimLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, 0.25, -0.433013, 0, 0.866025, 0.5, 0.5, 0.433013, -0.75, 0, 10, 0)
+light_color = Color(0.8, 0.86, 1, 1)
+light_energy = 0.7
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("PlaneMesh_floor")
+
+[node name="Dragon" parent="." instance=ExtResource("2_dragon")]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+fov = 40.0

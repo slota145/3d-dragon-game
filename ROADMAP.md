@@ -7,14 +7,15 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Repozytorium, struktura katalogów, `.gitignore`, `.editorconfig`
 - ✅ Projekt Godot 4.7 (Forward+), scena testowa z niebem, światłem, ziemią
 - ✅ Pipeline assetów: Blender (bpy, headless) → `.glb` → import do Godota
-- ✅ Placeholder smoka low-poly (~820 trójkątów)
+- ✅ Placeholder smoka low-poly (~820 trójkątów) → zastąpiony docelowym modelem
 - ✅ Narzędzia: `tools/setup.sh`, `tools/check.sh`, `tools/screenshot.sh`
 - ✅ Dokumentacja dla agentów (`CLAUDE.md`), research narzędzi (`docs/TOOLS.md`)
 
 ## Faza 1 — Decyzje projektowe ❓
 
-- ❓ **Styl graficzny** — low-poly / voxel / kreskówkowy / realistyczny
-  (analiza i rekomendacja w `docs/ART_STYLE.md`)
+- ✅ **Styl graficzny** — stylizowany low-poly (`docs/ART_STYLE.md`)
+- ✅ **Model smoka (wywerna)** wg referencji: ~10k trójkątów, rig 37 kości,
+  animacje Idle / Fly / Roar (`tools/blender/gen_dragon.py`, `scenes/dragon_showcase.tscn`)
 - ❓ **Gatunek i pętla rozgrywki** — np. eksploracja otwartego świata,
   walka powietrzna, zbieranie skarbów, rozwój smoka od pisklęcia…
 - ❓ **Kamera** — trzecia osoba za smokiem (domyślnie) czy inna
@@ -27,7 +28,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ⬜ Model lotu: prędkość, przechylenie (bank), nurkowanie, szybowanie, wznoszenie
 - ⬜ Kamera trzecioosobowa z opóźnieniem i dynamicznym FOV przy prędkości
 - ⬜ Sterowanie: klawiatura + mysz, gamepad
-- ⬜ Szkielet (rig) smoka + animacje: machanie skrzydłami, szybowanie, idle, chód
+- ✅ Szkielet (rig) smoka + animacje: machanie skrzydłami, idle, ryk
+- ⬜ Kolejne animacje: szybowanie, chód, start/lądowanie, zianie ogniem, obrót w locie
+- ⬜ Dopracowanie złożonych skrzydeł w Idle (błona przy ciele)
 - ⬜ Teren testowy: wzgórza, góry, woda (heightmap lub generator)
 
 ## Faza 3 — Świat ⬜

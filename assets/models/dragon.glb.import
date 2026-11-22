@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b8e8piyht0uej"
-path="res://.godot/imported/dragon_placeholder.glb-f7f821677f519fd2e64bbab42f741914.scn"
+uid="uid://i84y02se2ktf"
+path="res://.godot/imported/dragon.glb-a0a21819b5751b0d396fd5d3964cf656.scn"
 
 [deps]
 
-source_file="res://assets/models/dragon_placeholder.glb"
-dest_files=["res://.godot/imported/dragon_placeholder.glb-f7f821677f519fd2e64bbab42f741914.scn"]
+source_file="res://assets/models/dragon.glb"
+dest_files=["res://.godot/imported/dragon.glb-a0a21819b5751b0d396fd5d3964cf656.scn"]
 
 [params]
 
@@ -35,7 +35,7 @@ animation/fps=30
 animation/trimming=false
 animation/remove_immutable_tracks=true
 animation/import_rest_as_RESET=false
-import_script/path=""
+import_script/path="res://assets/models/dragon_import.gd"
 materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
