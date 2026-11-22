@@ -24,7 +24,8 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 | `project.godot` | konfiguracja projektu, input map |
 | `scenes/` | sceny: `boot.tscn` (start) → `world.tscn` (świat + `dragon_player.tscn` + `hud.tscn`), `dragon_showcase.tscn` |
 | `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `follow_camera.gd`, `updater.gd`, `game_version.gd` |
-| `scripts/ui/` | interfejs: `touch_joystick.gd` (gałka) |
+| `scripts/ui/` | interfejs: `touch_joystick.gd` (gałka), `touch_button.gd` (przyciski Skrzydła/Zryw) |
+| `scripts/fx/`, `assets/shaders/` | efekty: `dust_burst.gd` (pył), `speed_lines.gdshader` (linie pędu) |
 | `scripts/` | pozostałe (np. `model_showcase.gd`) |
 | `assets/models/` | wygenerowane `.glb` (+ pliki `.import` — commitujemy je) |
 | `assets/textures/`, `materials/`, `audio/` | pozostałe zasoby |

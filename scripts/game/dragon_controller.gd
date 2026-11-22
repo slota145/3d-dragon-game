@@ -10,9 +10,17 @@ extends CharacterBody3D
 ##   trzymanie        – ciągłe machanie: zawis w miejscu (z gałką do przodu: lot poziomy)
 ##   bez przycisku    – szybowanie: gałka do przodu = nurkowanie (im stromiej, tym szybciej),
 ##                      do tyłu = wyrównanie i zamiana rozpędu na wysokość, w bok = skręt
+## Machnięcia mają czas trwania (nie da się ich „spamować”); naciśnięcie w trakcie jest
+## zapamiętywane i wykonywane zaraz po bieżącym machnięciu.
+##
+## Przycisk „Zryw” (akcja `dash`): na ziemi trzymanie = bieg, w powietrzu = potężne machnięcie
+## mocno zwiększające prędkość w kierunku dzioba (z czasem odnowienia).
 
 signal took_off
-signal landed
+signal launched  ## wybicie przy starcie (pył)
+signal landed(impact: float)
+signal flapped
+signal dashed
 
 enum State { GROUND, AIR }
 
@@ -29,11 +37,13 @@ enum State { GROUND, AIR }
 @export var jump_forward: float = 7.0
 ## Ile trzeba przytrzymać przycisk na ziemi, żeby wystartować (s).
 @export var takeoff_hold_time: float = 0.35
-@export var takeoff_speed: float = 8.0
+@export var takeoff_speed: float = 15.0
 
 @export_group("Machanie i zawis")
 @export var gravity: float = 12.0
-@export var flap_lift: float = 8.5
+@export var flap_lift: float = 11.0
+## Minimalny odstęp między machnięciami = czas jednego pełnego ruchu skrzydeł (s).
+@export var flap_cooldown: float = 0.7
 @export var flap_thrust: float = 8.0
 @export var max_climb_speed: float = 13.0
 ## Rytm machania przy przytrzymanym przycisku (s).
@@ -65,6 +75,12 @@ enum State { GROUND, AIR }
 @export var pitch_rate: float = 2.2
 @export var max_bank_deg: float = 35.0
 
+@export_group("Zryw i bieg")
+@export var sprint_speed: float = 7.5
+@export var dash_impulse: float = 22.0
+@export var max_dash_speed: float = 75.0
+@export var dash_cooldown: float = 1.4
+
 @export var joystick: TouchJoystick
 @export var camera: Node3D
 
@@ -77,6 +93,14 @@ var _charge: float = -1.0
 var _air_time: float = 0.0
 var _flap_timer: float = 0.0
 var _since_flap: float = 99.0
+var _flap_cd: float = 0.0
+var _flap_buffered: bool = false
+var _dash_cd: float = 0.0
+var _since_dash: float = 99.0
+var _takeoff_time: float = 99.0
+## 0..1: siła efektów prędkości (linie pędu, FOV, drganie) — czyta je świat/kamera.
+var speed_effect: float = 0.0
+var _dash_boost: float = 0.0
 
 @onready var _visual: Node3D = $Visual
 @onready var _anim: AnimationPlayer = find_child("AnimationPlayer", true, false)
@@ -95,12 +119,19 @@ func _physics_process(delta: float) -> void:
 	var stick := _read_stick()
 	var pressed := Input.is_action_just_pressed("flap")
 	var held := Input.is_action_pressed("flap")
+	_flap_cd = maxf(0.0, _flap_cd - delta)
+	_dash_cd = maxf(0.0, _dash_cd - delta)
+	_since_dash += delta
+	_takeoff_time += delta
+	_dash_boost = maxf(0.0, _dash_boost - delta * 1.2)
 	if state == State.GROUND:
 		_process_ground(delta, stick, pressed, held)
 	else:
 		_process_air(delta, stick, pressed, held)
 	_update_visual(delta, stick)
 	_update_animation(held)
+	var speed := velocity.length()
+	speed_effect = maxf(clampf((speed - 22.0) / 38.0, 0.0, 1.0), _dash_boost)
 
 
 func _read_stick() -> Vector2:
@@ -134,7 +165,9 @@ func _process_ground(delta: float, stick: Vector2, pressed: bool, held: bool) ->
 		rotation.y = rotate_toward(rotation.y, atan2(wish.x, wish.z), turn_speed * delta)
 		var facing := _facing_flat()
 		var align := clampf(facing.dot(wish.normalized()), 0.0, 1.0)
-		flat = flat.move_toward(facing * walk_speed * minf(1.0, wish.length()) * align, acceleration * delta)
+		var top := sprint_speed if Input.is_action_pressed("dash") else walk_speed
+		var accel := acceleration * (2.5 if top > walk_speed else 1.0)
+		flat = flat.move_toward(facing * top * minf(1.0, wish.length()) * align, accel * delta)
 	else:
 		flat = flat.move_toward(Vector3.ZERO, deceleration * delta)
 	velocity.x = flat.x
@@ -142,6 +175,9 @@ func _process_ground(delta: float, stick: Vector2, pressed: bool, held: bool) ->
 
 	if pressed:
 		_charge = 0.0
+		if _anim:  # przysiad przed skokiem/startem (początek animacji TakeOff)
+			_anim.play("TakeOff", 0.15)
+			_anim.speed_scale = 1.0
 	if _charge >= 0.0:
 		if held:
 			_charge += delta
@@ -169,9 +205,11 @@ func _jump(wish: Vector3) -> void:
 func _take_off(stick: Vector2) -> void:
 	_charge = -1.0
 	velocity.y = takeoff_speed
-	velocity += _facing_flat() * maxf(0.0, -stick.y) * 4.0
+	velocity += _facing_flat() * maxf(0.0, -stick.y) * 5.0
 	_enter_air()
-	_start_flap_anim()
+	_takeoff_time = 0.0  # animacja TakeOff gra dalej: wybicie z łap + potężne machnięcie
+	_flap_cd = flap_cooldown
+	launched.emit()
 
 
 func _enter_air() -> void:
@@ -204,12 +242,19 @@ func _process_air(delta: float, stick: Vector2, pressed: bool, held: bool) -> vo
 	pitch = move_toward(pitch, target_pitch, pitch_rate * delta)
 
 	if pressed:
+		if _flap_cd <= 0.0:
+			_flap(fwd)
+		else:
+			_flap_buffered = true  # wykona się po bieżącym machnięciu
+	elif _flap_buffered and _flap_cd <= 0.0:
+		_flap_buffered = false
 		_flap(fwd)
+	if Input.is_action_just_pressed("dash") and _dash_cd <= 0.0:
+		_dash()
 	if held:
 		_flap_timer -= delta
 		if _flap_timer <= 0.0:
-			_flap_timer = flap_interval
-			_since_flap = 0.0
+			_flap_timer = flap_interval  # rytm machania w zawisie (animacja Fly w pętli)
 		_hover(delta, fwd)
 	else:
 		_glide(delta)
@@ -219,8 +264,23 @@ func _process_air(delta: float, stick: Vector2, pressed: bool, held: bool) -> vo
 		_land()
 
 
+func _dash() -> void:
+	_dash_cd = dash_cooldown
+	_since_dash = 0.0
+	_dash_boost = 1.0
+	var boosted := velocity + _facing_3d() * dash_impulse
+	velocity = boosted.limit_length(maxf(max_dash_speed, velocity.length()))
+	if _anim:
+		_anim.play("Fly", 0.08)
+		_anim.seek(0.05, true)
+		_anim.speed_scale = 2.6
+	dashed.emit()
+
+
 func _flap(fwd: float) -> void:
 	_since_flap = 0.0
+	_flap_cd = flap_cooldown
+	flapped.emit()
 	_flap_timer = flap_interval
 	velocity.y = clampf(maxf(velocity.y, 0.0) + flap_lift, 0.0, max_climb_speed)
 	if fwd > 0.1:
@@ -263,13 +323,15 @@ func _glide(delta: float) -> void:
 
 
 func _land() -> void:
+	var impact := maxf(-velocity.y, Vector2(velocity.x, velocity.z).length() * 0.5)
 	state = State.GROUND
+	_flap_buffered = false
 	pitch = 0.0
 	velocity.y = 0.0
 	var flat := Vector3(velocity.x, 0.0, velocity.z).limit_length(walk_speed * 1.5)
 	velocity.x = flat.x
 	velocity.z = flat.z
-	landed.emit()
+	landed.emit(impact)
 
 
 # --- Wygląd ------------------------------------------------------------------
@@ -284,9 +346,10 @@ func _update_visual(delta: float, stick: Vector2) -> void:
 
 func _start_flap_anim() -> void:
 	if _anim:
-		_anim.play("Fly", 0.12)
+		_anim.play("Fly", 0.1)
 		_anim.seek(0.05, true)
-		_anim.speed_scale = 1.6
+		# jedno machnięcie = jeden pełny cykl animacji (1.5 s) w czasie flap_cooldown
+		_anim.speed_scale = 1.5 / flap_cooldown
 
 
 func _play(anim_name: StringName, blend: float, speed_scale: float) -> void:
@@ -301,16 +364,20 @@ func _update_animation(held: bool) -> void:
 	if state == State.GROUND:
 		var speed := Vector2(velocity.x, velocity.z).length()
 		if _charge >= 0.0:
-			_play(&"Idle", 0.2, 1.0)
+			return  # przysiad (TakeOff) gra od naciśnięcia
 		elif speed > 0.12:
-			_play(&"Walk", 0.35, clampf(speed / walk_anim_speed, 0.4, 2.5))
+			_play(&"Walk", 0.35, clampf(speed / walk_anim_speed, 0.4, 3.2))
 		else:
 			_play(&"Idle", 0.5, 1.0)
 		return
+	if _takeoff_time < 0.85:
+		return  # dokończ wybicie i potężne machnięcie (TakeOff)
+	if _since_dash < 0.5:
+		return  # mocne machnięcie zrywu
+	if _since_flap < flap_cooldown:
+		return  # machnięcie trwa do końca — bez przerywania
 	if held:
 		_play(&"Fly", 0.2, 1.3)
-	elif _since_flap < 0.6:
-		_play(&"Fly", 0.12, 1.6)
 	elif pitch < deg_to_rad(-30.0):
 		_play(&"Dive", 0.4, 1.0)
 	else:

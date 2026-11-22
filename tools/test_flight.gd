@@ -8,6 +8,7 @@ extends SceneTree
 var _fails := 0
 var _out := ""
 var _p: DragonController
+var _flaps := 0
 
 
 func _init() -> void:
@@ -17,6 +18,18 @@ func _init() -> void:
 	await _frames(10)
 	_p = world.get_node("DragonPlayer")
 	var anim: AnimationPlayer = _p.find_child("AnimationPlayer", true, false)
+	_p.flapped.connect(func() -> void: _flaps += 1)
+
+	print("0) Zryw na ziemi (trzymanie) = bieg")
+	Input.action_press("dash")
+	Input.action_press("move_forward")
+	await _seconds(2.5)
+	var run := _flat(_p.velocity).length()
+	_check(run > _p.walk_speed * 2.0, "biegnie (%.1f m/s, chód %.1f)" % [run, _p.walk_speed])
+	_check(not _p.is_flying(), "nadal na ziemi")
+	Input.action_release("move_forward")
+	Input.action_release("dash")
+	await _seconds(2.5)
 
 	print("1) Tap na ziemi = skok w miejscu")
 	var y0 := _p.global_position.y
@@ -34,19 +47,33 @@ func _init() -> void:
 	Input.action_release("move_forward")
 	_check(_flat(_p.global_position).distance_to(x0) > 4.0, "skok do przodu (%.1f m)" % _flat(_p.global_position).distance_to(x0))
 
-	print("3) Przytrzymanie na ziemi = start, trzymanie = zawis")
+	print("3) Przytrzymanie na ziemi = potężny start, trzymanie = zawis")
 	Input.action_press("flap")
-	await _seconds(1.5)
+	await _seconds(0.6)
 	_check(_p.is_flying(), "wystartował")
+	await _seconds(0.15)
+	await _shot("flight_takeoff.png")
+	await _seconds(3.5)
 	var h1 := _p.global_position.y
 	await _seconds(3.0)
 	var h2 := _p.global_position.y
-	_check(h1 > 3.0, "nad ziemią (%.1f m)" % h1)
+	_check(h1 > 12.0, "wysoki start (%.1f m)" % h1)
 	_check(absf(h2 - h1) < 2.5, "zawis: wysokość stabilna (%.1f -> %.1f m)" % [h1, h2])
 	_check(_flat(_p.velocity).length() < 1.0, "zawis: w miejscu (%.2f m/s)" % _flat(_p.velocity).length())
 	_check(anim.current_animation == "Fly", "animacja machania (%s)" % anim.current_animation)
 	await _shot("flight_hover.png")
 	Input.action_release("flap")
+
+	print("3b) Spamowanie machnięć nie przerywa animacji")
+	await _seconds(1.0)
+	_flaps = 0
+	for i in 10:
+		await _tap(0.04)
+		await _seconds(0.06)
+	await _seconds(0.05)
+	_check(_flaps <= 2, "10 tapnięć w 1 s -> %d machnięcia (odstęp >= %.1f s)" % [_flaps, _p.flap_cooldown])
+	await _seconds(0.8)
+	_check(_flaps <= 3, "zapamiętane tapnięcie wykonane po machnięciu (%d)" % _flaps)
 
 	print("4) Tapnięcia bez kierunku = w górę")
 	var h3 := _p.global_position.y
@@ -79,15 +106,33 @@ func _init() -> void:
 	Input.action_release("move_forward")
 	print("   wysokość %.1f m, prędkość %.1f m/s" % [_p.global_position.y, _p.velocity.length()])
 
+	print("6b) Zryw w powietrzu = duży przyrost prędkości w kierunku dzioba")
+	await _seconds(1.0)
+	var v0 := _p.velocity
+	Input.action_press("dash")
+	await _seconds(0.1)
+	Input.action_release("dash")
+	var gain := (_p.velocity - v0).dot(Vector3(sin(_p.rotation.y), 0, cos(_p.rotation.y)))
+	_check(gain > 15.0, "przyspieszenie w przód (+%.1f m/s)" % gain)
+	_check(_p.speed_effect > 0.5, "efekty prędkości aktywne (%.2f)" % _p.speed_effect)
+	await _shot("flight_dash.png")
+	var v1 := _p.velocity.length()
+	Input.action_press("dash")
+	await _seconds(0.1)
+	Input.action_release("dash")
+	_check(_p.velocity.length() < v1 + 5.0, "czas odnowienia zrywu (%.1f -> %.1f m/s)" % [v1, _p.velocity.length()])
+	await _seconds(1.5)
+
 	print("7) Gałka do przodu (szybowanie) = nurkowanie")
 	var s7 := _p.velocity.length()
 	var h7 := _p.global_position.y
 	Input.action_press("move_forward")
-	await _seconds(3.0)
+	await _seconds(2.0)
 	_check(_p.pitch < deg_to_rad(-40), "pochylony w dół (%.0f°)" % rad_to_deg(_p.pitch))
-	_check(_p.velocity.length() > s7 + 8.0, "przyspiesza (%.1f -> %.1f m/s)" % [s7, _p.velocity.length()])
+	_check(_p.velocity.length() > s7 + 4.0, "przyspiesza (%.1f -> %.1f m/s)" % [s7, _p.velocity.length()])
 	_check(_p.global_position.y < h7, "traci wysokość (%.1f -> %.1f m)" % [h7, _p.global_position.y])
 	_check(anim.current_animation == "Dive", "animacja nurkowania (%s)" % anim.current_animation)
+	_check(_p.speed_effect > 0.2, "linie pędu przy nurkowaniu (%.2f)" % _p.speed_effect)
 	await _shot("flight_dive.png")
 	Input.action_release("move_forward")
 

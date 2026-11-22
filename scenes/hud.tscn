@@ -1,10 +1,25 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/touch_joystick.gd" id="1_joy"]
 [ext_resource type="Script" path="res://scripts/game/updater.gd" id="2_upd"]
 [ext_resource type="Script" path="res://scripts/ui/touch_button.gd" id="3_btn"]
+[ext_resource type="Shader" path="res://assets/shaders/speed_lines.gdshader" id="4_lines"]
+
+[sub_resource type="ShaderMaterial" id="Mat_lines"]
+shader = ExtResource("4_lines")
+shader_parameter/intensity = 0.0
+shader_parameter/flash = 0.0
 
 [node name="HUD" type="CanvasLayer"]
+
+[node name="SpeedLines" type="ColorRect" parent="."]
+material = SubResource("Mat_lines")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="Joystick" type="Control" parent="."]
 anchors_preset = 2
@@ -31,6 +46,24 @@ grow_horizontal = 0
 grow_vertical = 0
 script = ExtResource("3_btn")
 
+[node name="DashButton" type="Control" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -560.0
+offset_top = -300.0
+offset_right = -360.0
+offset_bottom = -100.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("3_btn")
+action = &"dash"
+label = "ZRYW"
+icon = "dash"
+radius = 90.0
+
 [node name="Status" type="Label" parent="."]
 offset_left = 24.0
 offset_top = 96.0
@@ -50,7 +83,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.6)
 theme_override_font_sizes/font_size = 22
 text = "Gałka: chód / w locie: przód = nurkuj, tył = w górę, boki = skręt
-Skrzydła (spacja / A): tap = skok / machnięcie, przytrzymaj = start / zawis"
+Skrzydła (spacja / A): tap = skok / machnięcie, przytrzymaj = start / zawis · Zryw (Shift / X): bieg / przyspieszenie"
 
 [node name="Version" type="Label" parent="."]
 anchors_preset = 2

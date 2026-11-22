@@ -19,6 +19,8 @@ Sterowanie:
 - **gałka** (lewy dół): chód; w locie: przód = nurkowanie, tył = w górę / wyrównanie, boki = skręt
 - **Skrzydła** (prawy dół, spacja, A na padzie): na ziemi tap = skok, przytrzymanie = start;
   w powietrzu tap = machnięcie w górę (z gałką w przód: w przód i w górę), trzymanie = zawis
+- **Zryw** (przycisk obok Skrzydeł, Shift, X na padzie): na ziemi trzymaj = bieg;
+  w locie = potężne machnięcie, które mocno przyspiesza w kierunku dzioba
 - **kamera:** przeciąganie ekranu (PPM, Q/E, prawa gałka pada)
 
 ## Uruchomienie ze źródeł

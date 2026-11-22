@@ -19,7 +19,16 @@ extends Node3D
 @export var flight_align_delay: float = 0.6
 @export var flight_align_speed: float = 2.2
 
+@export_group("Efekty prędkości")
+@export var base_fov: float = 55.0
+@export var fov_boost: float = 22.0
+@export var shake_amount: float = 0.35
+
+## 0..1 — ustawiane co klatkę przez świat (z DragonController.speed_effect).
+var effect: float = 0.0
+
 @onready var _arm: SpringArm3D = $SpringArm3D
+@onready var _cam: Camera3D = $SpringArm3D/Camera3D
 
 var _yaw: float = PI
 var _pitch: float = 0.0
@@ -71,3 +80,8 @@ func _process(delta: float) -> void:
 	var follow := flight_follow_speed if flying else follow_speed
 	global_position = global_position.lerp(goal, clampf(follow * delta, 0.0, 1.0))
 	rotation = Vector3(_pitch, _yaw, 0.0)
+	_cam.fov = lerpf(_cam.fov, base_fov + fov_boost * effect, clampf(4.0 * delta, 0.0, 1.0))
+	var t := Time.get_ticks_msec() / 1000.0
+	var shake := shake_amount * effect * effect
+	_cam.h_offset = shake * (sin(t * 37.0) + sin(t * 23.0) * 0.5)
+	_cam.v_offset = shake * (sin(t * 31.0 + 1.3) + sin(t * 19.0) * 0.5)

@@ -33,6 +33,10 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Skok, start, lot: przycisk „Skrzydła” (tap/przytrzymanie), zawis, machanie,
   szybowanie z modelem nośności i przeciągnięcia, nurkowanie, wyrównanie z rozpędu, lądowanie
 - ✅ Animacja Dive, góry i skalne słupy z kolizją, kamera lotu, status wys./prędkości
+- ✅ Machnięcia bez spamu (czas trwania + zapamiętane naciśnięcie), potężny start (animacja TakeOff:
+  przysiad, wybicie z łap, uderzenie skrzydeł) z chmurą pyłu, pył przy twardym lądowaniu
+- ✅ Przycisk Zryw: bieg na ziemi, potężne przyspieszenie w locie (z odnowieniem)
+- ✅ Efekty prędkości: linie pędu, winieta, FOV, drganie kamery, rozbłysk przy zrywie
 - ⬜ Dopracowanie odczucia lotu na telefonie (strojenie parametrów w `dragon_controller.gd`)
 - ⬜ Model lotu: prędkość, przechylenie (bank), nurkowanie, szybowanie, wznoszenie
 - ⬜ Kamera trzecioosobowa z opóźnieniem i dynamicznym FOV przy prędkości

@@ -789,6 +789,45 @@ def pose_fly(t: float):
     return rots, locs
 
 
+def pose_takeoff(t: float):
+    """Start: przysiad na tylnych łapach ze skrzydłami w górze (0–0.35), wybicie z łap
+    i potężne machnięcie w dół (0.35–0.6), wyprost w locie (0.6–1)."""
+    def ease(a: float, b: float) -> float:
+        x = clampf01((t - a) / (b - a))
+        return x * x * (3 - 2 * x)
+    crouch = ease(0.0, 0.33) * (1.0 - ease(0.36, 0.46))
+    leap = ease(0.33, 0.5) * (1.0 - ease(0.7, 1.0))
+    stroke = ease(0.36, 0.58)  # 0 = skrzydła w górze, 1 = po uderzeniu w dół
+    up_amount = ease(0.0, 0.3) * (1.0 - stroke)
+    body = V(0, 0.2 * crouch, -0.75 * crouch + 0.55 * leap)
+    rots = {}
+    for s, sfx in SIDES:
+        e1 = 1.05 * up_amount - 0.75 * stroke * (1.0 - ease(0.75, 1.0))
+        e2 = 0.45 * up_amount - 0.35 * stroke * (1.0 - ease(0.75, 1.0))
+        rots[f"UpperArm.{sfx}"] = [side_rot(sfx, AY, -e1), side_rot(sfx, AZ, -0.15 * up_amount)]
+        rots[f"Forearm.{sfx}"] = [side_rot(sfx, AY, -e2)]
+        rots[f"Hand.{sfx}"] = [side_rot(sfx, AY, -0.3 * up_amount + 0.25 * stroke)]
+        if leap < 0.5:
+            rots.update(planted_leg(s, sfx, mx(LEG["ball"], s), body))
+        else:  # w powietrzu łapy się wyprostowują i podkulają
+            k = (leap - 0.5) * 2
+            rots[f"Thigh.{sfx}"] = [(AX, 1.2 * (1 - k) + 0.6 * k)]
+            rots[f"Shin.{sfx}"] = [(AX, -0.2)]
+            rots[f"Foot.{sfx}"] = [(AX, 0.8)]
+            rots[f"Toes.{sfx}"] = [(AX, 0.6)]
+    rots["Neck1"] = [(AX, 0.18 * crouch - 0.22 * leap)]
+    rots["Neck2"] = [(AX, 0.08 * crouch - 0.1 * leap)]
+    rots["Head"] = [(AX, -0.15 * crouch - 0.12 * leap)]
+    rots["Jaw"] = [(AX, 0.25 * leap)]
+    for k in range(1, 7):
+        rots[f"Tail{k}"] = [(AX, 0.06 * crouch - 0.05 * leap)]
+    return rots, {"Hips": body}
+
+
+def clampf01(x: float) -> float:
+    return max(0.0, min(1.0, x))
+
+
 def pose_dive(t: float):
     """Nurkowanie: skrzydła złożone do tyłu wzdłuż ciała (jak sokół), łapy podkulone,
     szyja wyciągnięta, lekkie drżenie końcówek."""
@@ -889,6 +928,7 @@ def build_animations(arm) -> None:
     make_action(arm, "Idle", 144, pose_idle)
     make_action(arm, "Glide", 96, pose_glide)
     make_action(arm, "Dive", 24, pose_dive)
+    make_action(arm, "TakeOff", 24, pose_takeoff, step=1, loop=False)
     make_action(arm, "Walk", WALK_FRAMES, pose_walk)
     make_action(arm, "Fly", 36, pose_fly)
     make_action(arm, "Roar", 60, pose_roar, loop=False)

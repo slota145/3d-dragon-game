@@ -5,7 +5,7 @@ extends EditorScenePostImport
 ## - błona skrzydeł renderowana dwustronnie,
 ## - animacje Idle, Walk, Fly, Glide i Dive zapętlone.
 
-const LOOPING := ["Idle", "Walk", "Fly", "Glide", "Dive"]
+const LOOPING := ["Idle", "Walk", "Fly", "Glide", "Dive"]  # TakeOff i Roar bez pętli
 
 
 func _post_import(scene: Node) -> Object:
