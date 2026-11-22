@@ -33,7 +33,7 @@ bazą dostaną wtedy „Pobierz grę” (pełne APK), a nie łatkę.
 ## Jak wydać nową wersję
 
 1. Podbij `config/version` w `project.godot` (np. `"0.1.0"` → `"0.2.0"`).
-2. Wypchnij na domyślną gałąź repozytorium.
+2. Wypchnij na gałąź `main`.
 3. Workflow `.github/workflows/release.yml` zobaczy, że wydania `v0.2.0` jeszcze nie ma,
    zbuduje `DragonGame.exe` + `game-4.7.2.pck` i opublikuje wydanie (kilka minut).
 4. Gracze ze starszą wersją zobaczą w grze przycisk aktualizacji.

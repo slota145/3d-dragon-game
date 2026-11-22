@@ -1,6 +1,6 @@
 # Automatyczne wydania gry.
 #
-# Po wypchnięciu na domyślną gałąź: jeśli wydania `v<config/version z project.godot>`
+# Po wypchnięciu na main (lub domyślną gałąź): jeśli wydania `v<config/version z project.godot>`
 # jeszcze nie ma, buduje grę i publikuje wydanie z plikami:
 #   DragonGame.exe              – pełna gra dla Windows
 #   DragonGame.apk              – pełna gra dla Androida (arm64)
@@ -38,7 +38,8 @@ env:
 
 jobs:
   build:
-    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    # wydania z gałęzi main (oraz z gałęzi domyślnej repozytorium)
+    if: github.event_name != 'push' || github.ref_name == 'main' || github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
