@@ -44,6 +44,8 @@ var _idle_time: float = 0.0
 
 func _ready() -> void:
 	top_level = true
+	# Kamera porusza się co klatkę obrazu (_process), a nie co krok fizyki — bez interpolacji.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_pitch = deg_to_rad(pitch_deg)
 	_arm.spring_length = distance
 	if target is CollisionObject3D:
@@ -87,7 +89,9 @@ func _process(delta: float) -> void:
 			and Vector2(body.velocity.x, body.velocity.z).length() > 0.3:
 		var behind := target.global_rotation.y + PI
 		_yaw = rotate_toward(_yaw, behind, align_speed * delta)
-	var goal := target.global_position + Vector3.UP * (flight_height * flight_zoom if flying else height * zoom)
+	# płynna (interpolowana) pozycja smoka — przy ekranach 90/120 Hz fizyka (60 Hz) dawałaby drganie
+	var target_pos := target.get_global_transform_interpolated().origin
+	var goal := target_pos + Vector3.UP * (flight_height * flight_zoom if flying else height * zoom)
 	var follow := flight_follow_speed if flying else follow_speed
 	global_position = global_position.lerp(goal, clampf(follow * delta, 0.0, 1.0))
 	rotation = Vector3(_pitch, _yaw, 0.0)

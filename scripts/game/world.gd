@@ -56,6 +56,7 @@ func _on_died() -> void:
 	_banner("Zemdlałeś z głodu…", "Budzisz się w bezpiecznym miejscu")
 	_player.global_position = _spawn_point
 	_player.velocity = Vector3.ZERO
+	_player.reset_physics_interpolation()  # teleport — bez „przelotu” interpolacji
 	_player.stats.revive(60.0, 45.0)
 
 

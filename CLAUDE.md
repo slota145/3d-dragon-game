@@ -54,6 +54,9 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
    (test lotu sprawdza całą specyfikację sterowania właściciela — patrz nagłówek
    `scripts/game/dragon_controller.gd`). Parametry lotu są w `@export` (grupy w inspektorze).
    Nazwa klasy nie może kolidować z klasą Godota (np. `VirtualJoystick` istnieje w 4.7).
+   **Interpolacja fizyki jest włączona** (płynność na ekranach 90/120 Hz): ruch w
+   `_physics_process`, kamera czyta `get_global_transform_interpolated()`, po teleporcie
+   wołaj `reset_physics_interpolation()`.
 7. **Wydania:** podbij `config/version`. Jeśli zmieniasz input map / ustawienia projektu /
    eksportu / silnik — podbij też `config/base_api` (inaczej łatka zepsuje grę u graczy;
    patrz `docs/RELEASE.md`).
