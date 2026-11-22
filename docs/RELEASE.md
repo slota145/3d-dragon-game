@@ -17,15 +17,17 @@ pozostaje z `.exe` — dlatego nazwa łatki zawiera wersję silnika.
 
 ## Jak wydać nową wersję
 
-1. Wypchnij zmiany.
-2. Na GitHubie: **Releases → Draft a new release**, tag `vX.Y.Z` (np. `v0.2.0`),
-   opis zmian → **Publish**.
-3. Workflow `.github/workflows/release.yml` sam zbuduje i dołączy
-   `DragonGame.exe` oraz `game-4.7.2.pck` (kilka minut).
+1. Podbij `config/version` w `project.godot` (np. `"0.1.0"` → `"0.2.0"`).
+2. Wypchnij na domyślną gałąź repozytorium.
+3. Workflow `.github/workflows/release.yml` zobaczy, że wydania `v0.2.0` jeszcze nie ma,
+   zbuduje `DragonGame.exe` + `game-4.7.2.pck` i opublikuje wydanie (kilka minut).
 4. Gracze ze starszą wersją zobaczą w grze przycisk aktualizacji.
 
-Wersja gry jest brana z tagu; `config/version` w `project.godot` to tylko wartość
-domyślna dla buildów lokalnych.
+Wypchnięcie bez zmiany wersji niczego nie publikuje. Można też ręcznie utworzyć
+wydanie na GitHubie (tag `vX.Y.Z`) — workflow dobuduje do niego pliki.
+
+Stały link do najnowszej wersji gry:
+https://github.com/slota145/3d-dragon-game/releases/latest/download/DragonGame.exe
 
 ## Budowanie lokalnie
 

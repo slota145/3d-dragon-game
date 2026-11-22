@@ -1,42 +1,69 @@
-# Buduje grę po opublikowaniu wydania (release) na GitHubie i dołącza pliki do wydania:
-#   DragonGame.exe          – pełna gra dla Windows
-#   game-<silnik>.pck       – łatka dla aktualizatora w grze
-# Wersja gry = tag wydania (np. v0.2.0 -> 0.2.0).
+# Automatyczne wydania gry.
+#
+# Po wypchnięciu na domyślną gałąź: jeśli wydania `v<config/version z project.godot>`
+# jeszcze nie ma, buduje grę i publikuje wydanie z plikami:
+#   DragonGame.exe        – pełna gra dla Windows
+#   game-<silnik>.pck     – łatka dla aktualizatora w grze
+# Czyli: podbij `config/version` w project.godot, wypchnij — gracze dostaną aktualizację.
+#
+# Ręczne wydanie na GitHubie (Releases -> Publish, tag vX.Y.Z) też jest obsługiwane:
+# workflow dobuduje i dołączy pliki (wersja gry = tag).
 name: Release build
 
 on:
+  push:
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag istniejącego wydania (np. v0.2.0)"
-        required: true
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   GODOT_VERSION: "4.7.2"
 
 jobs:
   build:
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          fetch-depth: 20
 
-      - name: Wersja z tagu
+      - name: Ustal wersję i czy trzeba budować
+        id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            sed -i "s/^config\/version=.*/config\/version=\"${TAG#v}\"/" project.godot
+            echo "mode=upload" >> "$GITHUB_OUTPUT"
+          else
+            VERSION=$(sed -n 's/^config\/version="\(.*\)"/\1/p' project.godot)
+            TAG="v$VERSION"
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              echo "Wydanie $TAG już istnieje — nic do zrobienia."
+              echo "mode=skip" >> "$GITHUB_OUTPUT"
+            else
+              echo "mode=create" >> "$GITHUB_OUTPUT"
+            fi
+          fi
           VERSION="${TAG#v}"
-          echo "TAG=$TAG" >> "$GITHUB_ENV"
-          sed -i "s/^config\/version=.*/config\/version=\"$VERSION\"/" project.godot
           sed -i "s/^application\/file_version=.*/application\/file_version=\"$VERSION.0\"/; s/^application\/product_version=.*/application\/product_version=\"$VERSION.0\"/" export_presets.cfg
-          grep -n "config/version" project.godot
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Wersja: $TAG"
 
       - name: Cache Godot
+        if: steps.ver.outputs.mode != 'skip'
         uses: actions/cache@v4
         with:
           path: |
@@ -45,6 +72,7 @@ jobs:
           key: godot-${{ env.GODOT_VERSION }}
 
       - name: Instalacja Godota i szablonów eksportu
+        if: steps.ver.outputs.mode != 'skip'
         run: |
           if [ ! -x ~/godot/godot ]; then
             mkdir -p ~/godot && cd ~/godot
@@ -56,14 +84,36 @@ jobs:
           fi
 
       - name: Eksport
+        if: steps.ver.outputs.mode != 'skip'
         run: |
           ~/godot/godot --headless --path . --import || true
           mkdir -p build/windows
           ~/godot/godot --headless --path . --export-release "Windows Desktop" build/windows/DragonGame.exe
           ~/godot/godot --headless --path . --export-pack "Windows Desktop" "build/game-${GODOT_VERSION}.pck"
+          test -s build/windows/DragonGame.exe && test -s "build/game-${GODOT_VERSION}.pck"
           ls -la build build/windows
 
-      - name: Dołączenie plików do wydania
+      - name: Publikacja wydania
+        if: steps.ver.outputs.mode == 'create'
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          {
+            echo "Automatyczne wydanie z commita ${GITHUB_SHA::7}."
+            echo
+            echo "**Pobierz:** \`DragonGame.exe\` poniżej (Windows, jeden plik)."
+            echo "Windows może ostrzec o nieznanym wydawcy — „Więcej informacji” → „Uruchom mimo to”."
+            echo
+            echo "Ostatnie zmiany:"
+            git log -n 10 --pretty='- %s'
+          } > notes.md
+          gh release create "$TAG" build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck" \
+            --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md
+
+      - name: Dołączenie plików do istniejącego wydania
+        if: steps.ver.outputs.mode == 'upload'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ver.outputs.tag }}
         run: gh release upload "$TAG" build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck" --clobber
