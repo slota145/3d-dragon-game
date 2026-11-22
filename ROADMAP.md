@@ -61,16 +61,18 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Punkty odniesienia przy ziemi: trawa, kwiaty, krzaki (MultiMesh); kamera bez kręcenia przy sprincie
 - ⬜ Sprawdzenie na telefonie: czy polowanie i rośnięcie to frajda?
 
-## Faza 4 — Pisklę i etapy ⬜
+## Faza 4 — Pisklę i etapy ✅
 
 - ✅ **Płynne proporcje** pisklę → dorosły (0.6.0): modyfikator szkieletu `dragon_proportions.gd`
   wg `DragonStats.youth()` — duża głowa z krótkim pyszczkiem, krótka szyja, małe skrzydła, krótszy ogon
 - ✅ Przybliżanie kamery (0.6.1): szczypanie dwoma palcami, kółko myszy — oglądanie smoka z bliska
-- ⬜ Etapy Pisklę → Młodzik → Dorosły → Pradawny; odblokowania (lot, ogień, łapanie)
+- ✅ Etapy Pisklę → Młodzik → Dorosły → Pradawny wg rozmiaru; odblokowanie lotu
+  (ogień i łapanie → faza 7)
 - ✅ Wytrzymałość lotu (0.6.2): pasek „Siła lotu”; start, machanie, zawis, zryw zużywają siłę,
   szybowanie trochę, nurkowanie wcale; odnowa na ziemi; zużycie maleje z rozmiarem (dorosły prawie bez limitu)
 - ✅ Menu pauzy + tryb deweloperski (0.6.3): skok do stadium, reset wzrostu
-- ⬜ Wyszarzone przyciski przed odblokowaniem + animacja i napis przy odblokowaniu
+- ✅ Wyszarzone przyciski z kłódką + animacja odblokowania (0.6.4): napis stadium,
+  przycisk podskakuje i pulsuje złotem, fale; podpowiedź „Przytrzymaj SKRZYDŁA…”
 
 ## Faza 5 — Legowisko i świat ⬜
 

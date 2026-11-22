@@ -14,6 +14,20 @@ extends Control
 @export var color_pressed: Color = Color(1, 0.85, 0.5, 0.5)
 
 var _touch_index: int = -1
+## Czas pozostały animacji odblokowania (s) — pulsowanie i złote fale.
+var _celebrate_t: float = 0.0
+
+const CELEBRATE_TIME := 3.0
+const GOLD := Color(1.0, 0.82, 0.35)
+
+
+## Animacja odblokowania: przycisk podskakuje i pulsuje złotem, rozchodzą się od niego fale.
+func celebrate() -> void:
+	_celebrate_t = CELEBRATE_TIME
+
+
+func is_celebrating() -> bool:
+	return _celebrate_t > 0.0
 
 
 func _ready() -> void:
@@ -52,7 +66,23 @@ func _hit(screen_pos: Vector2) -> bool:
 func _draw() -> void:
 	var c := size / 2.0
 	var pressed := not locked and (_touch_index != -1 or Input.is_action_pressed(action))
-	draw_circle(c, radius, color_pressed if pressed else (Color(0.2, 0.2, 0.2, 0.25) if locked else color_idle))
+	var glow := 0.0
+	if _celebrate_t > 0.0:
+		var t := CELEBRATE_TIME - _celebrate_t  # 0 -> CELEBRATE_TIME
+		var fade := clampf(_celebrate_t / 0.8, 0.0, 1.0)
+		for i in 3:  # fale co 0.6 s
+			var ph := fmod(t - 0.6 * i, 1.8) / 1.8
+			if t >= 0.6 * i and ph >= 0.0:
+				draw_arc(c, radius * (1.0 + 0.9 * ph), 0.0, TAU, 64,
+					Color(GOLD, (1.0 - ph) * 0.8 * fade), 8.0 * (1.0 - ph) + 2.0, true)
+		glow = (0.55 + 0.45 * sin(t * 9.0)) * fade
+		# podskok: szybkie powiększenie i sprężyste wygaszenie
+		var bounce := 1.0 + 0.22 * exp(-3.0 * t) * absf(sin(t * 7.0)) + 0.05 * glow
+		draw_set_transform(c * (1.0 - bounce), 0.0, Vector2.ONE * bounce)
+	var fill := color_pressed if pressed else (Color(0.2, 0.2, 0.2, 0.25) if locked else color_idle)
+	draw_circle(c, radius, fill.lerp(Color(GOLD, 0.55), glow))
+	if glow > 0.0:
+		draw_arc(c, radius, 0.0, TAU, 64, Color(GOLD, glow), 8.0, true)
 	draw_arc(c, radius, 0.0, TAU, 64, Color(1, 1, 1, 0.2 if locked else 0.45), 4.0, true)
 	var wing := Color(1, 1, 1, 0.3 if locked else 0.85)
 	var k := radius / 120.0
@@ -101,5 +131,6 @@ func _draw_wings(c: Vector2, wing: Color) -> void:
 	draw_polyline(PackedVector2Array([c + Vector2(-16, 12), c + Vector2(0, -6), c + Vector2(16, 12)]), wing, 7.0, true)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_celebrate_t = maxf(0.0, _celebrate_t - delta)
 	queue_redraw()

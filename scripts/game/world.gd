@@ -55,10 +55,17 @@ func _update_buttons() -> void:
 
 func _on_stage_changed(_stage: int, stage_name: String) -> void:
 	var unlocks := ""
+	var unlocked: Array[TouchActionButton] = []
 	if _player.stats.stage == DragonStats.Stage.JUVENILE:
 		unlocks = "Odblokowano: LOT!"
+		unlocked.append(_hud.get_node("FlapButton"))
 	_banner(stage_name.to_upper() + "!", unlocks)
 	_update_buttons()
+	for b in unlocked:
+		b.celebrate()  # przycisk podskakuje i pulsuje złotem — „tu jest nowa zdolność”
+	if not unlocked.is_empty():
+		get_tree().create_timer(3.2).timeout.connect(func() -> void:
+			_toast("Przytrzymaj SKRZYDŁA, by wystartować"))
 	DustBurst.spawn(self, _player.global_position, 1.2 * maxf(_player.size_k(), 0.4), Color(1.0, 0.85, 0.45))
 
 

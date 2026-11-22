@@ -12,7 +12,7 @@ config_version=5
 
 config/name="3D Dragon Game"
 config/description="Gra o smoku w Godot 4 — prototyp."
-config/version="0.6.3"
+config/version="0.6.4"
 ; Numer zgodności „bazy” (APK/EXE). Podbij, gdy zmieniasz coś, czego łatka .pck nie przeniesie
 ; (input map, ustawienia projektu, eksportu, wersja silnika) — gracze dostaną wtedy pełną aktualizację.
 config/base_api=5

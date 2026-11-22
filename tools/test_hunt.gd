@@ -102,6 +102,10 @@ func _init() -> void:
 	_check(max_step < 0.3, "płynnie: maks. przyrost %.2f m na 0,25 s (posiłek: owca)" % max_step)
 	_check(_stage_events.has("Młodzik"), "zdarzenie stadium: %s" % str(_stage_events))
 	_check(stats.can_fly(), "lot odblokowany")
+	var flap_btn: TouchActionButton = _p.get_parent().get_node("HUD/FlapButton")
+	_check(flap_btn.is_celebrating(), "przycisk SKRZYDŁA świętuje odblokowanie (fale, złoty puls)")
+	_check(flap_btn.label == "SKRZYDŁA", "etykieta przycisku: %s" % flap_btn.label)
+	await _shot("unlock_flight.png")
 	_p.global_position = Vector3.ZERO
 	await _seconds(1.0)
 	await _shot("size_4m.png")
