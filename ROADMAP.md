@@ -67,7 +67,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 
 - ⬜ Jaskinia-legowisko: sen = zapis + nowy dzień + leczenie; łagodna śmierć
 - ⬜ Złoto i proceduralny stos skarbu; ulepszenia za złoto
-- ⬜ Baśniowy region: teren, las, łąki, farmy, jezioro, góry (assety generowane skryptami)
+- ⬜ Baśniowy region **~4 × 4 km, gęsty** (zasada 20 s, węzły POI, punkty orientacyjne;
+  `docs/GAME_DESIGN.md` → Skala i gęstość): teren, las, łąki, farmy, jezioro, góry
+- ⬜ Strumieniowanie świata kawałkami, LOD, MultiMesh (wydajność na telefonie)
 - ⬜ Cykl dnia i nocy
 
 ## Faza 6 — Ludzie ⬜

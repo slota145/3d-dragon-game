@@ -86,8 +86,32 @@ Pisklę nie ma ognia ani lotu: przyciski są wtedy wyszarzone, a ich odblokowani
   góry z jaskinią-legowiskiem, jedna wioska, jeden zamek. Potem kolejne regiony.
 - **Dzień i noc**: w nocy ludzie gorzej widzą (pisklę może zakraść się do kurnika),
   w dzień jest więcej ludzi w drodze.
+- **Duży, ale gęsty** (szczegóły niżej): dużo miejsca do latania, ale zawsze coś w zasięgu wzroku.
 - **Brak innych smoków**: jesteśmy ostatni. Najwięksi przeciwnicy to gryfy (dzikie,
   w górach) i jeźdźcy gryfów (elita królestwa).
+
+## Skala i gęstość świata
+
+Cel: świat jest **na tyle duży, żeby lot był przyjemnością**, ale **nigdy pusty**.
+
+- **Region startowy ok. 4 × 4 km.** Przelot w poprzek zwykłym lotem (~20 m/s) trwa około
+  3 minuty, a nurkowaniem i zrywem szybciej. Kolejne regiony mają podobną skalę.
+- **Zasada 20 sekund:** w locie co ~15–25 s (czyli co ~300–500 m) mijasz coś ciekawego:
+  stado, farmę, drogę z wozem, ruiny, wodospad, obóz myśliwych, gniazdo gryfa, skarb.
+- **Skupiska zamiast równomiernego rozsypania.** Ciekawe miejsca łączą się w „węzły”
+  (wioska + pola + pastwisko + droga + młyn), a między nimi są krótsze przerwy:
+  las, łąki, rzeka. Przerwy też mają zwierzynę i drobiazgi, więc nie są pustką.
+- **Punkty orientacyjne widoczne z daleka:** góry z legowiskiem, wieże zamku, jezioro,
+  wielkie drzewo, wodospad. Gracz zawsze widzi, dokąd chce lecieć.
+- **Świat „kurczy się” razem ze smokiem.** Pisklę zaczyna w gęstej dolinie o średnicy ok. 500 m,
+  w której jest wszystko, czego potrzebuje (las, strumień, kurnik, króliki), a dalsze części
+  świata są na razie zbyt groźne. Dla młodzika i dorosłego ta sama mapa robi się mała
+  i odsłania dalsze cele.
+- **Pionowość:** góry, klify, wąwozy i wysokie wieże dają powód do nurkowania,
+  wyciągania w górę i lądowania na szczytach.
+- **Wydajność na telefonie:** świat dzielony na kawałki wczytywane wokół smoka,
+  uproszczone modele w oddali (LOD), drzewa i trawa rysowane zbiorczo (MultiMesh),
+  mgła ukrywająca horyzont.
 
 ## Legowisko i skarb
 
