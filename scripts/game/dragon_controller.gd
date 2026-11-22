@@ -135,6 +135,7 @@ var _eating: float = 0.0
 var _k: float = 1.0  # skala smoka (rozmiar / rozmiar modelu)
 var _base_shape_size: Vector3
 var _base_shape_pos: Vector3
+var _proportions: DragonProportions
 
 @onready var stats: DragonStats = $Stats
 @onready var _visual: Node3D = $Visual
@@ -146,6 +147,10 @@ func _ready() -> void:
 	_collision.shape = _collision.shape.duplicate()
 	_base_shape_size = (_collision.shape as BoxShape3D).size
 	_base_shape_pos = _collision.position
+	var skel: Skeleton3D = _visual.find_child("Skeleton3D", true, false)
+	if skel:
+		_proportions = DragonProportions.new()
+		skel.add_child(_proportions)
 	stats.size_changed.connect(_apply_size)
 	_apply_size(stats.size)
 	if _anim:
@@ -159,6 +164,8 @@ func _apply_size(size: float) -> void:
 	_visual.position.y = 2.0 * _k
 	(_collision.shape as BoxShape3D).size = _base_shape_size * _k
 	_collision.position = _base_shape_pos * _k
+	if _proportions:
+		_proportions.youth = stats.youth()
 
 
 ## Skala ruchu na ziemi: mały smok jest wolniejszy, ale nie proporcjonalnie (wykładnik < 1).

@@ -63,8 +63,8 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 
 ## Faza 4 — Pisklę i etapy ⬜
 
-- ⬜ **Płynne proporcje** pisklę → dorosły (skalowanie kości wg rozmiaru: duża głowa,
-  krótka szyja, małe skrzydła u pisklęcia)
+- ✅ **Płynne proporcje** pisklę → dorosły (0.6.0): modyfikator szkieletu `dragon_proportions.gd`
+  wg `DragonStats.youth()` — duża głowa z krótkim pyszczkiem, krótka szyja, małe skrzydła, krótszy ogon
 - ⬜ Etapy Pisklę → Młodzik → Dorosły → Pradawny; odblokowania (lot, ogień, łapanie)
 - ⬜ Wytrzymałość lotu młodzika, wyszarzone przyciski przed odblokowaniem
 

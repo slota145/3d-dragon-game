@@ -47,6 +47,14 @@ func scale_factor() -> float:
 	return size / model_size
 
 
+## „Młodość” proporcji: 1 = świeżo wyklute pisklę (start_size), 0 = dorosły (próg Dorosłego).
+## Liczona logarytmicznie — proporcje zmieniają się najszybciej, gdy smok jest mały.
+func youth() -> float:
+	var adult: float = STAGE_MIN_SIZE[Stage.ADULT]
+	var t := log(maxf(size, 0.01) / start_size) / log(adult / start_size)
+	return 1.0 - smoothstep(0.0, 1.0, clampf(t, 0.0, 1.0))
+
+
 static func stage_for(s: float) -> int:
 	var result := 0
 	for i in STAGE_MIN_SIZE.size():

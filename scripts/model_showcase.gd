@@ -21,6 +21,9 @@ const CAMERAS := {
 @export var freeze_at: float = -1.0
 @export var camera_preset: String = "ref"
 
+## Proporcje pisklęcia (0 = dorosły, 1 = świeżo wyklute) — modyfikator DragonProportions.
+@export var youth: float = 0.0
+
 @onready var _camera: Camera3D = $Camera3D
 
 
@@ -33,8 +36,15 @@ func _ready() -> void:
 			"anim": animation = StringName(kv[1])
 			"t": freeze_at = float(kv[1])
 			"cam": camera_preset = kv[1]
+			"youth": youth = float(kv[1])
 	var preset: Array = CAMERAS.get(camera_preset, CAMERAS["ref"])
 	_camera.look_at_from_position(preset[0], preset[1])
+	if youth > 0.0:
+		var skel: Skeleton3D = model.find_child("Skeleton3D", true, false)
+		if skel:
+			var mod := DragonProportions.new()
+			mod.youth = youth
+			skel.add_child(mod)
 	var player: AnimationPlayer = model.find_child("AnimationPlayer", true, false)
 	if player and player.has_animation(animation):
 		player.play(animation)

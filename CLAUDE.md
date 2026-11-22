@@ -15,7 +15,7 @@ tools/setup.sh                 # Godot, bpy (Blender), xvfb/mesa — idempotentn
 tools/check.sh                 # import + uruchomienie sceny głównej, fail przy błędach
 tools/screenshot.sh res://scenes/world.tscn "$PWD/build/shot.png" 60  # zrzut ekranu gry
 .venv-tools/bin/python tools/blender/gen_dragon.py -- --preview /tmp/prev   # smok + rendery Blendera
-tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=ref anim=Roar t=1.25
+tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=ref anim=Roar t=1.25 youth=1  # youth: proporcje pisklęcia
 ```
 
 ## Struktura
@@ -24,7 +24,7 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 |---|---|
 | `project.godot` | konfiguracja projektu, input map |
 | `scenes/` | sceny: `boot.tscn` (start) → `world.tscn` (świat + `dragon_player.tscn` + `hud.tscn`), `dragon_showcase.tscn` |
-| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
+| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `dragon_proportions.gd` (proporcje pisklęcia — modyfikator szkieletu), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
 | `scripts/ui/` | interfejs: `touch_joystick.gd` (gałka), `touch_button.gd` (Skrzydła/Zryw/Ugryzienie/Ogień), `stat_bars.gd` (paski) |
 | `scripts/fx/`, `assets/shaders/` | efekty: `dust_burst.gd` (pył), `speed_lines.gdshader` (linie pędu) |
 | `scripts/` | pozostałe (np. `model_showcase.gd`) |
