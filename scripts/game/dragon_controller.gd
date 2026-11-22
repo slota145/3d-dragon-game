@@ -236,19 +236,25 @@ func _camera_wish(stick: Vector2) -> Vector3:
 
 func _process_ground(delta: float, stick: Vector2, pressed: bool, held: bool) -> void:
 	var wish := _camera_wish(stick)
-	var flat := Vector3(velocity.x, 0.0, velocity.z)
+	# Ruch „z przyczepnością”: smok zawsze biegnie tam, gdzie patrzy — zmienia się tylko
+	# wartość prędkości, kierunek od razu podąża za obrotem (bez driftu przy sprincie).
+	var speed := Vector2(velocity.x, velocity.z).length()
 	if wish.length() > 0.05:
-		rotation.y = rotate_toward(rotation.y, atan2(wish.x, wish.z), turn_speed * delta)
+		var sprinting := Input.is_action_pressed("dash")
+		# przy dużej prędkości skręt jest trochę szerszy, ale nadal pewny
+		var turn := turn_speed * (1.6 if speed < walk_speed * _move_k() * 1.2 else 1.15)
+		rotation.y = rotate_toward(rotation.y, atan2(wish.x, wish.z), turn * delta)
 		var facing := _facing_flat()
 		var align := clampf(facing.dot(wish.normalized()), 0.0, 1.0)
-		var sprinting := Input.is_action_pressed("dash")
 		var top := (sprint_speed if sprinting else walk_speed) * _move_k()
-		var accel := acceleration * (2.5 if sprinting else 1.0) * _move_k()
-		flat = flat.move_toward(facing * top * minf(1.0, wish.length()) * align, accel * delta)
+		var target := top * minf(1.0, wish.length()) * align * align
+		var rate := (acceleration * (2.5 if sprinting else 1.0) if target > speed else deceleration * 1.5) * _move_k()
+		speed = move_toward(speed, target, rate * delta)
 	else:
-		flat = flat.move_toward(Vector3.ZERO, deceleration * delta)
-	velocity.x = flat.x
-	velocity.z = flat.z
+		speed = move_toward(speed, 0.0, deceleration * _move_k() * delta)
+	var dir := _facing_flat()
+	velocity.x = dir.x * speed
+	velocity.z = dir.z * speed
 
 	if pressed:
 		_charge = 0.0

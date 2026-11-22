@@ -61,7 +61,7 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 ## Konwencje 3D
 
 - **Skala:** 1 jednostka = 1 metr. Model smoka 1:1: ~12 m długości (z ogonem), ~16,6 m
-  rozpiętości skrzydeł. W grze rozmiar zmienia się płynnie (`DragonStats.size`, start 2,4 m);
+  rozpiętości skrzydeł. W grze rozmiar zmienia się płynnie (`DragonStats.size`, start 1 m — pisklę wielkości królika);
   kontroler skaluje węzeł `Visual`, kolizję, prędkości i kamerę.
 - **Orientacja:** w Blenderze model patrzy w **−Y**, Z w górę → po eksporcie
   glTF patrzy w **+Z** w Godocie (`Vector3.MODEL_FRONT`). Przy `look_at()`

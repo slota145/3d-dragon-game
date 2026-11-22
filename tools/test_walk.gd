@@ -46,6 +46,24 @@ func _init() -> void:
 	await _frames(2)
 	_check(joy.output == Vector2.ZERO, "gałka puszczona -> zero")
 
+	# 3) sprint i skręt o 90° — bez driftu: ruch podąża za kierunkiem smoka
+	await _seconds(1.5)
+	Input.action_press("dash")
+	Input.action_press("move_forward")
+	await _seconds(2.5)
+	Input.action_release("move_forward")
+	Input.action_press("move_right")
+	var worst := 0.0
+	for i in 30:
+		await _seconds(0.05)
+		var v := Vector3(player.velocity.x, 0, player.velocity.z)
+		if v.length() > 0.3 and i > 10:
+			var facing := Vector3(sin(player.rotation.y), 0, cos(player.rotation.y))
+			worst = maxf(worst, rad_to_deg(v.normalized().angle_to(facing)))
+	Input.action_release("move_right")
+	Input.action_release("dash")
+	_check(worst < 10.0, "sprint + skręt bez driftu (maks. %.1f° między ruchem a kierunkiem smoka)" % worst)
+
 	print("WYNIK: ", "OK" if _fails == 0 else "%d błędów" % _fails)
 	quit(1 if _fails else 0)
 
