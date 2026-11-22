@@ -5,7 +5,7 @@ extends Node
 
 signal size_changed(size: float)
 signal stage_changed(stage: int, stage_name: String)
-signal ate(food: float, prey_name: String)
+signal ate(food: float, prey_name: String, growth: float)
 signal died
 
 enum Stage { HATCHLING, JUVENILE, ADULT, ANCIENT }
@@ -13,12 +13,14 @@ const STAGE_NAMES := ["Pisklę", "Młodzik", "Dorosły", "Pradawny"]
 ## Progi rozmiaru (m), od których zaczyna się dane stadium.
 const STAGE_MIN_SIZE := [0.0, 4.0, 9.0, 16.0]
 
-@export var start_size: float = 2.4
+@export var start_size: float = 1.0
 @export var max_size: float = 20.0
 ## Długość modelu smoka przy skali 1 (m).
 @export var model_size: float = 12.0
-## Przyrost rozmiaru (m) za 1 punkt jedzenia przy rozmiarze startowym; maleje z rozmiarem.
-@export var growth_rate: float = 0.15
+## Wzrost procentowy: przyrost = rozmiar × growth_rate × wartość posiłku.
+## Wartość posiłku = jedzenie × (rozmiar ofiary / rozmiar smoka, maks. 1) — małe ofiary
+## dają dużemu smokowi coraz mniej.
+@export var growth_rate: float = 0.1
 ## Trawienie: zjedzony wzrost przybywa płynnie (m/s, minimum) — bez skoków rozmiaru.
 @export var digest_speed: float = 0.35
 ## Spadek głodu (pkt/s): 100 -> 0 w ok. 3,7 min.
@@ -77,10 +79,11 @@ func can_fire() -> bool:
 
 ## Zjedzenie ofiary. Małe ofiary dają dużemu smokowi coraz mniej.
 func eat(food: float, prey_size: float, prey_name: String) -> void:
-	var effective := food * clampf(3.0 * prey_size / size, 0.15, 1.0)
-	hunger = minf(100.0, hunger + food * hunger_per_food)
-	pending_growth += growth_rate * effective * (start_size / size)
-	ate.emit(effective, prey_name)
+	var meal := food * clampf(prey_size / size, 0.05, 1.0)
+	var growth := size * growth_rate * meal
+	hunger = minf(100.0, hunger + food * hunger_per_food * clampf(2.0 * prey_size / size, 0.1, 1.0))
+	pending_growth += growth
+	ate.emit(meal, prey_name, growth)
 
 
 func set_size(s: float) -> void:
@@ -109,7 +112,7 @@ func revive(hp: float, food: float) -> void:
 
 func _process(delta: float) -> void:
 	if pending_growth > 0.0:
-		var step := minf(pending_growth, maxf(digest_speed, pending_growth * 1.2) * delta)
+		var step := minf(pending_growth, maxf(digest_speed * size / 4.0, pending_growth * 1.2) * delta)
 		pending_growth -= step
 		set_size(size + step)
 	hunger = maxf(0.0, hunger - hunger_decay * delta)

@@ -56,7 +56,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Jedzenie, **pasek głodu**, zdrowie, HUD (paski, napisy, 4 przyciski — Ogień zablokowany)
 - ✅ **Płynny wzrost** (trawienie): jedzenie powiększa smoka (skala, kamera, prędkości),
   progi rozmiaru → wyższe stadium (napis + odblokowania; Młodzik = lot), pasek wzrostu w HUD
-- ✅ Start jako pisklę (2,4 m) bez lotu
+- ✅ Start jako pisklę wielkości królika (1 m) bez lotu; wzrost procentowy (małe ofiary
+  coraz mniej dają), lot skalowany z rozmiarem, kamera oddala się wolniej niż smok rośnie
+- ✅ Punkty odniesienia przy ziemi: trawa, kwiaty, krzaki (MultiMesh); kamera bez kręcenia przy sprincie
 - ⬜ Sprawdzenie na telefonie: czy polowanie i rośnięcie to frajda?
 
 ## Faza 4 — Pisklę i etapy ⬜

@@ -22,9 +22,25 @@ func _init() -> void:
 
 	print("1) Start jako pisklę")
 	_check(stats.stage == DragonStats.Stage.HATCHLING, "stadium: %s" % stats.stage_name())
-	_check(absf(stats.size - 2.4) < 0.01, "rozmiar %.1f m" % stats.size)
+	_check(absf(stats.size - 1.0) < 0.01, "rozmiar %.1f m (jak królik)" % stats.size)
 	_check(spawner.get_child_count() > 15, "zwierzyna w świecie (%d)" % spawner.get_child_count())
 	await _shot("hunt_start.png")
+
+	print("1b) Kamera stabilna przy sprincie z lekko wychyloną gałką")
+	var cam: FollowCamera = world.get_node("FollowCamera")
+	var yaw0 := cam.rotation.y
+	Input.action_press("dash")
+	Input.action_press("move_forward")
+	Input.action_press("move_right", 0.3)
+	await _seconds(4.0)
+	Input.action_release("move_right")
+	Input.action_release("move_forward")
+	Input.action_release("dash")
+	_check(absf(angle_difference(yaw0, cam.rotation.y)) < 0.05, "kamera nie kręci się (zmiana %.3f rad)" % angle_difference(yaw0, cam.rotation.y))
+	await _seconds(1.5)
+	_p.global_position = Vector3.ZERO
+	await _seconds(0.5)
+	await _shot("size_1m.png")
 
 	print("2) Pisklę nie lata: przytrzymanie = tylko skok")
 	var peak := 0.0
@@ -86,6 +102,9 @@ func _init() -> void:
 	_check(max_step < 0.3, "płynnie: maks. przyrost %.2f m na 0,25 s (posiłek: owca)" % max_step)
 	_check(_stage_events.has("Młodzik"), "zdarzenie stadium: %s" % str(_stage_events))
 	_check(stats.can_fly(), "lot odblokowany")
+	_p.global_position = Vector3.ZERO
+	await _seconds(1.0)
+	await _shot("size_4m.png")
 	await _seconds(0.3)
 	await _shot("hunt_juvenile.png")
 	stats.hunger = 90.0

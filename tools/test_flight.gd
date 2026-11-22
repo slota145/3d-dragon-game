@@ -59,7 +59,8 @@ func _init() -> void:
 		await physics_frame
 		peak2 = maxf(peak2, _p.global_position.y)
 		if _p.is_flying():
-			leap_anim = anim.current_animation
+			if anim.current_animation == "Leap":
+				leap_anim = "Leap"
 			if not shot_done and _p.global_position.y > y2 + 1.5:
 				shot_done = true
 				await _shot("leap.png")

@@ -8,6 +8,11 @@ extends Node3D
 @export var seed: int = 42
 @export var mountain_count: int = 16
 @export var pillar_count: int = 10
+@export_group("Drobne punkty odniesienia (skala smoka)")
+@export var detail_radius: float = 140.0
+@export var grass_count: int = 3500
+@export var flower_count: int = 1200
+@export var bush_count: int = 220
 
 
 func _ready() -> void:
@@ -30,6 +35,7 @@ func _ready() -> void:
 		var dist := rng.randf_range(60.0, 180.0)
 		var h := rng.randf_range(18.0, 45.0)
 		_add_peak(Vector3(cos(ang), 0, sin(ang)) * dist, h, rng.randf_range(6.0, 11.0), mountain_mats[0], null, rng)
+	_add_ground_details(rng)
 	for i in count:
 		var pos := Vector3(rng.randf_range(-area, area), 0.0, rng.randf_range(-area, area))
 		if pos.length() < clear_radius:
@@ -122,3 +128,97 @@ func _add_peak(pos: Vector3, height: float, radius: float, mat: Material, snow: 
 		ci.mesh = cap
 		ci.position.y = height - cap.height / 2.0
 		body.add_child(ci)
+
+
+# --- Drobiazgi przy ziemi: trawa, kwiaty, krzaki (MultiMesh — tanie na telefonie) -----
+
+func _add_ground_details(rng: RandomNumberGenerator) -> void:
+	var grass := _multimesh(_grass_mesh(), grass_count, rng, 0.25, 0.45, false)
+	grass.name = "Grass"
+	var flowers := _multimesh(_flower_mesh(), flower_count, rng, 0.25, 0.4, true)
+	flowers.name = "Flowers"
+	var palette := [Color(1.0, 0.85, 0.2), Color(0.95, 0.35, 0.4), Color(0.6, 0.5, 1.0), Color(1, 1, 1),
+		Color(1.0, 0.55, 0.15)]
+	for i in flower_count:
+		flowers.multimesh.set_instance_color(i, palette[rng.randi() % palette.size()])
+	var bushes := _multimesh(_bush_mesh(), bush_count, rng, 0.7, 1.4, false)
+	bushes.name = "Bushes"
+
+
+func _multimesh(mesh: Mesh, n: int, rng: RandomNumberGenerator, s_min: float, s_max: float,
+		colors: bool) -> MultiMeshInstance3D:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = colors
+	mm.mesh = mesh
+	mm.instance_count = n
+	for i in n:
+		# gęściej blisko startu, rzadziej dalej
+		var r := detail_radius * sqrt(rng.randf()) * (0.4 + 0.6 * rng.randf())
+		var a := rng.randf() * TAU
+		var sc := rng.randf_range(s_min, s_max)
+		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * sc)
+		mm.set_instance_transform(i, Transform3D(basis, Vector3(cos(a) * r, 0.0, sin(a) * r)))
+	var inst := MultiMeshInstance3D.new()
+	inst.multimesh = mm
+	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(inst)
+	return inst
+
+
+func _grass_mesh() -> Mesh:
+	# kępa: 3 trójkątne źdźbła (wys. ~1 m przed skalowaniem)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for k in 3:
+		var a := TAU * k / 3.0
+		var d := Vector3(cos(a), 0, sin(a))
+		var side := Vector3(-d.z, 0, d.x) * 0.12
+		var tip := d * 0.25 + Vector3.UP * 1.0
+		st.add_vertex(-side)
+		st.add_vertex(side)
+		st.add_vertex(tip)
+		st.add_vertex(side)
+		st.add_vertex(-side)
+		st.add_vertex(tip)
+	st.generate_normals()
+	var m := st.commit()
+	m.surface_set_material(0, _flat_material(Color(0.42, 0.66, 0.3)))
+	return m
+
+
+func _flower_mesh() -> Mesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# łodyżka (cienki trójkąt) + główka (ośmiościan)
+	st.set_color(Color(0.3, 0.6, 0.25))
+	st.add_vertex(Vector3(-0.03, 0, 0))
+	st.add_vertex(Vector3(0.03, 0, 0))
+	st.add_vertex(Vector3(0, 0.9, 0))
+	var c := Vector3(0, 0.95, 0)
+	var pts := [Vector3(0.18, 0, 0), Vector3(0, 0, 0.18), Vector3(-0.18, 0, 0), Vector3(0, 0, -0.18)]
+	for i in 4:
+		var a: Vector3 = pts[i]
+		var b: Vector3 = pts[(i + 1) % 4]
+		for tip in [Vector3(0, 0.12, 0), Vector3(0, -0.08, 0)]:
+			st.set_color(Color.WHITE)
+			st.add_vertex(c + a)
+			st.add_vertex(c + b)
+			st.add_vertex(c + tip)
+	st.generate_normals()
+	var m := st.commit()
+	var mat := _flat_material(Color.WHITE)
+	mat.vertex_color_use_as_albedo = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.surface_set_material(0, mat)
+	return m
+
+
+func _bush_mesh() -> Mesh:
+	var sm := SphereMesh.new()
+	sm.radius = 0.6
+	sm.height = 0.9
+	sm.radial_segments = 7
+	sm.rings = 4
+	sm.material = _flat_material(Color(0.25, 0.5, 0.22))
+	return sm

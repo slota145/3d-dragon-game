@@ -166,6 +166,11 @@ func _move_k() -> float:
 	return pow(_k, 0.35)
 
 
+## Skala prędkości lotu: młodzik lata wyraźnie wolniej niż dorosły.
+func _fly_k() -> float:
+	return clampf(sqrt(_k), 0.35, 1.3)
+
+
 func size_k() -> float:
 	return _k
 
@@ -202,7 +207,7 @@ func _physics_process(delta: float) -> void:
 	_update_visual(delta, stick)
 	_update_animation(held)
 	var speed := velocity.length()
-	speed_effect = maxf(clampf((speed - 22.0) / 38.0, 0.0, 1.0), _dash_boost)
+	speed_effect = maxf(clampf((speed - 22.0 * _fly_k()) / (38.0 * _fly_k()), 0.0, 1.0), _dash_boost)
 
 
 func _read_stick() -> Vector2:
@@ -289,8 +294,8 @@ func _jump(wish: Vector3) -> void:
 
 func _take_off(stick: Vector2) -> void:
 	_charge = -1.0
-	velocity.y = takeoff_speed
-	velocity += _facing_flat() * maxf(0.0, -stick.y) * 5.0
+	velocity.y = takeoff_speed * _move_k()
+	velocity += _facing_flat() * maxf(0.0, -stick.y) * 5.0 * _fly_k()
 	_enter_air()
 	_takeoff_time = 0.0  # animacja TakeOff gra dalej: wybicie z łap + potężne machnięcie
 	_flap_cd = flap_cooldown
@@ -359,8 +364,8 @@ func _dash() -> void:
 	_dash_cd = dash_cooldown
 	_since_dash = 0.0
 	_dash_boost = 1.0
-	var boosted := velocity + _facing_3d() * dash_impulse
-	velocity = boosted.limit_length(maxf(max_dash_speed, velocity.length()))
+	var boosted := velocity + _facing_3d() * dash_impulse * _fly_k()
+	velocity = boosted.limit_length(maxf(max_dash_speed * _fly_k(), velocity.length()))
 	if _anim:
 		_anim.play("Fly", 0.08)
 		_anim.seek(0.05, true)
@@ -383,11 +388,11 @@ func _flap(fwd: float) -> void:
 	_flap_cd = flap_cooldown
 	flapped.emit()
 	_flap_timer = flap_interval
-	velocity.y = clampf(maxf(velocity.y, 0.0) + flap_lift, 0.0, max_climb_speed)
+	velocity.y = clampf(maxf(velocity.y, 0.0) + flap_lift * _move_k(), 0.0, max_climb_speed * _fly_k())
 	if fwd > 0.1:
 		var flat := Vector3(velocity.x, 0.0, velocity.z)
-		var boosted := flat + _facing_flat() * flap_thrust * fwd
-		boosted = boosted.limit_length(maxf(max_flap_speed, flat.length()))
+		var boosted := flat + _facing_flat() * flap_thrust * _fly_k() * fwd
+		boosted = boosted.limit_length(maxf(max_flap_speed * _fly_k(), flat.length()))
 		velocity.x = boosted.x
 		velocity.z = boosted.z
 	_start_flap_anim()
@@ -396,7 +401,7 @@ func _flap(fwd: float) -> void:
 func _hover(delta: float, fwd: float) -> void:
 	var flat := Vector3(velocity.x, 0.0, velocity.z)
 	if fwd > 0.1:
-		flat = flat.move_toward(_facing_flat() * hover_forward_speed * fwd, hover_accel * delta)
+		flat = flat.move_toward(_facing_flat() * hover_forward_speed * _fly_k() * fwd, hover_accel * delta)
 	else:
 		flat = flat.move_toward(Vector3.ZERO, hover_brake * delta)
 	velocity.x = flat.x
@@ -414,12 +419,12 @@ func _glide(delta: float) -> void:
 		var cos_a := dir.dot(facing)
 		var stall_cos := cos(deg_to_rad(stall_angle_deg))
 		var grip := clampf((cos_a - stall_cos) / (1.0 - stall_cos), 0.0, 1.0)  # 0 = przeciągnięcie
-		var t := clampf(align_rate * grip * clampf(speed / glide_speed, 0.0, 1.5) * delta, 0.0, 1.0)
+		var t := clampf(align_rate * grip * clampf(speed / (glide_speed * _fly_k()), 0.0, 1.5) * delta, 0.0, 1.0)
 		velocity = dir.slerp(facing, t).normalized() * speed
 		airspeed = maxf(0.0, velocity.dot(facing))
-	var lift := gravity * lift_factor * clampf(pow(airspeed / glide_speed, 2.0), 0.0, 1.0) * cos(pitch)
+	var lift := gravity * lift_factor * clampf(pow(airspeed / (glide_speed * _fly_k()), 2.0), 0.0, 1.0) * cos(pitch)
 	velocity.y += (lift - gravity) * delta
-	var bleed := drag * speed + climb_drag * maxf(0.0, sin(pitch))
+	var bleed := drag * speed / (_fly_k() * _fly_k()) + climb_drag * maxf(0.0, sin(pitch))
 	velocity -= velocity * clampf(bleed * delta, 0.0, 0.5)
 
 

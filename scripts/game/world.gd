@@ -15,8 +15,8 @@ func _ready() -> void:
 	_spawn_point = _player.global_position
 	_hud.get_node("StatBars").stats = _player.stats
 	_player.stats.stage_changed.connect(_on_stage_changed)
-	_player.stats.ate.connect(func(food: float, prey_name: String) -> void:
-		_toast("%s  +%.1f" % [prey_name, food]))
+	_player.stats.ate.connect(func(_meal: float, prey_name: String, growth: float) -> void:
+		_toast("%s · +%s" % [prey_name, ("%d cm" % roundi(growth * 100.0)) if growth < 1.0 else ("%.1f m" % growth)]))
 	_player.stats.died.connect(_on_died)
 	_spawner.dragon = _player
 	_spawner.populate()

@@ -33,7 +33,7 @@ a równolegle **zdobywaj złoto → znoś do legowiska → ulepszenia i prestiż
 
 | Etap | Rozmiar | Zdolności | Ofiary | Zagrożenia |
 |---|---|---|---|---|
-| **Pisklę** | ~2 m | chód, bieg, **sus**, szybowanie z wysokości, ugryzienie — **bez lotu** | kury, króliki, kaczki, ryby | lisy, psy, wieśniacy z widłami |
+| **Pisklę** | ~1 m (wielkości królika) → 4 m | chód, bieg, **sus**, szybowanie z wysokości, ugryzienie — **bez lotu** | kury, króliki, kaczki, ryby | lisy, psy, wieśniacy z widłami |
 | **Młodzik** | ~5 m | **krótki lot** (wytrzymałość), zryw, **mała kula ognia** (z czasem odnowienia) | owce, kozy, sarny | wilki, myśliwi z łukami i sieciami |
 | **Dorosły** | ~12 m | pełny lot, **zionięcie ogniem** (strumień), łapanie w locie dużych ofiar | jelenie, dziki, bydło, wozy kupieckie | rycerze, patrole, **gryfy** |
 | **Pradawny** | ~20 m | ryk płoszący wrogów, burzenie budowli, napady na zamki | niedźwiedzie, gryfy, zamki | balisty, **jeźdźcy gryfów**, zakon łowców smoków |

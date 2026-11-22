@@ -12,6 +12,11 @@ extends Node3D
 @export var drag_sensitivity: float = 0.006
 @export var auto_align_delay: float = 2.0
 @export var auto_align_speed: float = 1.2
+## Na ziemi kierunek gałki liczy się względem kamery — auto-ustawianie kamery za smokiem
+## tworzy wtedy pętlę (kamera kręci się przy lekkim wychyleniu), więc domyślnie tylko w locie.
+@export var align_on_ground: bool = false
+## Kamera oddala się wolniej niż rośnie smok (wykładnik < 1), żeby wzrost był widoczny.
+@export var zoom_exponent: float = 0.6
 @export_group("Lot")
 @export var flight_distance: float = 26.0
 @export var flight_height: float = 4.5
@@ -71,14 +76,15 @@ func _process(delta: float) -> void:
 	else:
 		_idle_time += delta
 	var flying: bool = target.has_method("is_flying") and target.is_flying()
-	var zoom := clampf(0.15 + 0.85 * size_k, 0.3, 1.8)
-	var flight_zoom := maxf(zoom, 0.55)
+	var zoom := clampf(pow(size_k, zoom_exponent), 0.18, 1.8)
+	var flight_zoom := maxf(zoom, 0.35)
 	_arm.spring_length = lerpf(_arm.spring_length, flight_distance * flight_zoom if flying else distance * zoom,
 		clampf(1.5 * delta, 0.0, 1.0))
 	var body := target as CharacterBody3D
 	var delay := flight_align_delay if flying else auto_align_delay
 	var align_speed := flight_align_speed if flying else auto_align_speed
-	if _idle_time > delay and body and Vector2(body.velocity.x, body.velocity.z).length() > 0.3:
+	if (flying or align_on_ground) and _idle_time > delay and body \
+			and Vector2(body.velocity.x, body.velocity.z).length() > 0.3:
 		var behind := target.global_rotation.y + PI
 		_yaw = rotate_toward(_yaw, behind, align_speed * delta)
 	var goal := target.global_position + Vector3.UP * (flight_height * flight_zoom if flying else height * zoom)
