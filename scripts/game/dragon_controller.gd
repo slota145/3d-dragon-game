@@ -34,7 +34,9 @@ enum State { GROUND, AIR }
 
 @export_group("Skok i start")
 @export var jump_speed: float = 7.0
-@export var jump_forward: float = 7.0
+## Sus do przodu (z wychyloną gałką): prędkość w przód i w górę — długi łuk (~15 m).
+@export var leap_forward: float = 12.5
+@export var leap_up: float = 8.0
 ## Ile trzeba przytrzymać przycisk na ziemi, żeby wystartować (s).
 @export var takeoff_hold_time: float = 0.35
 @export var takeoff_speed: float = 15.0
@@ -77,6 +79,8 @@ enum State { GROUND, AIR }
 
 @export_group("Zryw i bieg")
 @export var sprint_speed: float = 7.5
+## Prędkość (m/s), przy której animacja Run (galop) zgadza się z ruchem (speed_scale = 1).
+@export var run_anim_speed: float = 7.5
 @export var dash_impulse: float = 22.0
 @export var max_dash_speed: float = 75.0
 @export var dash_cooldown: float = 1.4
@@ -98,6 +102,8 @@ var _flap_buffered: bool = false
 var _dash_cd: float = 0.0
 var _since_dash: float = 99.0
 var _takeoff_time: float = 99.0
+## Skok / sus: lot balistyczny (bez szybowania) aż do lądowania lub machnięcia.
+var _hopping: bool = false
 ## 0..1: siła efektów prędkości (linie pędu, FOV, drganie) — czyta je świat/kamera.
 var speed_effect: float = 0.0
 var _dash_boost: float = 0.0
@@ -193,13 +199,23 @@ func _process_ground(delta: float, stick: Vector2, pressed: bool, held: bool) ->
 
 func _jump(wish: Vector3) -> void:
 	_charge = -1.0
-	velocity.y = jump_speed
-	if wish.length() > 0.2:
+	var amount := minf(1.0, wish.length())
+	if amount > 0.2:  # sus do przodu po łuku
 		rotation.y = atan2(wish.x, wish.z)
-		var dir := wish.normalized() * minf(1.0, wish.length())
-		velocity.x += dir.x * jump_forward
-		velocity.z += dir.z * jump_forward
+		var dir := _facing_flat()
+		velocity.x = dir.x * leap_forward * amount
+		velocity.z = dir.z * leap_forward * amount
+		velocity.y = lerpf(jump_speed, leap_up, amount)
+	else:
+		velocity.y = jump_speed
 	_enter_air()
+	_hopping = true
+	if _anim:
+		_anim.play("Leap", 0.1)
+		_anim.seek(0.12, true)  # przysiad już był — od razu wybicie
+		# animacja trwa tyle, ile lot balistyczny
+		var air_time := 2.0 * velocity.y / gravity
+		_anim.speed_scale = clampf((_anim.current_animation_length - 0.12) / maxf(air_time, 0.3), 0.6, 3.0)
 
 
 func _take_off(stick: Vector2) -> void:
@@ -225,6 +241,12 @@ func _enter_air() -> void:
 func _process_air(delta: float, stick: Vector2, pressed: bool, held: bool) -> void:
 	_air_time += delta
 	_since_flap += delta
+	if _hopping:
+		if pressed or Input.is_action_just_pressed("dash"):
+			_hopping = false  # machnięcie w trakcie susu = przejście do lotu
+		else:
+			_process_hop(delta)
+			return
 	var fwd := -stick.y  # > 0 gałka do przodu, < 0 do tyłu
 	rotation.y -= stick.x * air_turn_rate * delta
 
@@ -277,6 +299,16 @@ func _dash() -> void:
 	dashed.emit()
 
 
+func _process_hop(delta: float) -> void:
+	velocity.y -= gravity * delta
+	var flat := Vector2(velocity.x, velocity.z).length()
+	# nos podąża za łukiem: w górę przy wybiciu, w dół przy opadaniu
+	pitch = clampf(atan2(velocity.y, maxf(flat, 4.0)), -0.45, 0.45) * 0.7 if flat > 3.0 else 0.0
+	move_and_slide()
+	if _air_time > 0.15 and is_on_floor() and velocity.y <= 0.5:
+		_land()
+
+
 func _flap(fwd: float) -> void:
 	_since_flap = 0.0
 	_flap_cd = flap_cooldown
@@ -324,6 +356,9 @@ func _glide(delta: float) -> void:
 
 func _land() -> void:
 	var impact := maxf(-velocity.y, Vector2(velocity.x, velocity.z).length() * 0.5)
+	if _hopping:
+		impact *= 0.6  # sus jest „zaplanowany” — mniej pyłu
+	_hopping = false
 	state = State.GROUND
 	_flap_buffered = false
 	pitch = 0.0
@@ -365,11 +400,15 @@ func _update_animation(held: bool) -> void:
 		var speed := Vector2(velocity.x, velocity.z).length()
 		if _charge >= 0.0:
 			return  # przysiad (TakeOff) gra od naciśnięcia
+		elif speed > walk_speed * 1.4:
+			_play(&"Run", 0.3, clampf(speed / run_anim_speed, 0.5, 1.6))
 		elif speed > 0.12:
-			_play(&"Walk", 0.35, clampf(speed / walk_anim_speed, 0.4, 3.2))
+			_play(&"Walk", 0.35, clampf(speed / walk_anim_speed, 0.4, 2.0))
 		else:
 			_play(&"Idle", 0.5, 1.0)
 		return
+	if _hopping:
+		return  # Leap gra przez cały sus
 	if _takeoff_time < 0.85:
 		return  # dokończ wybicie i potężne machnięcie (TakeOff)
 	if _since_dash < 0.5:

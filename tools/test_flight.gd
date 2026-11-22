@@ -26,6 +26,8 @@ func _init() -> void:
 	await _seconds(2.5)
 	var run := _flat(_p.velocity).length()
 	_check(run > _p.walk_speed * 2.0, "biegnie (%.1f m/s, chód %.1f)" % [run, _p.walk_speed])
+	_check(anim.current_animation == "Run", "animacja biegu (%s)" % anim.current_animation)
+	await _shot("run.png")
 	_check(not _p.is_flying(), "nadal na ziemi")
 	Input.action_release("move_forward")
 	Input.action_release("dash")
@@ -39,13 +41,33 @@ func _init() -> void:
 	_check(_flat(_p.global_position).distance_to(x0) < 1.0, "w miejscu")
 	_check(not _p.is_flying(), "wylądował")
 
-	print("2) Tap z gałką do przodu = skok do przodu")
-	x0 = _flat(_p.global_position)
+	print("2) Tap z gałką do przodu = sus mocno do przodu po łuku")
 	Input.action_press("move_forward")
 	await _seconds(0.6)
-	peak = await _tap_and_track_peak(0.1, 2.0)
+	x0 = _flat(_p.global_position)
+	var y2 := _p.global_position.y
+	var leap_anim := ""
+	Input.action_press("flap")
+	await _seconds(0.1)
+	Input.action_release("flap")
+	var peak2 := y2
+	var shot_done := false
+	for i in 150:
+		await physics_frame
+		peak2 = maxf(peak2, _p.global_position.y)
+		if _p.is_flying():
+			leap_anim = anim.current_animation
+			if not shot_done and _p.global_position.y > y2 + 1.5:
+				shot_done = true
+				await _shot("leap.png")
+		elif i > 20:
+			break
+	var leap_dist := _flat(_p.global_position).distance_to(x0)
 	Input.action_release("move_forward")
-	_check(_flat(_p.global_position).distance_to(x0) > 4.0, "skok do przodu (%.1f m)" % _flat(_p.global_position).distance_to(x0))
+	_check(leap_dist > 12.0, "sus daleko do przodu (%.1f m)" % leap_dist)
+	_check(peak2 - y2 > 2.0, "po łuku (szczyt %.1f m)" % (peak2 - y2))
+	_check(leap_anim == "Leap", "animacja susu (%s)" % leap_anim)
+	_check(not _p.is_flying(), "wylądował")
 
 	print("3) Przytrzymanie na ziemi = potężny start, trzymanie = zawis")
 	Input.action_press("flap")

@@ -789,6 +789,91 @@ def pose_fly(t: float):
     return rots, locs
 
 
+RUN_FRAMES = 16  # 24 fps -> 0.67 s na cykl
+RUN_SPEED = 7.5  # m/s przy speed_scale = 1 (musi zgadzać się z DragonController.run_anim_speed)
+RUN_REACH = 1.0  # zasięg kończyny względem ciała (± m)
+
+
+def run_offset(p: float, duty: float = 0.32) -> tuple[float, float]:
+    """Faza kończyny w galopie: krótkie podparcie, długie wymachnięcie z wysokim uniesieniem."""
+    p %= 1.0
+    if p < duty:
+        return -RUN_REACH + 2 * RUN_REACH * p / duty, 0.0
+    q = (p - duty) / (1 - duty)
+    smooth = q * q * (3 - 2 * q)
+    return RUN_REACH - 2 * RUN_REACH * smooth, math.sin(math.pi * q)
+
+
+def pose_run(t: float):
+    """Bieg susami (galop wywerny): tylne łapy odbijają się razem, potem oba nadgarstki
+    skrzydeł lądują z przodu; grzbiet zgina się i prostuje, w cyklu jest faza lotu."""
+    ph = 2 * math.pi * t
+    # ciało: najwyżej w fazie lotu (po odbiciu z tylnych łap), najniżej przy lądowaniu na skrzydłach
+    body = V(0, 0, 0.05 + 0.28 * math.sin(ph - 0.6))
+    rots = {}
+    for s, sfx in SIDES:
+        off = 0.04 if sfx == "R" else 0.0  # lekko niesymetrycznie = naturalniej
+        dy, lift = run_offset(t + off)
+        ball = mx(LEG["ball"], s) + V(0, dy, 0.55 * lift)
+        rots.update(planted_leg(s, sfx, ball, body, toe_lift=0.6 * lift))
+        dy, lift = run_offset(t + 0.5 + off)
+        wrist = mx(WRIST_GROUND, s) + V(0, dy * 1.1, 0.7 * lift)
+        rots.update(planted_wing(s, sfx, wrist, body))
+    flex = math.sin(ph)  # zgięcie / wyprost grzbietu
+    rots["Spine"] = [(AX, 0.1 * flex)]
+    rots["Chest"] = [(AX, -0.06 * flex)]
+    rots["Neck1"] = [(AX, -0.1 + 0.08 * math.sin(ph + 1.2))]  # szyja wyciągnięta, stabilizuje głowę
+    rots["Neck2"] = [(AX, -0.04 * math.sin(ph + 1.2))]
+    rots["Head"] = [(AX, 0.06 - 0.06 * math.sin(ph + 1.6))]
+    for k in range(1, 7):
+        rots[f"Tail{k}"] = [(AX, -0.03 + 0.06 * math.sin(ph - 0.8 - k * 0.5)), (AZ, 0.03 * math.sin(ph * 0.5 - k * 0.4))]
+    return rots, {"Hips": body}
+
+
+LEAP_FRAMES = 32  # 1.33 s przy speed_scale = 1
+
+
+def pose_leap(t: float):
+    """Sus do przodu: wybicie z tylnych łap (0–0.15), lot po łuku z na wpół rozłożonymi
+    skrzydłami (0.15–0.7), wyciągnięcie przednich szponów do lądowania (0.7–1)."""
+    def ease(a: float, b: float) -> float:
+        x = clampf01((t - a) / (b - a))
+        return x * x * (3 - 2 * x)
+    push = ease(0.0, 0.12) * (1 - ease(0.15, 0.35))
+    air = ease(0.1, 0.3) * (1 - ease(0.72, 0.95))
+    reach = ease(0.62, 0.85)
+    rots = {}
+    for s, sfx in SIDES:
+        # skrzydła: z pozycji złożonej -> na wpół rozłożone (równowaga) -> nadgarstki w przód do lądowania
+        if reach < 0.5 and air > 0.3:
+            rots.update(aim_chain({
+                f"UpperArm.{sfx}": V(0.8 * s, 0.2, 0.55),
+                f"Forearm.{sfx}": V(0.65 * s, -0.55, -0.05),
+                f"Thumb.{sfx}": THUMB_DIR,
+                f"Hand.{sfx}": V(0.6 * s, 0.75, -0.15),
+                f"Finger1.{sfx}": V(0.75 * s, 0.6, -0.1),
+                f"Finger2.{sfx}": V(0.6 * s, 0.8, -0.15),
+                f"Finger3.{sfx}": V(0.45 * s, 0.9, -0.2),
+                f"Finger4.{sfx}": V(0.3 * s, 1.0, -0.25),
+            }))
+        else:
+            fwd = -0.6 * push + 1.3 * reach
+            rots.update(planted_wing(s, sfx, mx(WRIST_GROUND, s) + V(0, -fwd, 0.6 * (1 - reach) * air + 0.3 * push)))
+        # tylne łapy: wyprost w tył przy wybiciu, w locie ciągną się z tyłu, przed lądowaniem pod ciało
+        thigh = 0.9 * push + 0.7 * air * (1 - reach) - 0.25 * reach
+        rots[f"Thigh.{sfx}"] = [(AX, thigh)]
+        rots[f"Shin.{sfx}"] = [(AX, 0.3 * push - 0.3 * air * (1 - reach))]
+        rots[f"Foot.{sfx}"] = [(AX, 0.7 * push + 0.6 * air * (1 - reach))]
+        rots[f"Toes.{sfx}"] = [(AX, 0.5 * air)]
+    rots["Spine"] = [(AX, -0.12 * push + 0.06 * reach)]
+    rots["Neck1"] = [(AX, -0.2 * air + 0.1 * reach)]
+    rots["Head"] = [(AX, 0.1 * air - 0.05 * reach)]
+    rots["Jaw"] = [(AX, 0.18 * push)]
+    for k in range(1, 7):
+        rots[f"Tail{k}"] = [(AX, 0.05 * push - 0.06 * air + 0.04 * reach)]
+    return rots, {"Hips": V(0, 0, -0.35 * ease(0.0, 0.06) * (1 - push) + 0.2 * push)}
+
+
 def pose_takeoff(t: float):
     """Start: przysiad na tylnych łapach ze skrzydłami w górze (0–0.35), wybicie z łap
     i potężne machnięcie w dół (0.35–0.6), wyprost w locie (0.6–1)."""
@@ -930,6 +1015,8 @@ def build_animations(arm) -> None:
     make_action(arm, "Dive", 24, pose_dive)
     make_action(arm, "TakeOff", 24, pose_takeoff, step=1, loop=False)
     make_action(arm, "Walk", WALK_FRAMES, pose_walk)
+    make_action(arm, "Run", RUN_FRAMES, pose_run, step=1)
+    make_action(arm, "Leap", LEAP_FRAMES, pose_leap, step=1, loop=False)
     make_action(arm, "Fly", 36, pose_fly)
     make_action(arm, "Roar", 60, pose_roar, loop=False)
 

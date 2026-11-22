@@ -36,6 +36,7 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Machnięcia bez spamu (czas trwania + zapamiętane naciśnięcie), potężny start (animacja TakeOff:
   przysiad, wybicie z łap, uderzenie skrzydeł) z chmurą pyłu, pył przy twardym lądowaniu
 - ✅ Przycisk Zryw: bieg na ziemi, potężne przyspieszenie w locie (z odnowieniem)
+- ✅ Animacja Run (galop susami) przy biegu; sus do przodu po łuku (~17 m) z animacją Leap
 - ✅ Efekty prędkości: linie pędu, winieta, FOV, drganie kamery, rozbłysk przy zrywie
 - ⬜ Dopracowanie odczucia lotu na telefonie (strojenie parametrów w `dragon_controller.gd`)
 - ⬜ Model lotu: prędkość, przechylenie (bank), nurkowanie, szybowanie, wznoszenie
