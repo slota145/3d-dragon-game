@@ -24,7 +24,7 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 |---|---|
 | `project.godot` | konfiguracja projektu, input map |
 | `scenes/` | sceny: `boot.tscn` (start) → `world.tscn` (świat + `dragon_player.tscn` + `hud.tscn`), `dragon_showcase.tscn` |
-| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `dragon_proportions.gd` (proporcje pisklęcia — modyfikator szkieletu), `lair.gd` (legowisko: jaskinia, gniazdo, jajo), `save_game.gd` (zapis `user://save.json`), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
+| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `dragon_proportions.gd` (proporcje pisklęcia — modyfikator szkieletu), `lair.gd` (legowisko: jaskinia, gniazdo, jajo), `save_game.gd` (zapis `user://save.json`), `day_night.gd` (cykl dnia i nocy), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
 | `scripts/ui/` | interfejs: `touch_joystick.gd` (gałka), `touch_button.gd` (Skrzydła/Zryw/Ugryzienie/Ogień), `stat_bars.gd` (paski), `pause_menu.gd` (menu pauzy + okienko trybu deweloperskiego: stadia, reset wzrostu) |
 | `scripts/fx/`, `assets/shaders/` | efekty: `dust_burst.gd` (pył), `speed_lines.gdshader` (linie pędu) |
 | `scripts/` | pozostałe (np. `model_showcase.gd`) |

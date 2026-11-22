@@ -79,7 +79,8 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Jaskinia-legowisko (0.7.0, `gen_lair.py`): wyklucie z jaja w gnieździe (intro nowej gry),
   przycisk ŚPIJ w komorze = zapis + nowy dzień + leczenie; autozapis co 60 s i przy wyjściu;
   łagodna śmierć — budzisz się w gnieździe, wzrost zostaje; „Nowa gra” w menu pauzy
-- ⬜ Cykl dnia i nocy (sen przewija do rana)
+- ✅ Cykl dnia i nocy (0.7.1, `day_night.gd`): dzień 10 min (6–20), noc 4 min; słońce/księżyc,
+  kolory nieba, zmierzch z podpowiedzią; sen przewija do 7:00; godzina w zapisie i w HUD
 - ⬜ Złoto i proceduralny stos skarbu; ulepszenia za złoto
 - ⬜ Baśniowy region **~4 × 4 km, gęsty** (zasada 20 s, węzły POI, punkty orientacyjne;
   `docs/GAME_DESIGN.md` → Skala i gęstość): teren, las, łąki, farmy, jezioro, góry

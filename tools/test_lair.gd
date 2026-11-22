@@ -35,6 +35,12 @@ func _init() -> void:
 	var d := player.global_position - lair.global_position
 	_check(Vector2(d.x, d.z).length() < Lair.SLEEP_RADIUS + 3.0, "nie przeszedł przez ścianę (%.1f m od gniazda)" % Vector2(d.x, d.z).length())
 
+	print("2b) Noc")
+	var dn: DayNight = world.get_node("DayNight")
+	dn.set_hour(22.5)
+	var sun: DirectionalLight3D = world.get_node("Sun")
+	_check(dn.is_night() and sun.light_energy < 0.5, "noc: ciemniej (światło %.2f)" % sun.light_energy)
+
 	print("3) Sen: nowy dzień, leczenie, zapis")
 	player.global_position = lair.nest_position()
 	player.reset_physics_interpolation()
@@ -45,11 +51,14 @@ func _init() -> void:
 	world.sleep()
 	await _seconds(3.5)
 	_check(world.day == 2, "dzień %d" % world.day)
+	_check(absf(dn.hour - 7.0) < 0.1, "sen przewija do rana (%s)" % dn.clock_text())
+	_check(not dn.is_night(), "po śnie jest dzień")
 	_check(player.stats.health >= 99.0, "zdrowie odnowione (%.0f)" % player.stats.health)
 	var data := SaveGame.load_data()
 	_check(int(data.get("day", 0)) == 2, "zapis: dzień %s" % str(data.get("day")))
 
 	print("4) Poza jaskinią nie można spać")
+	dn.set_hour(21.5)  # nocne ujęcie legowiska
 	player.global_position = Lair.POSITION + Vector3(0, 0, 70)
 	player.reset_physics_interpolation()
 	await _frames(3)
@@ -57,7 +66,13 @@ func _init() -> void:
 	player.rotation.y = PI  # pyskiem do legowiska
 	world.get_node("FollowCamera").snap_behind()
 	await _seconds(1.5)
+	await _shot("lair_night.png")
+	dn.set_hour(12.0)
+	await _seconds(0.3)
 	await _shot("lair_outside.png")
+	dn.set_hour(19.3)
+	await _seconds(0.3)
+	await _shot("lair_dusk.png")
 	world.save_game()
 
 	print("5) Wczytanie zapisu")
@@ -67,6 +82,7 @@ func _init() -> void:
 	await _frames(5)
 	player = world.get_node("DragonPlayer")
 	_check(world.day == 2, "dzień po wczytaniu: %d" % world.day)
+	_check(absf((world.get_node("DayNight") as DayNight).hour - 19.3) < 0.2, "godzina po wczytaniu")
 	_check(absf(player.stats.size - 2.5) < 0.05, "rozmiar po wczytaniu: %.2f m" % player.stats.size)
 	_check(player.visible, "bez intro przy wczytaniu")
 	_check(player.global_position.distance_to(Lair.POSITION + Vector3(0, 0, 70)) < 2.0, "pozycja z zapisu")

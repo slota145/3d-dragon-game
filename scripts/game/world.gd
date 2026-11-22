@@ -12,6 +12,7 @@ extends Node3D
 ## Numer dnia (rośnie przy każdym śnie).
 var day: int = 1
 var _lair: Lair
+var _day_night: DayNight
 var _sleeping: bool = false
 var _intro: bool = false
 var _autosave_t: float = 0.0
@@ -34,6 +35,17 @@ func _ready() -> void:
 	_lair.position = Lair.POSITION
 	add_child(_lair)
 	_build_sleep_ui()
+	_day_night = DayNight.new()
+	_day_night.name = "DayNight"
+	_day_night.sun = $Sun
+	_day_night.environment = ($WorldEnvironment as WorldEnvironment).environment
+	_day_night.paused = not use_save  # testy: stałe południe/poranek
+	add_child(_day_night)
+	_day_night.set_hour(8.0)
+	_day_night.midnight.connect(func() -> void: day += 1)
+	_day_night.dusk.connect(func() -> void:
+		if not _lair.is_inside(_player.global_position):
+			_toast("Zapada zmrok — wróć do legowiska i prześpij noc"))
 	_spawn_point = _lair.nest_position()
 	var data := SaveGame.load_data() if use_save else {}
 	if not use_save:
@@ -81,12 +93,14 @@ func _place_in_lair() -> void:
 
 func _start_new_game() -> void:
 	day = 1
+	_day_night.set_hour(7.0)  # wyklucie o świcie
 	_place_in_lair()
 	_intro = true
 
 
 func _load_game(data: Dictionary) -> void:
 	day = int(data.get("day", 1))
+	_day_night.set_hour(float(data.get("hour", 8.0)))
 	_player.stats.restore(data.get("stats", {}))
 	_lair.show_shells()
 	var p: Array = data.get("pos", [])
@@ -103,7 +117,7 @@ func save_game() -> void:
 	if not use_save or _intro or _player.stats.health <= 0.0:
 		return
 	var pos := _player.global_position
-	SaveGame.write({"day": day, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
+	SaveGame.write({"day": day, "hour": _day_night.hour, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
 		"yaw": _player.rotation.y, "version": GameVersion.current()})
 
 
@@ -166,7 +180,7 @@ func can_sleep() -> bool:
 	return not _sleeping and not _intro and not _player.is_flying() and _lair.is_inside(_player.global_position)
 
 
-## Sen: ściemnienie, leczenie, odnowa sił, nowy dzień, zapis.
+## Sen: ściemnienie, leczenie, odnowa sił, przewinięcie do rana (7:00), zapis.
 func sleep() -> void:
 	if not can_sleep():
 		return
@@ -176,7 +190,9 @@ func sleep() -> void:
 	var tw := create_tween()
 	tw.tween_property(_fade, "color:a", 1.0, 0.8)
 	tw.tween_callback(func() -> void:
-		day += 1
+		if _day_night.hour >= 7.0:
+			day += 1  # po północy dzień już się zmienił — śpisz tylko do rana
+		_day_night.set_hour(7.0)
 		var st := _player.stats
 		st.health = 100.0
 		st.stamina = 100.0
@@ -263,7 +279,7 @@ func _process(delta: float) -> void:
 	var mode := "lot" if _player.is_flying() else "ziemia"
 	var status: Label = _hud.get_node("Status")
 	status.position.y = 184.0 if _player.stats.can_fly() else 150.0  # pod paskiem siły lotu
-	status.text = "Dzień %d · %s · wys. %d m · %d km/h" % [day, mode, int(_player.global_position.y),
+	status.text = "Dzień %d, %s · %s · wys. %d m · %d km/h" % [day, _day_night.clock_text(), mode, int(_player.global_position.y),
 		int(v.length() * 3.6)]
 	_sleep_button.visible = can_sleep()
 	if use_save and not _intro:
