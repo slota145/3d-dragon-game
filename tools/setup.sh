@@ -4,6 +4,8 @@
 #
 #   tools/setup.sh            # wszystko
 #   SKIP_APT=1 tools/setup.sh # bez pakietów systemowych (np. brak roota)
+#   WITH_EXPORT=1 tools/setup.sh   # + szablony eksportu (.exe)
+#   WITH_ANDROID=1 tools/setup.sh  # + JDK, Android SDK i szablony (.apk)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -40,7 +42,41 @@ if [[ ! -x .venv-tools/bin/python ]] || ! .venv-tools/bin/python -c "import bpy"
 fi
 echo ">> Blender (bpy): $(.venv-tools/bin/python -c 'import bpy; print(bpy.app.version_string)')"
 
-# 4) Import zasobów Godota (generuje .godot/ i pliki .import)
+# 4) (opcjonalnie) Android: JDK 17 + Android SDK do eksportu APK
+if [[ -n "${WITH_ANDROID:-}" ]]; then
+  export ANDROID_HOME=/opt/android-sdk
+  if [[ -z "${SKIP_APT:-}" ]] && ! command -v keytool >/dev/null 2>&1; then
+    apt-get install -y -q openjdk-17-jdk-headless
+  fi
+  if [[ ! -x "$ANDROID_HOME/build-tools/35.0.0/apksigner" ]]; then
+    echo ">> Instaluję Android SDK"
+    mkdir -p "$ANDROID_HOME/cmdline-tools"
+    tmp="$(mktemp -d)"
+    curl -fsSL -o "$tmp/clt.zip" https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+    unzip -q -o "$tmp/clt.zip" -d "$ANDROID_HOME/cmdline-tools"
+    rm -rf "$ANDROID_HOME/cmdline-tools/latest" && mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+    yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+    "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "build-tools;35.0.0" "platforms;android-35" >/dev/null
+    rm -rf "$tmp"
+  fi
+  JAVA_HOME_DIR="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
+  mkdir -p ~/.config/godot
+  printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' \
+    "$ANDROID_HOME" "$JAVA_HOME_DIR" > ~/.config/godot/editor_settings-4.7.tres
+  echo ">> Android SDK: $ANDROID_HOME"
+fi
+
+# 5) Szablony eksportu Godota (do budowania .exe / .apk)
+TPL_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+if [[ -n "${WITH_EXPORT:-}${WITH_ANDROID:-}" && ! -f "$TPL_DIR/windows_release_x86_64.exe" ]]; then
+  echo ">> Pobieram szablony eksportu Godota"
+  tmp="$(mktemp -d)"
+  curl -fsSL -o "$tmp/t.tpz" "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+  unzip -q -o "$tmp/t.tpz" -d "$tmp" && mkdir -p "$TPL_DIR" && cp -r "$tmp/templates/"* "$TPL_DIR/"
+  rm -rf "$tmp"
+fi
+
+# 6) Import zasobów Godota (generuje .godot/ i pliki .import)
 echo ">> Import projektu Godot"
 godot --headless --path . --import >/dev/null 2>&1 || true
 echo ">> Gotowe."

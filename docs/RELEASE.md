@@ -13,7 +13,8 @@
    - Brak zgodnej łatki (np. zmiana wersji Godota) → „Otwórz stronę” z nowym `.exe`.
 
 Łatka `.pck` zawiera całą zawartość gry (sceny, skrypty, modele), ale silnik
-pozostaje z `.exe` — dlatego nazwa łatki zawiera wersję silnika.
+pozostaje z `.exe`/`.apk` — dlatego nazwa łatki zawiera wersję silnika. Android ma
+osobną łatkę (`game-4.7.2-android.pck`), bo używa innych formatów tekstur.
 
 ## Jak wydać nową wersję
 
@@ -26,14 +27,35 @@ pozostaje z `.exe` — dlatego nazwa łatki zawiera wersję silnika.
 Wypchnięcie bez zmiany wersji niczego nie publikuje. Można też ręcznie utworzyć
 wydanie na GitHubie (tag `vX.Y.Z`) — workflow dobuduje do niego pliki.
 
-Stały link do najnowszej wersji gry:
-https://github.com/slota145/3d-dragon-game/releases/latest/download/DragonGame.exe
+Stałe linki do najnowszej wersji gry:
+- https://github.com/slota145/3d-dragon-game/releases/latest/download/DragonGame.apk
+- https://github.com/slota145/3d-dragon-game/releases/latest/download/DragonGame.exe
+
+## Android: podpis APK
+
+Android instaluje nową wersję APK „na” starą tylko wtedy, gdy obie są podpisane tym
+samym kluczem. Workflow używa sekretów repozytorium (Settings → Secrets and variables →
+Actions → New repository secret):
+
+| Sekret | Wartość |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | plik `.keystore` zakodowany base64 (`base64 -w0 dragon-release.keystore`) |
+| `ANDROID_KEYSTORE_PASSWORD` | hasło keystore |
+| `ANDROID_KEY_ALIAS` | alias klucza (`dragon`) |
+
+Bez sekretów workflow podpisuje APK kluczem tymczasowym — gra działa, ale przed
+instalacją nowego APK trzeba odinstalować stare. Zwykłe aktualizacje przez łatkę
+`.pck` w grze działają niezależnie od klucza. **Nie commituj keystore do repo.**
 
 ## Budowanie lokalnie
 
 ```bash
 godot --headless --path . --export-release "Windows Desktop" build/windows/DragonGame.exe
 godot --headless --path . --export-pack "Windows Desktop" build/game-4.7.2.pck
+# Android (WITH_ANDROID=1 tools/setup.sh instaluje JDK + SDK do /opt/android-sdk)
+GODOT_ANDROID_KEYSTORE_RELEASE_PATH=... GODOT_ANDROID_KEYSTORE_RELEASE_USER=dragon \
+GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=... \
+  godot --headless --path . --export-release "Android" build/android/DragonGame.apk
 ```
 
 ## Testy

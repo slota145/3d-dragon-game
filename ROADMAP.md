@@ -33,7 +33,7 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ⬜ Start ↔ lot ↔ lądowanie
 - ⬜ Model lotu: prędkość, przechylenie (bank), nurkowanie, szybowanie, wznoszenie
 - ⬜ Kamera trzecioosobowa z opóźnieniem i dynamicznym FOV przy prędkości
-- ⬜ Build Android (APK) — gałka już działa dotykiem
+- ✅ Build Android (APK, arm64) + osobna łatka `.pck` dla Androida w aktualizatorze
 - ✅ Szkielet (rig) smoka + animacje: machanie skrzydłami, szybowanie, idle (rozglądanie się, oddech), ryk
 - ⬜ Kolejne animacje: chód, start/lądowanie, zianie ogniem, obrót w locie
 - ⬜ Teren testowy: wzgórza, góry, woda (heightmap lub generator)

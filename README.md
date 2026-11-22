@@ -5,12 +5,16 @@ w **Blenderze** (skrypty Pythona).
 
 ![Smok](docs/img/dragon_roar.png)
 
-## Pobierz i graj (Windows)
+## Pobierz i graj
 
-**[⬇ DragonGame.exe (najnowsza wersja)](https://github.com/slota145/3d-dragon-game/releases/latest/download/DragonGame.exe)**
-— jeden plik, bez instalacji. Windows może ostrzec o nieznanym wydawcy
-(plik nie jest podpisany): „Więcej informacji” → „Uruchom mimo to”.
-Gra sama sprawdza aktualizacje na GitHubie.
+- **Android:** [⬇ DragonGame.apk](https://github.com/slota145/3d-dragon-game/releases/latest/download/DragonGame.apk)
+  — otwórz link na telefonie, zezwól przeglądarce na instalację aplikacji z nieznanych źródeł.
+  Wymaga 64-bitowego telefonu (arm64) z Vulkanem (praktycznie każdy z ostatnich lat).
+- **Windows:** [⬇ DragonGame.exe](https://github.com/slota145/3d-dragon-game/releases/latest/download/DragonGame.exe)
+  — jeden plik, bez instalacji. Windows może ostrzec o nieznanym wydawcy
+  (plik nie jest podpisany): „Więcej informacji” → „Uruchom mimo to”.
+
+Gra sama sprawdza aktualizacje na GitHubie (przycisk w prawym górnym rogu).
 
 Sterowanie: gałka na ekranie (mysz/dotyk), WASD/strzałki lub pad; kamera:
 przeciąganie ekranu, prawy przycisk myszy, Q/E lub prawa gałka pada.

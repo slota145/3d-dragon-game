@@ -34,7 +34,9 @@ func _ready() -> void:
 
 static func patch_asset_name() -> String:
 	var v := Engine.get_version_info()
-	return "game-%d.%d.%d.pck" % [v.major, v.minor, v.patch]
+	var engine := "%d.%d.%d" % [v.major, v.minor, v.patch]
+	# Android potrzebuje innych formatów tekstur (ETC2/ASTC) niż Windows (S3TC/BPTC)
+	return "game-%s-android.pck" % engine if OS.has_feature("android") else "game-%s.pck" % engine
 
 
 func _on_release_info(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:

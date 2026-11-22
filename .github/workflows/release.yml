@@ -2,8 +2,12 @@
 #
 # Po wypchnięciu na domyślną gałąź: jeśli wydania `v<config/version z project.godot>`
 # jeszcze nie ma, buduje grę i publikuje wydanie z plikami:
-#   DragonGame.exe        – pełna gra dla Windows
-#   game-<silnik>.pck     – łatka dla aktualizatora w grze
+#   DragonGame.exe              – pełna gra dla Windows
+#   DragonGame.apk              – pełna gra dla Androida (arm64)
+#   game-<silnik>.pck           – łatka dla aktualizatora (Windows)
+#   game-<silnik>-android.pck   – łatka dla aktualizatora (Android)
+# Podpis APK: sekrety ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS.
+# Bez nich workflow generuje klucz tymczasowy (nowe APK wtedy nie zainstaluje się „na” stare).
 # Czyli: podbij `config/version` w project.godot, wypchnij — gracze dostaną aktualizację.
 #
 # Ręczne wydanie na GitHubie (Releases -> Publish, tag vX.Y.Z) też jest obsługiwane:
@@ -58,6 +62,9 @@ jobs:
             fi
           fi
           VERSION="${TAG#v}"
+          IFS=. read -r MA MI PA <<< "$VERSION"
+          CODE=$(( ${MA:-0} * 10000 + ${MI:-0} * 100 + ${PA:-0} ))
+          sed -i "s/^version\/code=.*/version\/code=$CODE/; s/^version\/name=.*/version\/name=\"$VERSION\"/" export_presets.cfg
           sed -i "s/^application\/file_version=.*/application\/file_version=\"$VERSION.0\"/; s/^application\/product_version=.*/application\/product_version=\"$VERSION.0\"/" export_presets.cfg
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Wersja: $TAG"
@@ -83,6 +90,36 @@ jobs:
             mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ && rm -rf templates t.tpz
           fi
 
+      - name: Java 17
+        if: steps.ver.outputs.mode != 'skip'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Konfiguracja Androida (SDK, klucz)
+        if: steps.ver.outputs.mode != 'skip'
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          mkdir -p ~/.config/godot
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' "$ANDROID_HOME" "$JAVA_HOME" > ~/.config/godot/editor_settings-4.7.tres
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            ALIAS="${KS_ALIAS:-dragon}"; PASS="$KS_PASS"
+          else
+            echo "::warning::Brak sekretu ANDROID_KEYSTORE_BASE64 — APK podpisany kluczem tymczasowym."
+            PASS=$(openssl rand -hex 16); ALIAS=dragon
+            keytool -genkeypair -keystore "$RUNNER_TEMP/release.keystore" -alias "$ALIAS" -keyalg RSA -keysize 2048 \
+              -validity 10000 -storepass "$PASS" -keypass "$PASS" -dname "CN=Dragon Game, O=Hobby, C=PL"
+          fi
+          echo "::add-mask::$PASS"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$ALIAS" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+
       - name: Eksport
         if: steps.ver.outputs.mode != 'skip'
         run: |
@@ -90,8 +127,13 @@ jobs:
           mkdir -p build/windows
           ~/godot/godot --headless --path . --export-release "Windows Desktop" build/windows/DragonGame.exe
           ~/godot/godot --headless --path . --export-pack "Windows Desktop" "build/game-${GODOT_VERSION}.pck"
-          test -s build/windows/DragonGame.exe && test -s "build/game-${GODOT_VERSION}.pck"
-          ls -la build build/windows
+          mkdir -p build/android
+          ~/godot/godot --headless --path . --export-release "Android" build/android/DragonGame.apk
+          ~/godot/godot --headless --path . --export-pack "Android" "build/game-${GODOT_VERSION}-android.pck"
+          for f in build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck" build/android/DragonGame.apk "build/game-${GODOT_VERSION}-android.pck"; do
+            test -s "$f" || { echo "Brak pliku $f"; exit 1; }
+          done
+          ls -la build build/windows build/android
 
       - name: Publikacja wydania
         if: steps.ver.outputs.mode == 'create'
@@ -102,13 +144,15 @@ jobs:
           {
             echo "Automatyczne wydanie z commita ${GITHUB_SHA::7}."
             echo
-            echo "**Pobierz:** \`DragonGame.exe\` poniżej (Windows, jeden plik)."
+            echo "**Pobierz:** \`DragonGame.exe\` (Windows) lub \`DragonGame.apk\` (Android) poniżej."
             echo "Windows może ostrzec o nieznanym wydawcy — „Więcej informacji” → „Uruchom mimo to”."
+            echo "Android: zezwól przeglądarce na instalację aplikacji z nieznanych źródeł."
             echo
             echo "Ostatnie zmiany:"
             git log -n 10 --pretty='- %s'
           } > notes.md
           gh release create "$TAG" build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck" \
+            build/android/DragonGame.apk "build/game-${GODOT_VERSION}-android.pck" \
             --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md
 
       - name: Dołączenie plików do istniejącego wydania
@@ -116,4 +160,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.ver.outputs.tag }}
-        run: gh release upload "$TAG" build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck" --clobber
+        run: |
+          gh release upload "$TAG" build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck" \
+            build/android/DragonGame.apk "build/game-${GODOT_VERSION}-android.pck" --clobber

@@ -12,9 +12,10 @@ config_version=5
 
 config/name="3D Dragon Game"
 config/description="Gra o smoku w Godot 4 — prototyp."
-config/version="0.1.0"
+config/version="0.2.0"
 run/main_scene="res://scenes/boot.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
+config/icon="res://assets/icon.png"
 
 [display]
 
