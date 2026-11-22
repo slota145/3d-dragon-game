@@ -65,6 +65,7 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 
 - ✅ **Płynne proporcje** pisklę → dorosły (0.6.0): modyfikator szkieletu `dragon_proportions.gd`
   wg `DragonStats.youth()` — duża głowa z krótkim pyszczkiem, krótka szyja, małe skrzydła, krótszy ogon
+- ✅ Przybliżanie kamery (0.6.1): szczypanie dwoma palcami, kółko myszy — oglądanie smoka z bliska
 - ⬜ Etapy Pisklę → Młodzik → Dorosły → Pradawny; odblokowania (lot, ogień, łapanie)
 - ⬜ Wytrzymałość lotu młodzika, wyszarzone przyciski przed odblokowaniem
 
