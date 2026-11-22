@@ -3,9 +3,9 @@ extends EditorScenePostImport
 ## Post-import dla dragon.glb:
 ## - wszystkie materiały używają koloru wierzchołków (losowa jasność ścianek = efekt "ciosanego" low-poly),
 ## - błona skrzydeł renderowana dwustronnie,
-## - animacje Idle i Fly zapętlone.
+## - animacje Idle, Fly i Glide zapętlone.
 
-const LOOPING := ["Idle", "Fly"]
+const LOOPING := ["Idle", "Fly", "Glide"]
 
 
 func _post_import(scene: Node) -> Object:

@@ -60,7 +60,9 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 - **Budżet:** bohater (smok) ~10k trójkątów, 37 kości; zwykłe postacie ≤ 5k.
 - **Rig:** kości z sufiksem `.L`/`.R`; wagi — tułów i błona wg odległości od
   kości, detale sztywno do jednej kości. Animacje = akcje Blendera eksportowane
-  jako ścieżki NLA; pętle ustawia skrypt post-importu.
+  jako ścieżki NLA; pętle ustawia skrypt post-importu. Pozy złożonych kończyn
+  najlepiej opisywać kierunkami kości (`aim_chain` w `gen_dragon.py`), nie kątami.
+- **Pysk:** domyślnie zamknięty (`JAW_REST_OPEN = 0`); otwiera go kość `Jaw`.
 - Nazwy materiałów: `<Asset>_<Część>` (np. `Dragon_Scales`).
 
 ## GDScript

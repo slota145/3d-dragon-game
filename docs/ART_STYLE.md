@@ -40,3 +40,5 @@ na podstawie referencji (szary, kremowa grzywa, czerwony pysk):
 
 ![Smok — ryk](img/dragon_roar.png)
 ![Smok — lot](img/dragon_fly.png)
+![Smok — głowa](img/dragon_head.png)
+![Smok — spoczynek](img/dragon_idle.png)

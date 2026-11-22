@@ -95,8 +95,8 @@ SPINE = [
     (V(0, -2.05, 3.05), (0.54, 0.52, 0.56, 0.05)),
     (V(0, -2.65, 3.2), (0.46, 0.45, 0.47, 0.04)),
     (V(0, -3.15, 3.15), (0.4, 0.4, 0.41, 0.03)),
-    (V(0, -3.5, 2.98), (0.38, 0.39, 0.39, 0.02)),
-    (V(0, -3.72, 2.84), (0.32, 0.32, 0.3, 0.0)),
+    (V(0, -3.4, 3.03), (0.38, 0.39, 0.37, 0.02)),
+    (V(0, -3.56, 3.0), (0.3, 0.3, 0.22, 0.0)),
 ]
 SPINE_JOINTS = {  # kości kręgosłupa: nazwa -> (od, do)
     "Hips": (V(0, 1.0, 2.1), V(0, 0.1, 2.2)),
@@ -123,8 +123,8 @@ HEAD_FWD = V(0, -1, -0.3).normalized()
 HEAD_UP = HEAD_FWD.cross(V(1, 0, 0)).normalized()
 HEAD_LEN = 1.45
 HS = 1.32  # skala głowy
-JAW_HINGE = (0.0, -0.12)  # (f, z) w układzie głowy
-JAW_REST_OPEN = math.radians(14)
+JAW_HINGE = (0.0, -0.15)  # (f, z) w układzie głowy
+JAW_REST_OPEN = 0.0  # pysk domyślnie zamknięty
 
 LEG = dict(hip=V(0.5, 0.95, 1.95), knee=V(0.8, 0.2, 1.3), ankle=V(0.76, 1.05, 0.55), ball=V(0.73, 0.78, 0.14))
 TOE_TIPS = [V(0.5, 0.28, 0.07), V(0.74, 0.2, 0.07), V(0.97, 0.34, 0.07)]
@@ -250,23 +250,37 @@ def build_body(mats) -> bpy.types.Object:
 # Głowa
 # ---------------------------------------------------------------------------
 S_, R_ = SCALES, MOUTH
-# (f, pół-profil od środka góry do środka dołu: (x, z, materiał krawędzi))
+# Pół-profile głowy: (f, [(x, z, materiał krawędzi zaczynającej się w punkcie)]) od środka góry do środka dołu.
+# Górna szczęka: góra, brew, policzek, warga (zewn. dół) -> dziąsło -> podniebienie (czerwone).
 HEAD_RINGS = [
-    (-0.1, [(0, .30, S_), (.2, .28, S_), (.34, .13, S_), (.36, -.04, S_), (.29, -.14, R_), (.13, -.09, R_), (0, -.08, S_)]),
-    (0.3, [(0, .34, S_), (.17, .34, S_), (.33, .25, S_), (.35, .06, S_), (.28, -.13, R_), (.13, -.08, R_), (0, -.06, S_)]),
-    (0.62, [(0, .24, S_), (.13, .24, S_), (.25, .15, S_), (.27, .0, S_), (.22, -.12, R_), (.1, -.07, R_), (0, -.05, S_)]),
-    (0.92, [(0, .16, S_), (.09, .16, S_), (.18, .09, S_), (.2, -.03, S_), (.16, -.11, R_), (.07, -.07, R_), (0, -.06, S_)]),
-    (1.18, [(0, .08, S_), (.05, .08, S_), (.11, .04, S_), (.12, -.05, S_), (.09, -.1, R_), (.04, -.08, R_), (0, -.07, S_)]),
+    (-0.1, [(0, .32, S_), (.22, .3, S_), (.37, .14, S_), (.38, -.04, S_), (.36, -.17, S_), (.28, -.16, S_),
+            (.12, -.08, R_), (0, -.06, S_)]),
+    (0.33, [(0, .36, S_), (.2, .36, S_), (.4, .25, S_), (.38, .05, S_), (.35, -.15, S_), (.28, -.15, S_),
+            (.12, -.06, R_), (0, -.04, S_)]),
+    (0.6, [(0, .3, S_), (.15, .3, S_), (.29, .2, S_), (.32, .03, S_), (.3, -.14, S_), (.24, -.14, S_),
+           (.1, -.05, R_), (0, -.03, S_)]),
+    (0.88, [(0, .23, S_), (.12, .23, S_), (.23, .15, S_), (.26, .0, S_), (.25, -.13, S_), (.2, -.13, S_),
+            (.08, -.05, R_), (0, -.03, S_)]),
+    (1.08, [(0, .15, S_), (.11, .15, S_), (.2, .09, S_), (.22, -.03, S_), (.2, -.12, S_), (.15, -.12, S_),
+            (.06, -.06, R_), (0, -.05, S_)]),
+    (1.18, [(0, .07, S_), (.07, .07, S_), (.12, .03, S_), (.13, -.05, S_), (.11, -.1, S_), (.07, -.1, S_),
+            (.03, -.07, S_), (0, -.07, S_)]),
 ]
-HEAD_TIP = (1.28, -0.02)
+# Żuchwa (zamknięta): dno pyska (czerwone) -> dziąsło -> zewnętrzna ściana -> podbródek.
+# Leży wewnątrz górnej wargi (górna szczęka zachodzi na dolną).
 JAW_RINGS = [
-    (-0.05, [(0, -.12, R_), (.13, -.14, R_), (.28, -.14, S_), (.31, -.23, S_), (.22, -.33, S_), (0, -.36, S_)]),
-    (0.35, [(0, -.12, R_), (.12, -.13, R_), (.25, -.13, S_), (.27, -.2, S_), (.2, -.28, S_), (0, -.3, S_)]),
-    (0.7, [(0, -.11, R_), (.09, -.12, R_), (.19, -.12, S_), (.2, -.18, S_), (.15, -.24, S_), (0, -.26, S_)]),
-    (1.05, [(0, -.1, R_), (.05, -.11, R_), (.11, -.11, S_), (.12, -.15, S_), (.08, -.19, S_), (0, -.2, S_)]),
+    (-0.05, [(0, -.2, R_), (.14, -.19, R_), (.3, -.14, S_), (.33, -.22, S_), (.3, -.33, S_), (.18, -.4, S_),
+             (0, -.42, S_)]),
+    (0.35, [(0, -.17, R_), (.13, -.16, R_), (.29, -.13, S_), (.31, -.2, S_), (.27, -.29, S_), (.16, -.34, S_),
+            (0, -.35, S_)]),
+    (0.7, [(0, -.15, R_), (.11, -.15, R_), (.24, -.12, S_), (.26, -.18, S_), (.23, -.25, S_), (.13, -.29, S_),
+           (0, -.3, S_)]),
+    (0.98, [(0, -.13, R_), (.08, -.13, R_), (.17, -.11, S_), (.19, -.17, S_), (.16, -.23, S_), (.09, -.26, S_),
+            (0, -.27, S_)]),
+    (1.15, [(0, -.145, S_), (.05, -.145, S_), (.11, -.135, S_), (.13, -.17, S_), (.11, -.21, S_), (.06, -.23, S_),
+           (0, -.24, S_)]),
 ]
-JAW_TIP = (1.15, -0.15)
-UPPER_GUM, JAW_GUM = 4, 2
+UPPER_LIP, UPPER_GUM, JAW_GUM, JAW_FLOOR = 4, 5, 2, 0
 HEAD_G, JAW_G = {"Head": 1.0}, {"Jaw": 1.0}
 NECK_BONES = ["Chest", "Neck1", "Neck2", "Neck3", "Neck4"]
 
@@ -309,98 +323,101 @@ def ellipsoid_xf(b: MeshBuilder, xf, radii, mat, groups=None, seg: int = 8, ring
     b.loft(pts, mat, groups, cap_start=False, cap_end=False)
 
 
-def build_head(b: MeshBuilder) -> None:
-    rnd = random.Random(SEED + 1)
-    X = V(1, 0, 0)
-    # górna szczęka + czaszka
-    rings, mats = [], None
-    for f, half in HEAD_RINGS:
-        pts, mats = mirror_half_profile(half)
-        rings.append([hp(x, f, z) for x, z in pts])
-    rings.append(hp(0, *HEAD_TIP))
-    b.loft(rings, mats, HEAD_G, cap_end=False, cap_mat=SCALES)
-    # żuchwa
-    rings = []
-    for f, half in JAW_RINGS:
-        pts, mats = mirror_half_profile(half)
-        rings.append([jp(x, f, z) for x, z in pts])
-    rings.append(jp(0, *JAW_TIP))
-    b.loft(rings, mats, JAW_G, cap_end=False, cap_mat=SCALES)
+def _profile_loft(b: MeshBuilder, rings_def, point_fn, groups) -> None:
+    """Loft głowy/żuchwy; materiały krawędzi z pierwszego przekroju (przód zamyka szara pokrywa)."""
+    rings, mats = [], mirror_half_profile(rings_def[0][1])[1]
+    for f, half in rings_def:
+        pts, _ = mirror_half_profile(half)
+        rings.append([point_fn(x, f, z) for x, z in pts])
+    # ostatni odcinek (czubek nosa / brody) w całości w łuskach – bez czerwonego prześwitu
+    b.loft(rings[:-1], mats, groups, cap_end=False, cap_mat=SCALES)
+    b.loft(rings[-2:], SCALES, groups, cap_start=False, cap_mat=SCALES)
 
-    # policzki (wnętrze pyska między dziąsłami) + gardło
+
+def tooth(b: MeshBuilder, base: Vector, d: Vector, length: float, r: float, groups, curve: Vector) -> None:
+    """Ząb: czworokątny stożek, lekko zakrzywiony (curve = kierunek wygięcia czubka)."""
+    mid = base + d * (length * 0.55) + curve * (length * 0.05)
+    tip = base + d * length + curve * (length * 0.22)
+    b.tube([base, mid, tip], [r, r * 0.6, 0.0], 4, TEETH, groups, tip=True, samples=2, twist=0.785)
+
+
+def build_head(b: MeshBuilder) -> None:
+    X = V(1, 0, 0)
+    _profile_loft(b, HEAD_RINGS, hp, HEAD_G)
+    _profile_loft(b, JAW_RINGS, jp, JAW_G)
+
+    # kąciki pyska (policzki) i gardło – widoczne dopiero po otwarciu
     for s in (1, -1):
         prev = None
         for i in range(6):
-            f = -0.08 + 0.09 * i
+            f = -0.08 + 0.08 * i
             ux, uz = ring_interp(HEAD_RINGS, UPPER_GUM, f)
             lx, lz = ring_interp(JAW_RINGS, JAW_GUM, f)
-            cur = (b.add_vert(hp(s * ux * 0.93, f, uz), HEAD_G), b.add_vert(jp(s * lx * 0.93, f, lz), JAW_G))
+            cur = (b.add_vert(hp(s * ux * 0.95, f, uz), HEAD_G), b.add_vert(jp(s * lx * 0.92, f, lz), JAW_G))
             if prev:
                 b.add_face((prev[0], cur[0], cur[1], prev[1]), MOUTH)
             prev = cur
-    top = [b.add_vert(hp(s * x, -0.06, z), HEAD_G) for s, x, z in ((1, .27, -.13), (1, .12, -.09), (0, 0, -.08),
-                                                                     (-1, .12, -.09), (-1, .27, -.13))]
-    bot = [b.add_vert(jp(s * x, -0.06, z), JAW_G) for s, x, z in ((1, .27, -.14), (1, .12, -.14), (0, 0, -.12),
-                                                                    (-1, .12, -.14), (-1, .27, -.14))]
+    top = [b.add_vert(hp(s * x, -0.06, z), HEAD_G) for s, x, z in ((1, .27, -.15), (1, .12, -.08), (0, 0, -.06),
+                                                                     (-1, .12, -.08), (-1, .27, -.15))]
+    bot = [b.add_vert(jp(s * x, -0.06, z), JAW_G) for s, x, z in ((1, .27, -.15), (1, .13, -.2), (0, 0, -.21),
+                                                                    (-1, .13, -.2), (-1, .27, -.15))]
     for i in range(4):
         b.add_face((top[i], top[i + 1], bot[i + 1], bot[i]), MOUTH)
-    # język
-    b.tube([jp(0, 0.0, -0.15), jp(0, 0.4, -0.135), jp(0, 0.75, -0.125)], [0.085 * HS, 0.065 * HS, 0.02 * HS], 8,
+    # język – w całości w żuchwie
+    b.tube([jp(0, 0.0, -0.21), jp(0, 0.4, -0.18), jp(0, 0.8, -0.155)], [0.075 * HS, 0.06 * HS, 0.015 * HS], 8,
            TONGUE, JAW_G, up_hint=HEAD_UP, flatten=0.3)
 
+    up_dir = HEAD_UP
     for s in (1, -1):
-        # zęby górne
-        f = 0.1
-        while f < 1.15:
-            x, z = ring_interp(HEAD_RINGS, UPPER_GUM, f)
-            base = hp(s * x * 0.97, f, z + 0.025)
-            fang = abs(f - 0.94) < 0.035
-            L = (0.21 if fang else rnd.uniform(0.06, 0.095)) * HS
-            r = (0.042 if fang else 0.022) * HS
-            d = (-HEAD_UP + X * (s * 0.15) - HEAD_FWD * 0.12).normalized()
-            b.tube([base, base + d * L], [r, 0.0], 4, TEETH, HEAD_G, tip=True, samples=1, twist=0.4)
-            f += 0.07
-        # zęby dolne
-        f = 0.08
-        while f < 1.05:
-            x, z = ring_interp(JAW_RINGS, JAW_GUM, f)
-            base = jp(s * x * 0.97, f, z - 0.02)
-            up = (jp(s * x, f, z + 0.1) - jp(s * x, f, z)).normalized()
-            fang = abs(f - 0.86) < 0.035
-            L = (0.16 if fang else rnd.uniform(0.05, 0.08)) * HS
-            r = (0.036 if fang else 0.02) * HS
-            d = (up + X * (s * 0.12) - HEAD_FWD * 0.15).normalized()
-            b.tube([base, base + d * L], [r, 0.0], 4, TEETH, JAW_G, tip=True, samples=1, twist=0.4)
-            f += 0.075
+        out = X * s
+        # zęby górne: mniej, większe, wystają za żuchwę przy zamkniętym pysku
+        for f, ln, r in ((0.1, 0.08, 0.028), (0.25, 0.1, 0.03), (0.4, 0.11, 0.032), (0.54, 0.1, 0.03),
+                         (0.67, 0.13, 0.034), (0.8, 0.24, 0.05), (0.93, 0.12, 0.032), (1.04, 0.09, 0.028)):
+            lx, lz = ring_interp(HEAD_RINGS, UPPER_LIP, f)
+            gx, gz = ring_interp(HEAD_RINGS, UPPER_GUM, f)
+            base = hp(s * (lx * 0.62 + gx * 0.38), f, lz + 0.015)
+            d = (-up_dir + out * 0.08).normalized()
+            tooth(b, base, d, ln * HS, r * HS, HEAD_G, -HEAD_FWD)
+        # zęby dolne (schowane za górną wargą), jeden kieł wystaje na zewnątrz
+        for f, ln, r in ((0.18, 0.08, 0.026), (0.34, 0.09, 0.028), (0.5, 0.09, 0.028), (0.63, 0.1, 0.03),
+                         (1.0, 0.08, 0.026)):
+            gx, gz = ring_interp(JAW_RINGS, JAW_GUM, f)
+            base = jp(s * gx * 0.97, f, gz - 0.015)
+            d = (jp(s * gx, f, gz + 0.1) - jp(s * gx, f, gz)).normalized()
+            tooth(b, base, d, ln * HS, r * HS, JAW_G, -HEAD_FWD)
+        lx, lz = ring_interp(HEAD_RINGS, UPPER_LIP, 0.9)
+        base = jp(s * (lx + 0.02), 0.9, -0.15)
+        tooth(b, base, (up_dir + out * 0.12).normalized(), 0.17 * HS, 0.04 * HS, JAW_G, -HEAD_FWD)
 
-        # oko + źrenica (pionowa szczelina)
+        # oko pod łukiem brwiowym + pionowa źrenica
         def eye_xf(v, s=s):
-            return hp(s * 0.312 + s * v.x, 0.47 + v.y, 0.13 + v.z)
+            return hp(s * 0.335 + s * v.x, 0.43 + v.y, 0.1 + v.z)
         ellipsoid_xf(b, eye_xf, (0.045, 0.085, 0.05), EYE, HEAD_G, seg=8, rings=4)
-        b.blade(hp(s * 0.355, 0.48, 0.085), HEAD_UP, 0.1 * HS, HEAD_FWD, 0.012, X, 0.01, PUPIL, HEAD_G)
-        # łuki brwiowe – gniewne, ciężkie
-        b.blade(hp(s * 0.3, 0.5, 0.25), (-HEAD_FWD * 1.0 + X * (s * 0.35) + HEAD_UP * 0.1), 0.42 * HS, HEAD_FWD,
-                0.11 * HS, HEAD_UP, 0.06 * HS, SCALES, HEAD_G)
-        b.blade(hp(s * 0.33, 0.25, 0.22), (-HEAD_FWD * 1.0 + X * (s * 0.5) + HEAD_UP * 0.3), 0.38 * HS, HEAD_FWD,
-                0.09 * HS, HEAD_UP, 0.05 * HS, SCALES, HEAD_G)
+        b.blade(hp(s * 0.378, 0.44, 0.055), HEAD_UP, 0.095 * HS, HEAD_FWD, 0.011, X, 0.01, PUPIL, HEAD_G)
+        # łuk brwiowy: jeden mocny kolec do tyłu z krawędzi czaszki
+        b.blade(hp(s * 0.38, 0.36, 0.23), (-HEAD_FWD + out * 0.35 + HEAD_UP * 0.15), 0.34 * HS, HEAD_FWD,
+                0.09 * HS, HEAD_UP, 0.035 * HS, SCALES, HEAD_G)
+        # nozdrza
+        def nostril_xf(v, s=s):
+            return hp(s * 0.075 + s * v.x, 1.13 + v.y, 0.05 + v.z)
+        ellipsoid_xf(b, nostril_xf, (0.03, 0.04, 0.018), PUPIL, HEAD_G, seg=6, rings=3)
         # rogi
         for (x0, z0, ln, r0) in ((0.17, 0.3, 0.95, 0.09), (0.3, 0.16, 0.6, 0.065)):
             p0 = hp(s * x0, 0.02, z0)
-            path = [p0, p0 + (-HEAD_FWD * 0.45 * ln + HEAD_UP * 0.12 + X * (s * 0.08)) * HS,
-                    p0 + (-HEAD_FWD * 0.9 * ln + HEAD_UP * 0.2 + X * (s * 0.18)) * HS]
+            path = [p0, p0 + (-HEAD_FWD * 0.45 * ln + HEAD_UP * 0.12 + out * 0.08) * HS,
+                    p0 + (-HEAD_FWD * 0.9 * ln + HEAD_UP * 0.2 + out * 0.18) * HS]
             b.tube(path, [r0 * HS, r0 * 0.6 * HS, 0.0], 6, HORN, HEAD_G, tip=True)
-        # kolce policzkowe i na żuchwie
-        for f, z, ln in ((0.12, -0.0, 0.3), (0.0, -0.06, 0.26), (0.24, 0.07, 0.2)):
-            b.blade(hp(s * 0.33, f, z), (-HEAD_FWD + X * (s * 0.45) - HEAD_UP * 0.05), ln * HS, HEAD_FWD, 0.07 * HS,
+        # kolce policzkowe (tył czaszki) i pod żuchwą
+        for f, z, ln in ((0.05, 0.0, 0.3), (-0.02, -0.1, 0.24)):
+            b.blade(hp(s * 0.36, f, z), (-HEAD_FWD + out * 0.45 - HEAD_UP * 0.05), ln * HS, HEAD_FWD, 0.07 * HS,
                     HEAD_UP, 0.03 * HS, SCALES, HEAD_G)
-        jaw_down = (jp(0, 0.3, -0.4) - jp(0, 0.3, -0.3)).normalized()
-        jaw_back = (jp(0, -0.7, -0.3) - jp(0, 0.3, -0.3)).normalized()
-        for f, ln in ((0.0, 0.26), (0.2, 0.2), (0.4, 0.14)):
-            jb = jp(s * 0.2, f, -0.27)
-            b.blade(jb, jaw_back + jaw_down * 0.5 + X * (s * 0.35), ln * HS, jaw_back, 0.05 * HS, X, 0.02 * HS,
-                    SCALES, JAW_G)
+        jaw_down = (jp(0, 0.3, -0.5) - jp(0, 0.3, -0.4)).normalized()
+        jaw_back = -HEAD_FWD
+        for f, ln in ((0.0, 0.24), (0.2, 0.17)):
+            b.blade(jp(s * 0.22, f, -0.36), jaw_back + jaw_down * 0.5 + out * 0.35, ln * HS, jaw_back,
+                    0.05 * HS, X, 0.02 * HS, SCALES, JAW_G)
     # małe kolce na nosie
-    for f, ln in ((0.78, 0.09), (0.95, 0.07), (1.12, 0.06)):
+    for f, ln in ((0.7, 0.09), (0.86, 0.07)):
         _, ztop = ring_interp(HEAD_RINGS, 0, f)
         b.blade(hp(0, f, ztop), HEAD_UP - HEAD_FWD * 0.6, ln * HS, HEAD_FWD, 0.035 * HS, X, 0.015 * HS, HORN, HEAD_G)
 
@@ -410,34 +427,31 @@ def build_head(b: MeshBuilder) -> None:
 # ---------------------------------------------------------------------------
 
 def build_frill(b: MeshBuilder) -> None:
-    """Grzywa: rzędy szerokich płytek ułożonych jak dachówki (kremowe z szarymi końcami)
-    + grzbiet z poszarpanych kolców. Kształtem przypomina kołnierz wzdłuż szyi."""
+    """Grzywa: kołnierz z szerokich płytek ułożonych jak dachówki (kremowe, szare końce)
+    + środkowy grzebień z szarych kolców."""
     rnd = random.Random(SEED + 2)
     neck = sorted([smp for smp in spine_samples(per_seg=6) if -3.8 <= smp[0].y <= -1.0], key=lambda m: m[0].y)
     n = len(neck)
-    # (kąt od grzbietu, długość, materiał, materiał czubka, odchylenie od szyi, pół-szerokość)
-    rows = ((0.04, 0.5, SCALES, HORN, 1.1, 0.07),
-            (0.38, 0.95, FRILL, SCALES, 0.62, 0.18),
-            (0.72, 0.92, FRILL, FRILL, 0.55, 0.18),
-            (1.05, 0.75, FRILL, SCALES, 0.45, 0.16),
-            (1.38, 0.45, SCALES, SCALES, 0.35, 0.12))
+    # (kąt od grzbietu, długość, materiał, materiał końca, odchylenie od szyi, pół-szerokość, podział koloru)
+    rows = ((0.0, 0.42, SCALES, HORN, 1.0, 0.07, 0.6),
+            (0.42, 0.8, FRILL, SCALES, 0.3, 0.2, 0.74),
+            (0.8, 0.76, FRILL, FRILL, 0.26, 0.2, 0.8),
+            (1.15, 0.56, FRILL, SCALES, 0.22, 0.17, 0.72))
     for i, (c, (t, side, up), q) in enumerate(neck):
         tn = i / (n - 1)
-        env = 0.45 + 0.55 * math.sin(math.pi * min(1.0, 0.18 + tn * 0.92))
+        env = 0.5 + 0.5 * math.sin(math.pi * min(1.0, 0.15 + tn * 0.9))
         bone = nearest_bone(c, NECK_BONES)
         for s in (1, -1):
-            for r, (ang, ln, mat, tip_mat, out, w) in enumerate(rows):
-                if (i + r) % 2:
+            for r, (ang, ln, mat, tip_mat, out, w, split) in enumerate(rows):
+                if (i + r) % 2 or (r == 0 and s < 0):
                     continue
-                if r == 0 and s < 0:
-                    continue  # grzbiet tylko raz (środek)
-                a = 0.0 if r == 0 else ang + rnd.uniform(-0.06, 0.06)
+                a = ang + rnd.uniform(-0.02, 0.02)
                 nrm = (side * (s * math.sin(a)) + up * math.cos(a)).normalized()
-                base = c + side * (s * math.sin(a) * q[0] * 0.93) + up * (math.cos(a) * q[1] * 0.93)
+                base = c + side * (s * math.sin(a) * q[0] * 0.95) + up * (math.cos(a) * q[1] * 0.95)
                 d = (-t + nrm * out).normalized()
-                length = ln * env * rnd.uniform(0.8, 1.2)
-                b.blade2(base, d, length, t, w * (0.8 + 0.4 * env), d.cross(t), 0.018, mat, tip_mat, {bone: 1.0},
-                         split=rnd.uniform(0.5, 0.75))
+                length = ln * env * rnd.uniform(0.93, 1.07)
+                b.blade2(base, d, length, t, w * (0.75 + 0.35 * env), d.cross(t), 0.015, mat, tip_mat, {bone: 1.0},
+                         split=split + rnd.uniform(-0.04, 0.04))
 
 
 def build_back_spikes(b: MeshBuilder) -> None:
@@ -630,49 +644,107 @@ def side_rot(sfx: str, axis: Vector, angle: float):
     return (axis, angle)
 
 
+RIG: bpy.types.Object | None = None  # armatura dla funkcji pozujących (ustawiana w build_animations)
+
+
+def aim_chain(targets: dict[str, Vector]) -> dict[str, list]:
+    """Solver kierunków: {kość: docelowy kierunek w przestrzeni armatury} -> obroty względne
+    (oś, kąt) w świecie dla make_action. Rodzice muszą występować przed dziećmi."""
+    world: dict[str, Quaternion] = {}
+    out = {}
+    for name, target in targets.items():
+        bone = RIG.data.bones[name]
+        rest_dir = (bone.tail_local - bone.head_local).normalized()
+        world[name] = rest_dir.rotation_difference(target.normalized())
+        parent_w = world.get(bone.parent.name, Quaternion()) if bone.parent else Quaternion()
+        axis, angle = (parent_w.inverted() @ world[name]).to_axis_angle()
+        out[name] = [(axis, angle)]
+    return out
+
+
+def folded_wings(breath: float = 0.0) -> dict[str, list]:
+    """Skrzydła złożone na grzbiecie: łokieć w górze, nadgarstek z przodu, palce wzdłuż boków."""
+    rots = {}
+    for s, sfx in SIDES:
+        t = {
+            f"UpperArm.{sfx}": V(0.5 * s, 0.6, 0.52 + breath),
+            f"Forearm.{sfx}": V(0.17 * s, -0.85, -0.5),
+            f"Hand.{sfx}": V(0.1 * s, 1.0, -0.1),
+        }
+        for k, (out, down) in enumerate(((0.1, 0.06), (0.14, 0.17), (0.19, 0.3), (0.24, 0.43))):
+            t[f"Finger{k + 1}.{sfx}"] = V(out * s, 1.0, -down - breath * 0.5)
+        rots.update(aim_chain(t))
+    return rots
+
+
+def tucked_legs(rots: dict) -> None:
+    for _, sfx in SIDES:
+        rots[f"Thigh.{sfx}"] = [(AX, 1.55)]
+        rots[f"Shin.{sfx}"] = [(AX, -0.5)]
+        rots[f"Foot.{sfx}"] = [(AX, 0.9)]
+        rots[f"Toes.{sfx}"] = [(AX, 0.6)]
+
+
 def pose_fly(t: float):
     ph = 2 * math.pi * t
     rots, locs = {}, {}
     for _, sfx in SIDES:
         e1 = 0.62 * math.cos(ph)
         e2 = 0.32 * math.cos(ph - 0.7)
-        e3 = 0.28 * math.cos(ph - 1.3)
-        sweep = 0.18 * math.sin(ph)
-        rots[f"UpperArm.{sfx}"] = [side_rot(sfx, AY, -e1), side_rot(sfx, AZ, sweep)]
-        rots[f"Forearm.{sfx}"] = [side_rot(sfx, AY, -e2)]
-        rots[f"Hand.{sfx}"] = [side_rot(sfx, AY, -e3)]
-        rots[f"Thigh.{sfx}"] = [(AX, 1.55)]
-        rots[f"Shin.{sfx}"] = [(AX, -0.5)]
-        rots[f"Foot.{sfx}"] = [(AX, 0.9)]
-        rots[f"Toes.{sfx}"] = [(AX, 0.6)]
+        e3 = 0.3 * math.cos(ph - 1.3)
+        up_fold = max(0.0, -math.sin(ph))  # w ruchu w górę skrzydło lekko się składa
+        rots[f"UpperArm.{sfx}"] = [side_rot(sfx, AY, -e1), side_rot(sfx, AZ, 0.12 * math.sin(ph))]
+        rots[f"Forearm.{sfx}"] = [side_rot(sfx, AY, -e2), side_rot(sfx, AZ, 0.3 * up_fold)]
+        rots[f"Hand.{sfx}"] = [side_rot(sfx, AY, -e3), side_rot(sfx, AZ, 0.35 * up_fold)]
+        for k in range(1, 5):
+            rots[f"Finger{k}.{sfx}"] = [side_rot(sfx, AY, -0.08 * math.cos(ph - 1.8))]
+    tucked_legs(rots)
     for k in range(1, 7):
-        rots[f"Tail{k}"] = [(AX, -0.05 + 0.05 * math.sin(ph - k * 0.55)), (AZ, 0.035 * math.sin(ph * 0.5 - k * 0.5))]
+        rots[f"Tail{k}"] = [(AX, -0.05 + 0.06 * math.sin(ph - k * 0.55)), (AZ, 0.04 * math.sin(ph * 0.5 - k * 0.5))]
+    rots["Spine"] = [(AX, 0.04 * math.sin(ph))]
     rots["Neck1"] = [(AX, -0.12)]
     rots["Neck2"] = [(AX, 0.03 * math.sin(ph - 0.8))]
     rots["Neck3"] = [(AX, 0.04 * math.sin(ph - 1.2))]
-    rots["Head"] = [(AX, -0.05 * math.sin(ph - 1.6))]
-    rots["Jaw"] = [(AX, -JAW_REST_OPEN * 0.85)]
+    rots["Head"] = [(AX, 0.05 * math.cos(ph) - 0.03)]  # głowa stabilizuje się względem kołysania ciała
     locs["Hips"] = V(0, 0, -0.18 * math.cos(ph))
     return rots, locs
 
 
+def pose_glide(t: float):
+    ph = 2 * math.pi * t
+    rots = {}
+    for _, sfx in SIDES:
+        rots[f"UpperArm.{sfx}"] = [side_rot(sfx, AY, -0.14 - 0.04 * math.sin(ph)), side_rot(sfx, AZ, 0.08)]
+        rots[f"Forearm.{sfx}"] = [side_rot(sfx, AY, 0.06 + 0.03 * math.sin(ph - 0.6))]
+        rots[f"Hand.{sfx}"] = [side_rot(sfx, AY, 0.05 * math.sin(ph - 1.2))]
+    tucked_legs(rots)
+    for k in range(1, 7):
+        rots[f"Tail{k}"] = [(AX, -0.04), (AZ, 0.06 * math.sin(ph - k * 0.5))]
+    rots["Neck1"] = [(AX, -0.14)]
+    rots["Neck2"] = [(AZ, 0.08 * math.sin(ph * 0.5))]
+    rots["Neck3"] = [(AZ, 0.06 * math.sin(ph * 0.5 - 0.6))]
+    rots["Head"] = [(AX, 0.04), (AZ, 0.05 * math.sin(ph * 0.5 - 1.2))]
+    rots["Spine"] = [(AY, 0.04 * math.sin(ph))]  # lekkie przechylanie
+    return rots, {"Hips": V(0, 0, 0.06 * math.sin(ph))}
+
+
 def pose_idle(t: float):
     ph = 2 * math.pi * t
-    rots = {"Chest": [(AX, 0.025 * math.sin(ph))], "Spine": [(AX, -0.015 * math.sin(ph))],
-            "Neck1": [(AX, 0.03 * math.sin(ph + 0.5))], "Neck2": [(AX, 0.04 * math.sin(ph + 1.0)),
-                                                                   (AZ, 0.05 * math.sin(ph * 0.5))],
-            "Neck3": [(AZ, 0.04 * math.sin(ph * 0.5 + 0.6))], "Head": [(AX, -0.05 * math.sin(ph + 1.6))],
-            "Jaw": [(AX, -JAW_REST_OPEN * 0.8 + 0.06 * (1 + math.sin(ph)))]}
+    breath = math.sin(ph * 3)  # 3 oddechy na cykl
+    look = math.sin(ph)  # powolne rozglądanie się
+    rots = folded_wings(0.03 * breath)
+    rots.update({
+        "Chest": [(AX, 0.02 * breath)], "Spine": [(AX, -0.012 * breath)],
+        "Neck1": [(AX, 0.03 * math.sin(ph * 3 + 0.5))],
+        "Neck2": [(AX, 0.03 * math.sin(ph * 3 + 1.0)), (AZ, 0.12 * look)],
+        "Neck3": [(AZ, 0.1 * math.sin(ph - 0.4))],
+        "Head": [(AX, -0.04 * math.sin(ph * 3 + 1.6)), (AZ, 0.12 * math.sin(ph - 0.8)),
+                 (AY, 0.06 * math.sin(ph * 2))],
+        "Jaw": [(AX, 0.03 * max(0.0, math.sin(ph * 3 - 1.0)))],  # lekkie dyszenie
+    })
     for k in range(1, 7):
-        rots[f"Tail{k}"] = [(AZ, 0.07 * math.sin(ph - k * 0.6))]
-    for _, sfx in SIDES:
-        # skrzydła złożone wzdłuż ciała
-        rots[f"UpperArm.{sfx}"] = [side_rot(sfx, AZ, 0.85), side_rot(sfx, AY, 0.45 + 0.02 * math.sin(ph))]
-        rots[f"Forearm.{sfx}"] = [side_rot(sfx, AZ, -2.35)]
-        rots[f"Hand.{sfx}"] = [side_rot(sfx, AZ, 2.2), side_rot(sfx, AY, 0.25)]
-        for k in range(1, 5):
-            rots[f"Finger{k}.{sfx}"] = [side_rot(sfx, AZ, 0.15 * (k - 1))]
-    return rots, {}
+        rots[f"Tail{k}"] = [(AZ, 0.09 * math.sin(ph * 2 - k * 0.6)), (AX, 0.02 * math.sin(ph * 3 - k * 0.4))]
+    return rots, {"Hips": V(0, 0, 0.02 * breath)}
 
 
 def pose_roar(t: float):
@@ -691,22 +763,27 @@ def pose_roar(t: float):
     rots = {
         "Neck1": [(AX, -0.12 * up + 0.12 * roar)], "Neck2": [(AX, -0.15 * up + 0.12 * roar)],
         "Neck3": [(AX, -0.1 * up + 0.1 * roar + shake)], "Neck4": [(AX, 0.08 * roar)],
-        "Head": [(AX, -0.3 * up - 0.5 * roar + shake)], "Jaw": [(AX, 0.1 * up + 0.7 * roar)],
-        "Chest": [(AX, 0.06 * roar)],
+        "Head": [(AX, -0.3 * up - 0.5 * roar + shake)], "Jaw": [(AX, 0.1 * up + 0.78 * roar)],
+        "Chest": [(AX, 0.06 * roar - 0.04 * up)],
     }
     for _, sfx in SIDES:
         rots[f"UpperArm.{sfx}"] = [side_rot(sfx, AY, -0.25 * up - 0.4 * roar), side_rot(sfx, AZ, -0.15 * roar)]
         rots[f"Forearm.{sfx}"] = [side_rot(sfx, AY, 0.2 * roar)]
+        for k in range(1, 5):
+            rots[f"Finger{k}.{sfx}"] = [side_rot(sfx, AY, 0.06 * roar * math.sin(2 * math.pi * t * 10 + k))]
         rots[f"Thigh.{sfx}"] = [(AX, -0.35 * roar)]
         rots[f"Shin.{sfx}"] = [(AX, 0.55 * roar)]
         rots[f"Foot.{sfx}"] = [(AX, -0.2 * roar)]
     for k in range(1, 7):
-        rots[f"Tail{k}"] = [(AX, 0.06 * roar), (AZ, 0.05 * roar * math.sin(2 * math.pi * t * 3 - k))]
+        rots[f"Tail{k}"] = [(AX, 0.06 * roar), (AZ, 0.07 * roar * math.sin(2 * math.pi * t * 3 - k))]
     return rots, {"Hips": V(0, 0, -0.32 * roar)}
 
 
 def build_animations(arm) -> None:
-    make_action(arm, "Idle", 72, pose_idle)
+    global RIG
+    RIG = arm
+    make_action(arm, "Idle", 144, pose_idle)
+    make_action(arm, "Glide", 96, pose_glide)
     make_action(arm, "Fly", 36, pose_fly)
     make_action(arm, "Roar", 60, pose_roar, loop=False)
 

@@ -15,7 +15,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 
 - ✅ **Styl graficzny** — stylizowany low-poly (`docs/ART_STYLE.md`)
 - ✅ **Model smoka (wywerna)** wg referencji: ~10k trójkątów, rig 37 kości,
-  animacje Idle / Fly / Roar (`tools/blender/gen_dragon.py`, `scenes/dragon_showcase.tscn`)
+  animacje Idle / Glide / Fly / Roar (`tools/blender/gen_dragon.py`, `scenes/dragon_showcase.tscn`)
+- ✅ Poprawki smoka: nowa głowa (zamknięty pysk, warga zachodzi na żuchwę, mniej i większe zęby,
+  kły, nozdrza), grzywa jako równy kołnierz z płytek, naturalnie złożone skrzydła (solver kierunków)
 - ❓ **Gatunek i pętla rozgrywki** — np. eksploracja otwartego świata,
   walka powietrzna, zbieranie skarbów, rozwój smoka od pisklęcia…
 - ❓ **Kamera** — trzecia osoba za smokiem (domyślnie) czy inna
@@ -28,9 +30,8 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ⬜ Model lotu: prędkość, przechylenie (bank), nurkowanie, szybowanie, wznoszenie
 - ⬜ Kamera trzecioosobowa z opóźnieniem i dynamicznym FOV przy prędkości
 - ⬜ Sterowanie: klawiatura + mysz, gamepad
-- ✅ Szkielet (rig) smoka + animacje: machanie skrzydłami, idle, ryk
-- ⬜ Kolejne animacje: szybowanie, chód, start/lądowanie, zianie ogniem, obrót w locie
-- ⬜ Dopracowanie złożonych skrzydeł w Idle (błona przy ciele)
+- ✅ Szkielet (rig) smoka + animacje: machanie skrzydłami, szybowanie, idle (rozglądanie się, oddech), ryk
+- ⬜ Kolejne animacje: chód, start/lądowanie, zianie ogniem, obrót w locie
 - ⬜ Teren testowy: wzgórza, góry, woda (heightmap lub generator)
 
 ## Faza 3 — Świat ⬜
