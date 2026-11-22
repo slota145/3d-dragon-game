@@ -44,6 +44,8 @@ var hunger: float = 70.0
 var stage: int = Stage.HATCHLING
 ## Siła lotu 0..100: machanie, zawis, zryw i start ją zużywają; odnawia się na ziemi.
 var stamina: float = 100.0
+## Złoto niesione przy sobie (odkłada się na stos w legowisku; po śmierci część przepada).
+var gold: int = 0
 var _regen_wait: float = 0.0
 ## Wzrost czekający na „strawienie” (m).
 var pending_growth: float = 0.0
@@ -145,6 +147,7 @@ func restore(data: Dictionary) -> void:
 	health = float(data.get("health", 100.0))
 	hunger = float(data.get("hunger", 70.0))
 	stamina = float(data.get("stamina", 100.0))
+	gold = int(data.get("gold", 0))
 	size = clampf(float(data.get("size", start_size)), 0.5, max_size)
 	stage = stage_for(size)
 	size_changed.emit(size)
@@ -152,7 +155,7 @@ func restore(data: Dictionary) -> void:
 
 func to_save() -> Dictionary:
 	return {"size": size, "pending_growth": pending_growth, "health": health, "hunger": hunger,
-		"stamina": stamina}
+		"stamina": stamina, "gold": gold}
 
 
 ## Natychmiastowa zmiana rozmiaru (narzędzia dewelopera): bez trawienia zaległego wzrostu.

@@ -5,6 +5,45 @@
 
 ---
 
+## 2026-11-22 — po wersji v0.7.2 (faza 5: legowisko, dzień/noc, złoto)
+
+```text
+Kontynuujemy pracę nad grą „3D Dragon Game” (Godot 4.7, Android, repo slota145/3d-dragon-game,
+gałąź main). Przeczytaj najpierw CLAUDE.md, docs/GAME_DESIGN.md i ROADMAP.md.
+
+Stan (v0.7.2, wydana, APK: releases/latest/download/DragonGame.apk). Fazy 0–4 gotowe, faza 5 w toku.
+- Lekki surwiwal: pisklę poluje, je, płynnie rośnie; stadia wg rozmiaru (Młodzik 4 m = lot,
+  Dorosły 9 m, Pradawny 16 m); proporcje pisklęcia, siła lotu, zoom kamery, menu pauzy +
+  tryb deweloperski (stadia, reset wzrostu — właściciel: na razie bez zmian).
+- Faza 5 (decyzje właściciela z ankiety):
+  * 0.7.0 jaskinia-legowisko (tools/blender/gen_lair.py, scripts/game/lair.gd) w Lair.POSITION
+    (0,0,-80), wejście w stronę łąki. Nowa gra = wyklucie z jaja w gnieździe (intro).
+    Przycisk ŚPIJ w komorze: zapis + nowy dzień + leczenie. Zapis: scripts/game/save_game.gd
+    (user://save.json) przy śnie + autozapis co 60 s + przy wyjściu/tle. Śmierć: budzisz się
+    w gnieździe, wzrost zostaje. Menu pauzy: „Nowa gra” (z potwierdzeniem).
+  * 0.7.1 cykl dnia i nocy (scripts/game/day_night.gd): dzień 10 min, noc 4 min; sen do 7:00.
+  * 0.7.2 złoto: znaleziska na łące (co dzień nowe, złoty słup światła), skrytki-skrzynie na
+    szczytach skalnych słupów (tylko lotem); złoto niesione → odkładane na stos w komorze
+    (scripts/game/treasure_pile.gd, MultiMesh monet); śmierć = utrata połowy niesionego.
+    Modele: tools/blender/gen_treasure.py. Na razie złoto = tylko stos (prestiż).
+- Testy: tools/check.sh + tools/test_walk/flight/hunt/pause/lair.gd. Testy ustawiają
+  world.use_save = false (piaskownica: łąka, bez zapisu i intro); test_lair kasuje zapis.
+
+Uwagi otwarte:
+- Systemowy „wstecz” na Androidzie zamyka grę (zmiana ustawień projektu → base_api, pełne APK).
+- Pisklę ma duże kolce/zęby (rosną z głową) — ew. łagodniejsze pisklę w generatorze.
+- Czekamy na uwagi właściciela z telefonu (jaskinia, sen, noc, złoto).
+
+Następny krok wg ROADMAP (faza 5): ulepszenia za złoto; większy, gęsty region ~4×4 km
+(teren, las, jezioro, góry) + strumieniowanie świata/LOD (wydajność telefonu).
+Zapytaj właściciela (ankietą), od czego dalej.
+
+Komunikacja z właścicielem po polsku. Po każdym zadaniu: testy, commit, push na main,
+a dla zmian w grze — wydanie (podbicie wersji) i link do APK.
+```
+
+---
+
 ## 2026-11-22 — po wersji v0.6.4 (koniec fazy 4)
 
 ```text

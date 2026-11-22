@@ -81,7 +81,10 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   łagodna śmierć — budzisz się w gnieździe, wzrost zostaje; „Nowa gra” w menu pauzy
 - ✅ Cykl dnia i nocy (0.7.1, `day_night.gd`): dzień 10 min (6–20), noc 4 min; słońce/księżyc,
   kolory nieba, zmierzch z podpowiedzią; sen przewija do 7:00; godzina w zapisie i w HUD
-- ⬜ Złoto i proceduralny stos skarbu; ulepszenia za złoto
+- ✅ Złoto i proceduralny stos skarbu (0.7.2, `gen_treasure.py`): błyszczące znaleziska na łące
+  (co dzień nowe), skrytki-skrzynie na szczytach skalnych słupów (tylko lotem); złoto niesione →
+  odkładane na stos w komorze; śmierć = utrata połowy niesionego; licznik w HUD
+- ⬜ Ulepszenia za złoto (twardsze łuski, siła lotu, regeneracja…)
 - ⬜ Baśniowy region **~4 × 4 km, gęsty** (zasada 20 s, węzły POI, punkty orientacyjne;
   `docs/GAME_DESIGN.md` → Skala i gęstość): teren, las, łąki, farmy, jezioro, góry
 - ⬜ Strumieniowanie świata kawałkami, LOD, MultiMesh (wydajność na telefonie)

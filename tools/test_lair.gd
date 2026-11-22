@@ -94,6 +94,55 @@ func _init() -> void:
 	_check(player.global_position.distance_to(lair.nest_position()) < 1.0, "odrodzenie w gnieździe")
 	_check(absf(player.stats.size - 2.5) < 0.05, "rozmiar zachowany (%.2f m)" % player.stats.size)
 
+	print("7) Złoto: zbieranie, niesienie, stos w legowisku, utrata przy śmierci")
+	var finds: GoldFinds = world.get_node("GoldFinds")
+	var all := finds.remaining()
+	var caches := all.filter(func(f: Node3D) -> bool: return f.get_meta("cache", false))
+	_check(all.size() > 10, "znaleziska na łące: %d" % all.size())
+	_check(caches.size() > 0, "skrytki na skalnych słupach: %d" % caches.size())
+	var top_ok := true
+	for c: Node3D in caches:
+		top_ok = top_ok and c.global_position.y > 10.0
+	_check(top_ok, "skrytki leżą wysoko (tylko dla latających)")
+	var find: Node3D = all.filter(func(f: Node3D) -> bool: return not f.get_meta("cache", false))[0]
+	var value: int = find.get_meta("value")
+	(world.get_node("DayNight") as DayNight).set_hour(11.0)
+	player.global_position = find.global_position + Vector3(0, 0, 7)
+	player.rotation.y = PI  # pyskiem do znaleziska
+	player.reset_physics_interpolation()
+	world.get_node("FollowCamera").snap_behind()
+	await _seconds(1.0)
+	await _shot("gold_find.png")
+	player.global_position = find.global_position
+	player.reset_physics_interpolation()
+	await _seconds(0.5)
+	_check(player.stats.gold == value, "zebrane: %d złota (niesione)" % player.stats.gold)
+	_check(not is_instance_valid(find) or find.is_queued_for_deletion(), "znalezisko znikło")
+	player.global_position = lair.nest_position()
+	player.reset_physics_interpolation()
+	await _seconds(0.5)
+	_check(player.stats.gold == 0 and world.treasure == value, "odłożone na stos: skarb %d" % world.treasure)
+	var pile: TreasurePile = lair.pile
+	world.treasure = 1500
+	pile.set_gold(1500)
+	player.rotation.y = 0.0
+	world.get_node("FollowCamera").snap_behind()
+	player.global_position = lair.nest_position() + Vector3(0, 0, 4)
+	player.rotation.y = PI
+	player.reset_physics_interpolation()
+	world.get_node("FollowCamera").snap_behind()
+	await _seconds(1.5)
+	await _shot("lair_pile.png")
+	player.global_position = Lair.POSITION + Vector3(0, 0, 70)
+	player.reset_physics_interpolation()
+	player.stats.gold = 40
+	player.stats.damage(1000.0)
+	await _frames(3)
+	# połowa przepada, reszta trafia na stos (budzisz się w legowisku)
+	_check(world.treasure == 1520, "śmierć: połowa z 40 złota przepada, 20 na stos (skarb %d)" % world.treasure)
+	world.save_game()
+	_check(int(SaveGame.load_data().get("treasure", 0)) == 1520, "skarb w zapisie")
+
 	SaveGame.delete()
 	print("WYNIK: ", "OK" if _fails == 0 else "%d błędów" % _fails)
 	quit(1 if _fails else 0)

@@ -14,6 +14,9 @@ extends Node3D
 @export var flower_count: int = 1200
 @export var bush_count: int = 220
 
+## Szczyty skalnych słupów (globalnie) — tam leżą ukryte skrytki ze złotem (tylko dla latających).
+var pillar_tops: Array[Vector3] = []
+
 
 func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -37,7 +40,8 @@ func _ready() -> void:
 		var pillar_pos := Vector3(cos(ang), 0, sin(ang)) * dist
 		if _in_lair(pillar_pos, 15.0):
 			continue
-		_add_peak(Vector3(cos(ang), 0, sin(ang)) * dist, h, rng.randf_range(6.0, 11.0), mountain_mats[0], null, rng)
+		_add_peak(pillar_pos, h, rng.randf_range(6.0, 11.0), mountain_mats[0], null, rng)
+		pillar_tops.append(global_position + pillar_pos + Vector3.UP * h)
 	_add_ground_details(rng)
 	for i in count:
 		var pos := Vector3(rng.randf_range(-area, area), 0.0, rng.randf_range(-area, area))

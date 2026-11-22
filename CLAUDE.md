@@ -24,13 +24,13 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 |---|---|
 | `project.godot` | konfiguracja projektu, input map |
 | `scenes/` | sceny: `boot.tscn` (start) → `world.tscn` (świat + `dragon_player.tscn` + `hud.tscn`), `dragon_showcase.tscn` |
-| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `dragon_proportions.gd` (proporcje pisklęcia — modyfikator szkieletu), `lair.gd` (legowisko: jaskinia, gniazdo, jajo), `save_game.gd` (zapis `user://save.json`), `day_night.gd` (cykl dnia i nocy), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
+| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `dragon_proportions.gd` (proporcje pisklęcia — modyfikator szkieletu), `lair.gd` (legowisko: jaskinia, gniazdo, jajo), `save_game.gd` (zapis `user://save.json`), `day_night.gd` (cykl dnia i nocy), `gold_finds.gd` (złoto w świecie), `treasure_pile.gd` (stos skarbu), `treasure.gd` (siatki skarbów), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
 | `scripts/ui/` | interfejs: `touch_joystick.gd` (gałka), `touch_button.gd` (Skrzydła/Zryw/Ugryzienie/Ogień), `stat_bars.gd` (paski), `pause_menu.gd` (menu pauzy + okienko trybu deweloperskiego: stadia, reset wzrostu) |
 | `scripts/fx/`, `assets/shaders/` | efekty: `dust_burst.gd` (pył), `speed_lines.gdshader` (linie pędu) |
 | `scripts/` | pozostałe (np. `model_showcase.gd`) |
 | `assets/models/` | wygenerowane `.glb` (+ pliki `.import` — commitujemy je) |
 | `assets/textures/`, `materials/`, `audio/` | pozostałe zasoby |
-| `tools/blender/` | generatory assetów (Python + bpy): `gen_dragon.py` (smok), `gen_animals.py` (królik, owca), `gen_lair.py` (jaskinia-legowisko), `meshkit.py` (lofty, rury, kolce, płaty, wagi), `common.py` (scena, materiały, render) |
+| `tools/blender/` | generatory assetów (Python + bpy): `gen_dragon.py` (smok), `gen_animals.py` (królik, owca), `gen_lair.py` (jaskinia-legowisko), `gen_treasure.py` (moneta, kielich, korona, skrzynia, klejnot), `meshkit.py` (lofty, rury, kolce, płaty, wagi), `common.py` (scena, materiały, render) |
 | `assets/models/*_import.gd` | skrypty post-importu (materiały, pętle animacji) |
 | `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_flight.gd`, `test_hunt.gd`, `test_pause.gd`, `test_lair.gd`, `test_updater.gd`) |
 | `export_presets.cfg`, `.github/workflows/release.yml` | eksport Android (+ Windows wstrzymany); CI buduje APK + łatkę `.pck` przy podbiciu wersji (`docs/RELEASE.md`) |

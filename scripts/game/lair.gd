@@ -14,6 +14,8 @@ const EGG_COLOR := Color(0.93, 0.88, 0.74)
 
 signal hatched
 
+## Stos skarbu przy tylnej ścianie komory.
+var pile: TreasurePile
 var _egg: MeshInstance3D
 var _shells: Node3D
 
@@ -24,6 +26,10 @@ func _ready() -> void:
 	var rock := model.find_child("Lair_Rock", true, false) as MeshInstance3D
 	if rock:
 		rock.create_trimesh_collision()
+	pile = TreasurePile.new()
+	pile.name = "TreasurePile"
+	pile.position = Vector3(0, 0, -9.5)
+	add_child(pile)
 	var light := OmniLight3D.new()  # ciepłe światło w komorze (gniazdo)
 	light.position = Vector3(0, 6, 0)
 	light.light_color = Color(1.0, 0.78, 0.5)

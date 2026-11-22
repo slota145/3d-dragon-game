@@ -9,8 +9,15 @@ extends Node3D
 ## Ile najedzenia „zjada” noc snu.
 @export var sleep_hunger_cost: float = 15.0
 
+## Część niesionego złota tracona przy śmierci.
+@export var death_gold_loss: float = 0.5
+
 ## Numer dnia (rośnie przy każdym śnie).
 var day: int = 1
+## Złoto na stosie w legowisku (skarb).
+var treasure: int = 0
+var _finds: GoldFinds
+var _gold_label: Label
 var _lair: Lair
 var _day_night: DayNight
 var _sleeping: bool = false
@@ -42,7 +49,15 @@ func _ready() -> void:
 	_day_night.paused = not use_save  # testy: stałe południe/poranek
 	add_child(_day_night)
 	_day_night.set_hour(8.0)
-	_day_night.midnight.connect(func() -> void: day += 1)
+	_day_night.midnight.connect(func() -> void:
+		day += 1
+		_finds.setup(day, ($Props as Node).pillar_tops))
+	_finds = GoldFinds.new()
+	_finds.name = "GoldFinds"
+	_finds.dragon = _player
+	add_child(_finds)
+	_finds.picked.connect(_on_gold_picked)
+	_build_gold_label()
 	_day_night.dusk.connect(func() -> void:
 		if not _lair.is_inside(_player.global_position):
 			_toast("Zapada zmrok — wróć do legowiska i prześpij noc"))
@@ -77,6 +92,8 @@ func _ready() -> void:
 	_player.launched.connect(func() -> void: DustBurst.spawn(self, _player.global_position, 1.4 * _player.size_k()))
 	_player.landed.connect(_on_landed)
 	_player.dashed.connect(func() -> void: _flash = 1.0)
+	_finds.setup(day, ($Props as Node).pillar_tops)
+	_lair.pile.set_gold(treasure)
 	if _intro:
 		_play_intro()
 
@@ -101,6 +118,9 @@ func _start_new_game() -> void:
 func _load_game(data: Dictionary) -> void:
 	day = int(data.get("day", 1))
 	_day_night.set_hour(float(data.get("hour", 8.0)))
+	treasure = int(data.get("treasure", 0))
+	_finds.taken_today = data.get("finds_taken", [])
+	_finds.caches_taken = data.get("caches_taken", [])
 	_player.stats.restore(data.get("stats", {}))
 	_lair.show_shells()
 	var p: Array = data.get("pos", [])
@@ -117,7 +137,8 @@ func save_game() -> void:
 	if not use_save or _intro or _player.stats.health <= 0.0:
 		return
 	var pos := _player.global_position
-	SaveGame.write({"day": day, "hour": _day_night.hour, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
+	SaveGame.write({"day": day, "hour": _day_night.hour, "treasure": treasure,
+		"finds_taken": _finds.taken_today, "caches_taken": _finds.caches_taken, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
 		"yaw": _player.rotation.y, "version": GameVersion.current()})
 
 
@@ -151,6 +172,42 @@ func _play_intro() -> void:
 		get_tree().create_timer(3.5).timeout.connect(func() -> void:
 			_toast("Ugryzienie: poluj na króliki"))
 		save_game())
+
+
+# --- Złoto -------------------------------------------------------------------------
+
+func _build_gold_label() -> void:
+	_gold_label = Label.new()
+	_gold_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_gold_label.offset_left = -300
+	_gold_label.offset_right = 300
+	_gold_label.offset_top = 14
+	_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_gold_label.add_theme_font_size_override("font_size", 30)
+	_gold_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.35))
+	_gold_label.add_theme_color_override("font_outline_color", Color(0.2, 0.1, 0.0, 0.9))
+	_gold_label.add_theme_constant_override("outline_size", 8)
+	_hud.add_child(_gold_label)
+
+
+func _on_gold_picked(value: int, item_name: String, where: Vector3) -> void:
+	_player.stats.gold += value
+	_toast("%s · +%d złota" % [item_name, value])
+	DustBurst.spawn(self, where, 0.4, Color(1.0, 0.82, 0.3))
+
+
+func _update_gold() -> void:
+	var carried := _player.stats.gold
+	# odłóż niesione złoto na stos, gdy smok jest w komorze legowiska
+	if carried > 0 and not _intro and _lair.is_inside(_player.global_position):
+		treasure += carried
+		_player.stats.gold = 0
+		_lair.pile.set_gold(treasure)
+		_toast("+%d złota na stosie! Skarb: %d" % [carried, treasure])
+		DustBurst.spawn(self, _lair.pile.global_position, 0.8, Color(1.0, 0.82, 0.3))
+		save_game()
+		carried = 0
+	_gold_label.text = ("Złoto %d  ·  " % carried if carried > 0 else "") + "Skarb %d" % treasure
 
 
 # --- Sen w legowisku -------------------------------------------------------------
@@ -193,6 +250,7 @@ func sleep() -> void:
 		if _day_night.hour >= 7.0:
 			day += 1  # po północy dzień już się zmienił — śpisz tylko do rana
 		_day_night.set_hour(7.0)
+		_finds.setup(day, ($Props as Node).pillar_tops)  # nowy dzień — nowe znaleziska
 		var st := _player.stats
 		st.health = 100.0
 		st.stamina = 100.0
@@ -246,6 +304,10 @@ func _on_died() -> void:
 	_player.velocity = Vector3.ZERO
 	_player.reset_physics_interpolation()  # teleport — bez „przelotu” interpolacji
 	_player.stats.revive(60.0, 45.0)
+	var lost := int(ceil(_player.stats.gold * death_gold_loss))
+	if lost > 0:
+		_player.stats.gold -= lost
+		get_tree().create_timer(2.5).timeout.connect(func() -> void: _toast("Zgubiłeś %d złota" % lost))
 	save_game()
 
 
@@ -282,6 +344,7 @@ func _process(delta: float) -> void:
 	status.text = "Dzień %d, %s · %s · wys. %d m · %d km/h" % [day, _day_night.clock_text(), mode, int(_player.global_position.y),
 		int(v.length() * 3.6)]
 	_sleep_button.visible = can_sleep()
+	_update_gold()
 	if use_save and not _intro:
 		_autosave_t += delta
 		if _autosave_t >= autosave_interval:
