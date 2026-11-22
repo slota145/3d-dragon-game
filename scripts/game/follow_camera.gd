@@ -69,6 +69,11 @@ func _ready() -> void:
 		_yaw = target.global_rotation.y + PI
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PAUSED or what == NOTIFICATION_UNPAUSED:
+		_touches.clear()  # puszczenia palców w czasie pauzy nie docierają — zacznij od zera
+
+
 func set_user_zoom(z: float) -> void:
 	user_zoom = clampf(z, user_zoom_min, user_zoom_max)
 

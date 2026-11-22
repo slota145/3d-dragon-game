@@ -18,6 +18,14 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PAUSED:  # puszczenie palca w czasie pauzy by nie dotarło
+		_touch_index = -1
+		_knob = Vector2.ZERO
+		output = Vector2.ZERO
+		queue_redraw()
+
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed and _touch_index == -1 and get_global_rect().has_point(event.position):

@@ -69,6 +69,7 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ⬜ Etapy Pisklę → Młodzik → Dorosły → Pradawny; odblokowania (lot, ogień, łapanie)
 - ✅ Wytrzymałość lotu (0.6.2): pasek „Siła lotu”; start, machanie, zawis, zryw zużywają siłę,
   szybowanie trochę, nurkowanie wcale; odnowa na ziemi; zużycie maleje z rozmiarem (dorosły prawie bez limitu)
+- ✅ Menu pauzy + tryb deweloperski (0.6.3): skok do stadium, reset wzrostu
 - ⬜ Wyszarzone przyciski przed odblokowaniem + animacja i napis przy odblokowaniu
 
 ## Faza 5 — Legowisko i świat ⬜

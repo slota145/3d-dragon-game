@@ -139,6 +139,12 @@ func rest(delta: float) -> void:
 	stamina = minf(100.0, stamina + stamina_regen * delta)
 
 
+## Natychmiastowa zmiana rozmiaru (narzędzia dewelopera): bez trawienia zaległego wzrostu.
+func set_size_instant(s: float) -> void:
+	pending_growth = 0.0
+	set_size(s)
+
+
 func damage(amount: float) -> void:
 	if health <= 0.0:
 		return

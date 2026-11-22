@@ -22,6 +22,11 @@ func _ready() -> void:
 		if Time.get_ticks_msec() - _exhausted_msg > 2500:
 			_exhausted_msg = Time.get_ticks_msec()
 			_toast("Brak sił! Szybuj w dół i odpocznij na ziemi"))
+	var pause := PauseMenu.new()
+	pause.name = "PauseMenu"
+	pause.stats = _player.stats
+	pause.on_stats_changed = _update_buttons
+	add_child(pause)
 	_spawner.dragon = _player
 	_spawner.populate()
 	_update_buttons()

@@ -20,6 +20,13 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PAUSED and _touch_index != -1:  # puszczenie w czasie pauzy by nie dotarło
+		_touch_index = -1
+		Input.action_release(action)
+		queue_redraw()
+
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed and _touch_index == -1 and _hit(event.position):
