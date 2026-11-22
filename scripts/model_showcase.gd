@@ -1,7 +1,7 @@
 extends Node3D
 ## Scena prezentacyjna modelu: odtwarza animację i ustawia kamerę wg presetu.
 ## Argumenty z linii poleceń (po `--`, np. przez tools/screenshot.sh):
-##   anim=Idle|Fly|Glide|Roar  t=1.2  cam=ref|side|front|top|head|low|idle
+##   anim=Idle|Fly|Glide|Roar  t=1.2  cam=ref|side|front|top|head|low|idle|idlefront|roarhead
 
 const CAMERAS := {
 	"ref": [Vector3(-8.6, 2.6, 7.6), Vector3(0.0, 2.3, 2.2)],
@@ -10,7 +10,8 @@ const CAMERAS := {
 	"top": [Vector3(0.0, 21.0, 2.0), Vector3(0.0, 0.0, -0.6)],
 	"head": [Vector3(-2.7, 3.25, 6.4), Vector3(0.0, 2.75, 4.25)],
 	"roarhead": [Vector3(-3.6, 2.6, 6.6), Vector3(0.0, 2.0, 3.9)],
-	"idle": [Vector3(-9.5, 4.5, 7.0), Vector3(0.0, 2.2, 0.8)],
+	"idle": [Vector3(-10.5, 3.2, 7.5), Vector3(0.0, 1.8, 0.8)],
+	"idlefront": [Vector3(-3.0, 2.6, 13.0), Vector3(0.0, 1.8, 0.0)],
 	"low": [Vector3(-7.0, 0.8, 9.0), Vector3(0.0, 3.0, 0.5)],
 }
 

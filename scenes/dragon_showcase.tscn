@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/model_showcase.gd" id="1_showcase"]
 [ext_resource type="PackedScene" path="res://assets/models/dragon.glb" id="2_dragon"]
@@ -16,8 +16,13 @@ ssao_intensity = 1.5
 glow_enabled = true
 glow_intensity = 0.25
 
+[sub_resource type="StandardMaterial3D" id="Mat_floor"]
+albedo_color = Color(0.4, 0.395, 0.385, 1)
+roughness = 1.0
+
 [sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
-size = Vector2(80, 80)
+material = SubResource("Mat_floor")
+size = Vector2(200, 200)
 
 [node name="DragonShowcase" type="Node3D" node_paths=PackedStringArray("model")]
 script = ExtResource("1_showcase")
@@ -41,7 +46,6 @@ light_color = Color(0.8, 0.86, 1, 1)
 light_energy = 0.7
 
 [node name="Floor" type="MeshInstance3D" parent="."]
-visible = false
 mesh = SubResource("PlaneMesh_floor")
 
 [node name="Dragon" parent="." instance=ExtResource("2_dragon")]

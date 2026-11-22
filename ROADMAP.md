@@ -18,6 +18,7 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   animacje Idle / Glide / Fly / Roar (`tools/blender/gen_dragon.py`, `scenes/dragon_showcase.tscn`)
 - ✅ Poprawki smoka: nowa głowa (zamknięty pysk, warga zachodzi na żuchwę, mniej i większe zęby,
   kły, nozdrza), grzywa jako równy kołnierz z płytek, naturalnie złożone skrzydła (solver kierunków)
+- ✅ Postawa wywerny: w Idle smok stoi na nadgarstkach złożonych skrzydeł (IK 2-kościowe, kość `Thumb` dla szponów)
 - ❓ **Gatunek i pętla rozgrywki** — np. eksploracja otwartego świata,
   walka powietrzna, zbieranie skarbów, rozwój smoka od pisklęcia…
 - ❓ **Kamera** — trzecia osoba za smokiem (domyślnie) czy inna

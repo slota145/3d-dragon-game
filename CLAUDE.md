@@ -63,6 +63,8 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
   jako ścieżki NLA; pętle ustawia skrypt post-importu. Pozy złożonych kończyn
   najlepiej opisywać kierunkami kości (`aim_chain` w `gen_dragon.py`), nie kątami.
 - **Pysk:** domyślnie zamknięty (`JAW_REST_OPEN = 0`); otwiera go kość `Jaw`.
+- **Postawa na ziemi:** wywerna opiera się nadgarstkami skrzydeł o ziemię
+  (`standing_wings`, `WRIST_GROUND`); szpony „dłoni” są na kości `Thumb.L/.R`.
 - Nazwy materiałów: `<Asset>_<Część>` (np. `Dragon_Scales`).
 
 ## GDScript

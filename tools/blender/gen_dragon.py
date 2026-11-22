@@ -133,6 +133,8 @@ BACK_TOE_TIP = V(0.73, 1.15, 0.06)
 ARM = dict(shoulder=V(0.42, -0.95, 2.85), elbow=V(1.95, 0.15, 3.05), wrist=V(4.0, -0.75, 3.45))
 FINGER_TIPS = [V(8.3, -0.25, 3.0), V(7.9, 1.65, 2.55), V(6.5, 3.15, 2.3), V(4.7, 3.65, 2.15)]
 WING_ROOT_BACK = V(0.6, 1.75, 1.9)  # tylne zaczepienie błony przy biodrze
+THUMB_DIR = V(0, -0.42, -0.72).normalized()  # ogólny kierunek szponów "dłoni"
+WRIST_GROUND = V(1.3, -1.85, 0.3)  # nadgarstek oparty o ziemię w pozycji stojącej (prawa strona)
 
 
 def head_point(x: float, f: float, z: float) -> Vector:
@@ -512,7 +514,7 @@ def build_wings(det: MeshBuilder, mem: MeshBuilder) -> None:
             dx = s * 0.09 * (k - 1)
             base = W + V(dx, -0.1, -0.05)
             path = [base, base + V(dx, -0.3, -0.05), base + V(dx * 1.6, -0.5, -0.35), base + V(dx * 2, -0.42, -0.72)]
-            det.tube(path, [0.075, 0.06, 0.04, 0.0], 6, CLAW, {f"Hand.{sfx}": 1.0})
+            det.tube(path, [0.075, 0.06, 0.04, 0.0], 6, CLAW, {f"Thumb.{sfx}": 1.0})
         # ostroga na łokciu
         det.blade(E + V(0, 0.1, 0.1), V(s * 0.2, 1, 0.25), 0.45, V(1, 0, 0), 0.08, V(0, 0, 1), 0.04, HORN,
                   {f"UpperArm.{sfx}": 1.0})
@@ -552,6 +554,7 @@ def bone_defs() -> list[tuple[str, Vector, Vector, str | None, float]]:
             (f"Toes.{sfx}", L["ball"], L["ball"] + V(0, -0.45, 0), f"Foot.{sfx}", 0.12),
             (f"UpperArm.{sfx}", A["shoulder"], A["elbow"], "Chest", 0.42),
             (f"Forearm.{sfx}", A["elbow"], A["wrist"], f"UpperArm.{sfx}", 0.2),
+            (f"Thumb.{sfx}", A["wrist"], A["wrist"] + THUMB_DIR * 0.5, f"Forearm.{sfx}", 0.15),
             (f"Hand.{sfx}", A["wrist"], A["wrist"] + (mx(FINGER_TIPS[0], s) - A["wrist"]).normalized() * 0.4,
              f"Forearm.{sfx}", 0.18),
         ]
@@ -662,17 +665,35 @@ def aim_chain(targets: dict[str, Vector]) -> dict[str, list]:
     return out
 
 
-def folded_wings(breath: float = 0.0) -> dict[str, list]:
-    """Skrzydła złożone na grzbiecie: łokieć w górze, nadgarstek z przodu, palce wzdłuż boków."""
+def two_bone_ik(root: Vector, target: Vector, len_a: float, len_b: float, pole: Vector) -> Vector:
+    """Pozycja stawu środkowego (łokcia) dla łańcucha 2 kości; pole = kierunek wygięcia."""
+    d = target - root
+    dist = min(d.length, (len_a + len_b) * 0.999)
+    u = d.normalized()
+    along = (len_a ** 2 - len_b ** 2 + dist ** 2) / (2 * dist)
+    h = math.sqrt(max(0.0, len_a ** 2 - along ** 2))
+    v = (pole - u * pole.dot(u)).normalized()
+    return root + u * along + v * h
+
+
+def standing_wings(breath: float = 0.0) -> dict[str, list]:
+    """Wywerna stoi na złożonych skrzydłach: nadgarstki na ziemi, łokcie w górze i z tyłu,
+    palce z błoną złożone wzdłuż ramienia, szpony skierowane do przodu w ziemię."""
     rots = {}
     for s, sfx in SIDES:
+        S, E, W = (mx(ARM[k], s) for k in ("shoulder", "elbow", "wrist"))
+        wrist = mx(WRIST_GROUND, s)
+        elbow = two_bone_ik(S, wrist, (E - S).length, (W - E).length, V(0.55 * s, 0.9, 0.7 + breath))
+        up_arm = (elbow - wrist).normalized()
+        back, out = V(0, 1, 0), V(s, 0, 0)
         t = {
-            f"UpperArm.{sfx}": V(0.5 * s, 0.6, 0.52 + breath),
-            f"Forearm.{sfx}": V(0.17 * s, -0.85, -0.5),
-            f"Hand.{sfx}": V(0.1 * s, 1.0, -0.1),
+            f"UpperArm.{sfx}": elbow - S,
+            f"Forearm.{sfx}": wrist - elbow,
+            f"Thumb.{sfx}": Quaternion(V(1, 0, 0), -0.45) @ THUMB_DIR,
+            f"Hand.{sfx}": up_arm + back * 0.2,
         }
-        for k, (out, down) in enumerate(((0.1, 0.06), (0.14, 0.17), (0.19, 0.3), (0.24, 0.43))):
-            t[f"Finger{k + 1}.{sfx}"] = V(out * s, 1.0, -down - breath * 0.5)
+        for k in range(4):
+            t[f"Finger{k + 1}.{sfx}"] = up_arm * 0.8 + back * (0.7 + 0.35 * k) + out * 0.12 - V(0, 0, 0.1 * k)
         rots.update(aim_chain(t))
     return rots
 
@@ -732,9 +753,9 @@ def pose_idle(t: float):
     ph = 2 * math.pi * t
     breath = math.sin(ph * 3)  # 3 oddechy na cykl
     look = math.sin(ph)  # powolne rozglądanie się
-    rots = folded_wings(0.03 * breath)
+    rots = standing_wings(0.03 * breath)
     rots.update({
-        "Chest": [(AX, 0.02 * breath)], "Spine": [(AX, -0.012 * breath)],
+        "Chest": [(AX, 0.008 * breath)],
         "Neck1": [(AX, 0.03 * math.sin(ph * 3 + 0.5))],
         "Neck2": [(AX, 0.03 * math.sin(ph * 3 + 1.0)), (AZ, 0.12 * look)],
         "Neck3": [(AZ, 0.1 * math.sin(ph - 0.4))],
