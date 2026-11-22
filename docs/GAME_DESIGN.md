@@ -38,10 +38,23 @@ a równolegle **zdobywaj złoto → znoś do legowiska → ulepszenia i prestiż
 | **Dorosły** | ~12 m | pełny lot, **zionięcie ogniem** (strumień), łapanie w locie dużych ofiar | jelenie, dziki, bydło, wozy kupieckie | rycerze, patrole, **gryfy** |
 | **Pradawny** | ~20 m | ryk płoszący wrogów, burzenie budowli, napady na zamki | niedźwiedzie, gryfy, zamki | balisty, **jeźdźcy gryfów**, zakon łowców smoków |
 
-- **Wzrost** = zjedzone jedzenie (punkty wzrostu). Smok rośnie płynnie; przejście do następnego
-  etapu jest momentem (np. sen w legowisku i przebudzenie jako większy smok, nowe zdolności).
+- **Wzrost jest płynny.** Każde zjedzone zwierzę od razu trochę powiększa smoka: rośnie
+  rozmiar, a razem z nim siła, prędkość, zasięg kroku i dystans kamery. Nie ma skoków
+  rozmiaru „z dnia na dzień”.
+- **Etap zależy od rozmiaru.** Po przekroczeniu progu (np. 4 m → Młodzik, 9 m → Dorosły,
+  16 m → Pradawny) smok **od razu wchodzi na wyższe stadium**: krótki efekt (ryk, rozbłysk,
+  napis „Młodzik!”) i odblokowanie nowych zdolności. Pasek wzrostu w HUD pokazuje postęp
+  do następnego progu.
+- **Proporcje też zmieniają się płynnie.** Pisklę ma dużą głowę, krótką szyję i małe
+  skrzydła; z rozmiarem głowa robi się względnie mniejsza, a szyja, ogon i skrzydła dłuższe.
+  Technicznie: jeden szkielet i skalowanie poszczególnych kości zależnie od rozmiaru
+  (albo przejście między modelem pisklęcia i dorosłego), więc nie ma podmiany modelu
+  w trakcie gry.
+- Wzrost spowalnia z rozmiarem: większy smok potrzebuje większych ofiar, żeby urosnąć,
+  a drobne zwierzęta dają mu coraz mniej.
 - Do etapu **Pradawny** potrzeba też odpowiednio dużego **skarbu**.
-- **Pierwszy lot** (Młodzik) to celowo ważny moment gry: wcześniej świat oglądamy z ziemi.
+- **Pierwszy lot** (wejście w stadium Młodzika) to celowo ważny moment gry: wcześniej świat
+  oglądamy z ziemi.
 - Generator smoka jest kodem, więc etapy mają **własne proporcje** (pisklę: duża głowa,
   krótka szyja, małe skrzydła), a nie tylko skalę.
 
@@ -132,7 +145,7 @@ Cel: świat jest **na tyle duży, żeby lot był przyjemnością**, ale **nigdy 
 ## Kolejność prac (wycinek rdzenia → reszta)
 
 1. **Polowanie i wzrost**: przycisk Ugryzienie, pierwsza zwierzyna z prostą SI (ucieka),
-   jedzenie, pasek głodu, smok rośnie. Pytanie do sprawdzenia: czy to jest frajda?
+   jedzenie, pasek głodu, smok **płynnie** rośnie. Pytanie do sprawdzenia: czy to jest frajda?
 2. **Pisklę**: model pisklęcia, start gry jako pisklę bez lotu, etapy i odblokowania.
 3. **Legowisko**: sen i zapis, pierwsze złoto i stos skarbu.
 4. **Pierwsi ludzie**: wieśniak, myśliwy, farma i wioska, rozgłos.

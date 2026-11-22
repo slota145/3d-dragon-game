@@ -54,12 +54,14 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ⬜ Przycisk **Ugryzienie** (atak na ziemi) + animacja Bite
 - ⬜ Pierwsza zwierzyna (owce, króliki) z prostą SI: pasie się, ucieka przed smokiem
 - ⬜ Jedzenie, **pasek głodu**, zdrowie, HUD
-- ⬜ **Wzrost**: punkty wzrostu z jedzenia, smok płynnie rośnie (skala, kamera, prędkości)
+- ⬜ **Płynny wzrost**: każde jedzenie od razu powiększa smoka (skala, kamera, prędkości),
+  progi rozmiaru → wyższe stadium (efekt + odblokowania), pasek wzrostu w HUD
 - ⬜ Sprawdzenie na telefonie: czy polowanie i rośnięcie to frajda?
 
 ## Faza 4 — Pisklę i etapy ⬜
 
-- ⬜ Model **pisklęcia** z generatora (proporcje: duża głowa, krótka szyja, małe skrzydła)
+- ⬜ **Płynne proporcje** pisklę → dorosły (skalowanie kości wg rozmiaru: duża głowa,
+  krótka szyja, małe skrzydła u pisklęcia)
 - ⬜ Etapy Pisklę → Młodzik → Dorosły → Pradawny; odblokowania (lot, ogień, łapanie)
 - ⬜ Wytrzymałość lotu młodzika, wyszarzone przyciski przed odblokowaniem
 
