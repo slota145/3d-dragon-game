@@ -16,6 +16,20 @@
 pozostaje z `.exe`/`.apk` — dlatego nazwa łatki zawiera wersję silnika. Android ma
 osobną łatkę (`game-4.7.2-android.pck`), bo używa innych formatów tekstur.
 
+## Łatka czy pełna aktualizacja? (`base_api`)
+
+Łatka `.pck` podmienia sceny, skrypty i modele, ale **nie** ustawienia projektu wbudowane
+w APK/EXE (mapowanie przycisków / input map, renderer, ustawienia eksportu, wersja silnika).
+Dlatego `project.godot` ma `config/base_api`, a łatki mają go w nazwie
+(`game-4.7.2-android-b2.pck`). Gra szuka tylko łatki ze swoim numerem.
+
+**Podbij `config/base_api`**, gdy zmieniasz: input map (nowa akcja/przycisk), cokolwiek
+w `[rendering]`, `[display]`, `[input_devices]` itp., `export_presets.cfg`, wersję Godota,
+dodajesz nową klasę `class_name` używaną jako typ w innych skryptach. Gracze ze starszą
+bazą dostaną wtedy „Pobierz grę” (pełne APK), a nie łatkę.
+
+(Lekcja z v0.3.0: łatka dodała przycisk Skrzydła, ale stare APK nie znało akcji `flap`.)
+
 ## Jak wydać nową wersję
 
 1. Podbij `config/version` w `project.godot` (np. `"0.1.0"` → `"0.2.0"`).

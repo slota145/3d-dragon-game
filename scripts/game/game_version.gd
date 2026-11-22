@@ -12,6 +12,11 @@ static func builtin() -> String:
 	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
 
 
+## Numer zgodności bazy (z project.godot wbudowanego w APK/EXE — łatka go nie zmienia).
+static func base_api() -> int:
+	return int(ProjectSettings.get_setting("application/config/base_api", 1))
+
+
 static func current() -> String:
 	return patched_version if patched_version != "" else builtin()
 

@@ -4,8 +4,9 @@
 # jeszcze nie ma, buduje grę i publikuje wydanie z plikami:
 #   DragonGame.exe              – pełna gra dla Windows
 #   DragonGame.apk              – pełna gra dla Androida (arm64)
-#   game-<silnik>.pck           – łatka dla aktualizatora (Windows)
-#   game-<silnik>-android.pck   – łatka dla aktualizatora (Android)
+#   game-<silnik>-b<N>.pck          – łatka dla aktualizatora (Windows)
+#   game-<silnik>-android-b<N>.pck  – łatka dla aktualizatora (Android)
+#   N = config/base_api z project.godot (numer zgodności bazy, patrz docs/RELEASE.md)
 # Podpis APK: sekrety ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS.
 # Bez nich workflow generuje klucz tymczasowy (nowe APK wtedy nie zainstaluje się „na” stare).
 # Czyli: podbij `config/version` w project.godot, wypchnij — gracze dostaną aktualizację.
@@ -125,18 +126,20 @@ jobs:
       - name: Eksport
         if: steps.ver.outputs.mode != 'skip'
         run: |
+          BASE_API=$(sed -n 's/^config\/base_api=\([0-9]*\)/\1/p' project.godot); BASE_API=${BASE_API:-1}
+          echo "base_api=$BASE_API"
           ~/godot/godot --headless --path . --import || true
           FILES=()
           if [ "$BUILD_WINDOWS" = "true" ]; then
             mkdir -p build/windows
             ~/godot/godot --headless --path . --export-release "Windows Desktop" build/windows/DragonGame.exe
-            ~/godot/godot --headless --path . --export-pack "Windows Desktop" "build/game-${GODOT_VERSION}.pck"
-            FILES+=(build/windows/DragonGame.exe "build/game-${GODOT_VERSION}.pck")
+            ~/godot/godot --headless --path . --export-pack "Windows Desktop" "build/game-${GODOT_VERSION}-b${BASE_API}.pck"
+            FILES+=(build/windows/DragonGame.exe "build/game-${GODOT_VERSION}-b${BASE_API}.pck")
           fi
           mkdir -p build/android
           ~/godot/godot --headless --path . --export-release "Android" build/android/DragonGame.apk
-          ~/godot/godot --headless --path . --export-pack "Android" "build/game-${GODOT_VERSION}-android.pck"
-          FILES+=(build/android/DragonGame.apk "build/game-${GODOT_VERSION}-android.pck")
+          ~/godot/godot --headless --path . --export-pack "Android" "build/game-${GODOT_VERSION}-android-b${BASE_API}.pck"
+          FILES+=(build/android/DragonGame.apk "build/game-${GODOT_VERSION}-android-b${BASE_API}.pck")
           for f in "${FILES[@]}"; do
             test -s "$f" || { echo "Brak pliku $f"; exit 1; }
           done

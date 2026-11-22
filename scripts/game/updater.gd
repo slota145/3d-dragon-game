@@ -1,8 +1,9 @@
 class_name Updater
 extends Control
-## Sprawdza najnowsze wydanie na GitHubie. Jeśli jest nowsze i zawiera łatkę
-## `game-<wersja silnika>.pck` zgodną z tym plikiem .exe, pozwala ją pobrać; po ponownym
-## uruchomieniu boot.gd wczytuje łatkę. Bez zgodnej łatki (np. nowy silnik) otwiera stronę wydania.
+## Sprawdza najnowsze wydanie na GitHubie. Jeśli jest nowsze i zawiera łatkę zgodną z tą
+## instalacją (`game-<silnik>[-android]-b<base_api>.pck`), pozwala ją pobrać; po ponownym
+## uruchomieniu boot.gd wczytuje łatkę. Bez zgodnej łatki (zmiana ustawień projektu, sterowania,
+## silnika) proponuje pobranie pełnej wersji (na Androidzie bezpośrednio plik APK).
 
 const REPO := "slota145/3d-dragon-game"
 
@@ -13,6 +14,7 @@ const REPO := "slota145/3d-dragon-game"
 var _latest_tag := ""
 var _patch_url := ""
 var _release_page := ""
+var _full_url := ""
 var _api: HTTPRequest
 var _download: HTTPRequest
 var _ready_to_restart := false
@@ -36,7 +38,12 @@ static func patch_asset_name() -> String:
 	var v := Engine.get_version_info()
 	var engine := "%d.%d.%d" % [v.major, v.minor, v.patch]
 	# Android potrzebuje innych formatów tekstur (ETC2/ASTC) niż Windows (S3TC/BPTC)
-	return "game-%s-android.pck" % engine if OS.has_feature("android") else "game-%s.pck" % engine
+	var platform := "-android" if OS.has_feature("android") else ""
+	return "game-%s%s-b%d.pck" % [engine, platform, GameVersion.base_api()]
+
+
+static func full_asset_name() -> String:
+	return "DragonGame.apk" if OS.has_feature("android") else "DragonGame.exe"
 
 
 func _on_release_info(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
@@ -49,13 +56,20 @@ func _on_release_info(result: int, code: int, _headers: PackedStringArray, body:
 	_latest_tag = str(data.get("tag_name", ""))
 	_release_page = str(data.get("html_url", ""))
 	for asset in data.get("assets", []):
-		if str(asset.get("name", "")) == patch_asset_name():
+		var asset_name := str(asset.get("name", ""))
+		if asset_name == patch_asset_name():
 			_patch_url = str(asset.get("browser_download_url", ""))
+		elif asset_name == full_asset_name():
+			_full_url = str(asset.get("browser_download_url", ""))
 	if _latest_tag == "" or GameVersion.compare(_latest_tag, GameVersion.current()) <= 0:
 		print("Updater: gra aktualna (", GameVersion.current(), ")")
 		return
-	_label.text = "Dostępna aktualizacja %s" % _latest_tag
-	_button.text = "Pobierz" if _patch_url != "" else "Otwórz stronę"
+	if _patch_url != "":
+		_label.text = "Dostępna aktualizacja %s" % _latest_tag
+		_button.text = "Pobierz"
+	else:
+		_label.text = "Dostępna wersja %s — wymaga pobrania pełnej gry" % _latest_tag
+		_button.text = "Pobierz grę"
 	_panel.visible = true
 
 
@@ -64,6 +78,8 @@ func _on_button_pressed() -> void:
 		_restart()
 	elif _patch_url != "":
 		_start_download()
+	elif _full_url != "":
+		OS.shell_open(_full_url)  # przeglądarka pobierze APK/EXE
 	elif _release_page != "":
 		OS.shell_open(_release_page)
 
