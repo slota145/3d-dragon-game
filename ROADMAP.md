@@ -76,12 +76,14 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 
 ## Faza 5 — Legowisko i świat ⬜
 
-- ⬜ Jaskinia-legowisko: sen = zapis + nowy dzień + leczenie; łagodna śmierć
+- ✅ Jaskinia-legowisko (0.7.0, `gen_lair.py`): wyklucie z jaja w gnieździe (intro nowej gry),
+  przycisk ŚPIJ w komorze = zapis + nowy dzień + leczenie; autozapis co 60 s i przy wyjściu;
+  łagodna śmierć — budzisz się w gnieździe, wzrost zostaje; „Nowa gra” w menu pauzy
+- ⬜ Cykl dnia i nocy (sen przewija do rana)
 - ⬜ Złoto i proceduralny stos skarbu; ulepszenia za złoto
 - ⬜ Baśniowy region **~4 × 4 km, gęsty** (zasada 20 s, węzły POI, punkty orientacyjne;
   `docs/GAME_DESIGN.md` → Skala i gęstość): teren, las, łąki, farmy, jezioro, góry
 - ⬜ Strumieniowanie świata kawałkami, LOD, MultiMesh (wydajność na telefonie)
-- ⬜ Cykl dnia i nocy
 
 ## Faza 6 — Ludzie ⬜
 

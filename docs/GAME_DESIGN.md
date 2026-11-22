@@ -129,6 +129,8 @@ Cel: świat jest **na tyle duży, żeby lot był przyjemnością**, ale **nigdy 
 ## Legowisko i skarb
 
 - **Jaskinia** w górach: sen = zapis gry + przejście do następnego dnia + leczenie.
+  Nowa gra zaczyna się w gnieździe w tej jaskini: pisklę wykluwa się z jaja (decyzja właściciela).
+  Zapis: pełny przy śnie (przycisk „Śpij” w komorze) + ciche autozapisy (telefon zabija grę w tle).
 - **Stos złota rośnie wizualnie** (generowany proceduralnie z monet, kielichów, koron).
 - Złoto to **prestiż i ulepszenia legowiska oraz smoka**: twardsze łuski, większy zasięg
   ognia, szybsza regeneracja, większa pojemność skarbca.
@@ -156,7 +158,6 @@ Cel: świat jest **na tyle duży, żeby lot był przyjemnością**, ale **nigdy 
 
 ## Otwarte pytania
 
-- Czy pisklę zaczyna w gnieździe/jaskini, w której wykluło się z jaja (intro)?
 - Jak daleko ma sięgać „łapanie”: tylko zwierzęta, czy też ludzie i wozy?
 - Mapa: jedna duża wyspa czy połączone regiony?
 - Nazwa gry.

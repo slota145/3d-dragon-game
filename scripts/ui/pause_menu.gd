@@ -13,6 +13,11 @@ const BUTTON_H := 84.0
 var stats: DragonStats
 ## Woła świat po zmianie stadium z okienka dewelopera (odświeżenie przycisków i HUD).
 var on_stats_changed: Callable
+## Nowa gra (kasuje zapis) — ustawia świat; pusty = opcja ukryta.
+var on_new_game: Callable
+
+var _new_game_button: Button
+var _new_game_armed: bool = false
 
 var _pause_button: Button
 var _dim: ColorRect
@@ -41,6 +46,9 @@ func is_open() -> bool:
 
 
 func open() -> void:
+	_new_game_armed = false
+	_new_game_button.text = "Nowa gra"
+	_new_game_button.visible = on_new_game.is_valid()
 	_menu.visible = true
 	_dim.visible = true
 	_pause_button.visible = false
@@ -134,6 +142,8 @@ func _build_menu() -> void:
 	_dev_toggle.toggled.connect(_on_dev_toggled)
 	box.add_child(_dev_toggle)
 
+	_new_game_button = _button("Nowa gra", _on_new_game)
+	box.add_child(_new_game_button)
 	box.add_child(_button("Wyjdź z gry", func() -> void: get_tree().quit()))
 
 
@@ -180,6 +190,16 @@ func _build_dev_panel() -> void:
 	var reset := _button("Reset wzrostu", _reset_growth, 26)
 	reset.custom_minimum_size = Vector2(0, 72)
 	_dev_body.add_child(reset)
+
+
+## Nowa gra wymaga drugiego naciśnięcia (potwierdzenie) — kasuje zapis.
+func _on_new_game() -> void:
+	if not _new_game_armed:
+		_new_game_armed = true
+		_new_game_button.text = "Na pewno? Zapis zniknie!"
+		return
+	if on_new_game.is_valid():
+		on_new_game.call()
 
 
 func _toggle_fold() -> void:

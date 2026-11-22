@@ -69,6 +69,15 @@ func _ready() -> void:
 		_yaw = target.global_rotation.y + PI
 
 
+## Natychmiast za smokiem (po teleporcie / wczytaniu gry).
+func snap_behind() -> void:
+	if not target:
+		return
+	_yaw = target.rotation.y + PI
+	global_position = target.global_position + Vector3.UP * height * clampf(pow(size_k, zoom_exponent), 0.18, 1.8)
+	reset_physics_interpolation()
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PAUSED or what == NOTIFICATION_UNPAUSED:
 		_touches.clear()  # puszczenia palców w czasie pauzy nie docierają — zacznij od zera

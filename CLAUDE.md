@@ -24,15 +24,15 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 |---|---|
 | `project.godot` | konfiguracja projektu, input map |
 | `scenes/` | sceny: `boot.tscn` (start) → `world.tscn` (świat + `dragon_player.tscn` + `hud.tscn`), `dragon_showcase.tscn` |
-| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `dragon_proportions.gd` (proporcje pisklęcia — modyfikator szkieletu), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
+| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `dragon_proportions.gd` (proporcje pisklęcia — modyfikator szkieletu), `lair.gd` (legowisko: jaskinia, gniazdo, jajo), `save_game.gd` (zapis `user://save.json`), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
 | `scripts/ui/` | interfejs: `touch_joystick.gd` (gałka), `touch_button.gd` (Skrzydła/Zryw/Ugryzienie/Ogień), `stat_bars.gd` (paski), `pause_menu.gd` (menu pauzy + okienko trybu deweloperskiego: stadia, reset wzrostu) |
 | `scripts/fx/`, `assets/shaders/` | efekty: `dust_burst.gd` (pył), `speed_lines.gdshader` (linie pędu) |
 | `scripts/` | pozostałe (np. `model_showcase.gd`) |
 | `assets/models/` | wygenerowane `.glb` (+ pliki `.import` — commitujemy je) |
 | `assets/textures/`, `materials/`, `audio/` | pozostałe zasoby |
-| `tools/blender/` | generatory assetów (Python + bpy): `gen_dragon.py` (smok), `gen_animals.py` (królik, owca), `meshkit.py` (lofty, rury, kolce, płaty, wagi), `common.py` (scena, materiały, render) |
+| `tools/blender/` | generatory assetów (Python + bpy): `gen_dragon.py` (smok), `gen_animals.py` (królik, owca), `gen_lair.py` (jaskinia-legowisko), `meshkit.py` (lofty, rury, kolce, płaty, wagi), `common.py` (scena, materiały, render) |
 | `assets/models/*_import.gd` | skrypty post-importu (materiały, pętle animacji) |
-| `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_flight.gd`, `test_hunt.gd`, `test_pause.gd`, `test_updater.gd`) |
+| `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_flight.gd`, `test_hunt.gd`, `test_pause.gd`, `test_lair.gd`, `test_updater.gd`) |
 | `export_presets.cfg`, `.github/workflows/release.yml` | eksport Android (+ Windows wstrzymany); CI buduje APK + łatkę `.pck` przy podbiciu wersji (`docs/RELEASE.md`) |
 | `docs/` | `GAME_DESIGN.md` (koncepcja), `SESSION_HANDOFF.md` (prompt dla następnej sesji), styl graficzny, wydania, research narzędzi |
 | `ROADMAP.md` | plan rozwoju i status |
@@ -51,7 +51,9 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
    Godot nada je przy imporcie (ścieżki `res://` wystarczą).
 5. Aktualizuj `ROADMAP.md`, gdy zadanie zostaje ukończone lub zmienia się plan.
 6. Po zmianach w sterowaniu uruchom `tools/test_walk.gd`, `tools/test_flight.gd` i `tools/test_hunt.gd`
-   (po zmianach w menu / HUD także `tools/test_pause.gd`)
+   (po zmianach w menu / HUD także `tools/test_pause.gd`, w legowisku / zapisie — `tools/test_lair.gd`).
+   Testy ustawiają `world.use_save = false` (piaskownica: bez zapisu i intro, start na łące);
+   `test_lair.gd` kasuje zapis gry.
    (test lotu sprawdza całą specyfikację sterowania właściciela — patrz nagłówek
    `scripts/game/dragon_controller.gd`). Parametry lotu są w `@export` (grupy w inspektorze).
    Nazwa klasy nie może kolidować z klasą Godota (np. `VirtualJoystick` istnieje w 4.7).

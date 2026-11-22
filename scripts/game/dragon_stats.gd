@@ -139,6 +139,22 @@ func rest(delta: float) -> void:
 	stamina = minf(100.0, stamina + stamina_regen * delta)
 
 
+## Wczytanie stanu z zapisu: bez napisów o nowym stadium.
+func restore(data: Dictionary) -> void:
+	pending_growth = float(data.get("pending_growth", 0.0))
+	health = float(data.get("health", 100.0))
+	hunger = float(data.get("hunger", 70.0))
+	stamina = float(data.get("stamina", 100.0))
+	size = clampf(float(data.get("size", start_size)), 0.5, max_size)
+	stage = stage_for(size)
+	size_changed.emit(size)
+
+
+func to_save() -> Dictionary:
+	return {"size": size, "pending_growth": pending_growth, "health": health, "hunger": hunger,
+		"stamina": stamina}
+
+
 ## Natychmiastowa zmiana rozmiaru (narzędzia dewelopera): bez trawienia zaległego wzrostu.
 func set_size_instant(s: float) -> void:
 	pending_growth = 0.0

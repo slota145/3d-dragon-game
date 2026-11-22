@@ -34,16 +34,24 @@ func _ready() -> void:
 		var ang := rng.randf() * TAU
 		var dist := rng.randf_range(60.0, 180.0)
 		var h := rng.randf_range(18.0, 45.0)
+		var pillar_pos := Vector3(cos(ang), 0, sin(ang)) * dist
+		if _in_lair(pillar_pos, 15.0):
+			continue
 		_add_peak(Vector3(cos(ang), 0, sin(ang)) * dist, h, rng.randf_range(6.0, 11.0), mountain_mats[0], null, rng)
 	_add_ground_details(rng)
 	for i in count:
 		var pos := Vector3(rng.randf_range(-area, area), 0.0, rng.randf_range(-area, area))
-		if pos.length() < clear_radius:
+		if pos.length() < clear_radius or _in_lair(pos, 4.0):
 			continue
 		if rng.randf() < 0.45:
 			_add_rock(pos, rng, rock_mat)
 		else:
 			_add_tree(pos, rng, trunk_mat, leaf_mats[rng.randi() % leaf_mats.size()])
+
+
+## Czy punkt leży na wzgórzu legowiska (tam nic nie stawiamy).
+func _in_lair(pos: Vector3, margin: float = 0.0) -> bool:
+	return Vector2(pos.x - Lair.POSITION.x, pos.z - Lair.POSITION.z).length() < Lair.RADIUS + margin
 
 
 func _flat_material(color: Color) -> StandardMaterial3D:
@@ -158,7 +166,10 @@ func _multimesh(mesh: Mesh, n: int, rng: RandomNumberGenerator, s_min: float, s_
 		var a := rng.randf() * TAU
 		var sc := rng.randf_range(s_min, s_max)
 		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * sc)
-		mm.set_instance_transform(i, Transform3D(basis, Vector3(cos(a) * r, 0.0, sin(a) * r)))
+		var pos := Vector3(cos(a) * r, 0.0, sin(a) * r)
+		if _in_lair(pos):
+			basis = basis.scaled(Vector3.ZERO)  # na wzgórzu / w jaskini — ukryj (stała liczba instancji)
+		mm.set_instance_transform(i, Transform3D(basis, pos))
 	var inst := MultiMeshInstance3D.new()
 	inst.multimesh = mm
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

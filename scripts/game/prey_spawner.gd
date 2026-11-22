@@ -55,7 +55,13 @@ func _random_point(r_min: float, r_max: float) -> Vector3:
 	var center := dragon.global_position if dragon else Vector3.ZERO
 	var a := _rng.randf() * TAU
 	var r := _rng.randf_range(r_min, r_max)
-	return Vector3(center.x + cos(a) * r, 0.0, center.z + sin(a) * r)
+	var p := Vector3(center.x + cos(a) * r, 0.0, center.z + sin(a) * r)
+	# nie na wzgórzu legowiska — wypchnij poza jego obrys
+	var off := p - Lair.POSITION
+	off.y = 0.0
+	if off.length() < Lair.RADIUS + 4.0:
+		p = Lair.POSITION + (off.normalized() if off.length() > 0.1 else Vector3.BACK) * (Lair.RADIUS + 4.0 + _rng.randf() * 20.0)
+	return p
 
 
 func _make(model: PackedScene, pos: Vector3) -> Prey:

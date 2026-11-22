@@ -12,6 +12,7 @@ var _stage_events: Array[String] = []
 func _init() -> void:
 	_out = OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else ""
 	var world: Node = load("res://scenes/world.tscn").instantiate()
+	world.set("use_save", false)  # piaskownica: bez zapisu i intro, start na łące
 	root.add_child(world)
 	await _frames(15)
 	_p = world.get_node("DragonPlayer")
