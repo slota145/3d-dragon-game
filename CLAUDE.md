@@ -13,7 +13,7 @@ plików, węzłów i zmiennych: **angielski**.
 ```bash
 tools/setup.sh                 # Godot, bpy (Blender), xvfb/mesa — idempotentne
 tools/check.sh                 # import + uruchomienie sceny głównej, fail przy błędach
-tools/screenshot.sh res://scenes/main.tscn "$PWD/build/shot.png" 60   # zrzut ekranu
+tools/screenshot.sh res://scenes/world.tscn "$PWD/build/shot.png" 60  # zrzut ekranu gry
 .venv-tools/bin/python tools/blender/gen_dragon.py -- --preview /tmp/prev   # smok + rendery Blendera
 tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=ref anim=Roar t=1.25
 ```
@@ -32,9 +32,9 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 | `assets/textures/`, `materials/`, `audio/` | pozostałe zasoby |
 | `tools/blender/` | generatory assetów (Python + bpy): `gen_dragon.py` (smok), `gen_animals.py` (królik, owca), `meshkit.py` (lofty, rury, kolce, płaty, wagi), `common.py` (scena, materiały, render) |
 | `assets/models/*_import.gd` | skrypty post-importu (materiały, pętle animacji) |
-| `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_updater.gd`) |
-| `export_presets.cfg`, `.github/workflows/release.yml` | eksport Windows; CI buduje `.exe` + łatkę przy wydaniu (`docs/RELEASE.md`) |
-| `docs/` | styl graficzny, research narzędzi, obrazki |
+| `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_flight.gd`, `test_hunt.gd`, `test_updater.gd`) |
+| `export_presets.cfg`, `.github/workflows/release.yml` | eksport Android (+ Windows wstrzymany); CI buduje APK + łatkę `.pck` przy podbiciu wersji (`docs/RELEASE.md`) |
+| `docs/` | `GAME_DESIGN.md` (koncepcja), `SESSION_HANDOFF.md` (prompt dla następnej sesji), styl graficzny, wydania, research narzędzi |
 | `ROADMAP.md` | plan rozwoju i status |
 
 ## Zasady pracy
@@ -60,6 +60,15 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 7. **Wydania:** podbij `config/version`. Jeśli zmieniasz input map / ustawienia projektu /
    eksportu / silnik — podbij też `config/base_api` (inaczej łatka zepsuje grę u graczy;
    patrz `docs/RELEASE.md`).
+8. **Przekazanie sesji (handoff).** Gdy sesja robi się długa (dużo zadań, długa rozmowa,
+   kontekst bliski limitu) albo właściciel kończy pracę, **przygotuj prompt dla następnej
+   sesji**: stan projektu i wersji, co zrobiono, otwarte problemy / uwagi właściciela,
+   następny krok z `ROADMAP.md` i najważniejsze pliki. Dopisz go na górze
+   `docs/SESSION_HANDOFF.md` (z datą i wersją), zacommituj i **wklej też w odpowiedzi**,
+   żeby właściciel mógł go skopiować do nowej sesji. Nowa sesja zaczyna od przeczytania
+   `docs/SESSION_HANDOFF.md`.
+9. **Git:** pracujemy na `main` (gałąź domyślna). Po zakończonym zadaniu: testy → commit →
+   push na `main`.
 
 ## Konwencje 3D
 
