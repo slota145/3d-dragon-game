@@ -676,26 +676,84 @@ def two_bone_ik(root: Vector, target: Vector, len_a: float, len_b: float, pole: 
     return root + u * along + v * h
 
 
+def planted_wing(s: int, sfx: str, wrist: Vector, body_off: Vector = V(0, 0, 0), breath: float = 0.0):
+    """Skrzydło złożone, nadgarstek w punkcie `wrist` (świat), łokieć w górze i z tyłu."""
+    S, E, W = (mx(ARM[k], s) for k in ("shoulder", "elbow", "wrist"))
+    S = S + body_off
+    elbow = two_bone_ik(S, wrist, (E - S).length, (W - E).length, V(0.55 * s, 0.9, 0.7 + breath))
+    up_arm = (elbow - wrist).normalized()
+    back, out = V(0, 1, 0), V(s, 0, 0)
+    t = {
+        f"UpperArm.{sfx}": elbow - S,
+        f"Forearm.{sfx}": wrist - elbow,
+        f"Thumb.{sfx}": Quaternion(V(1, 0, 0), -0.45) @ THUMB_DIR,
+        f"Hand.{sfx}": up_arm + back * 0.2,
+    }
+    for k in range(4):
+        t[f"Finger{k + 1}.{sfx}"] = up_arm * 0.8 + back * (0.7 + 0.35 * k) + out * 0.12 - V(0, 0, 0.1 * k)
+    return aim_chain(t)
+
+
 def standing_wings(breath: float = 0.0) -> dict[str, list]:
     """Wywerna stoi na złożonych skrzydłach: nadgarstki na ziemi, łokcie w górze i z tyłu,
     palce z błoną złożone wzdłuż ramienia, szpony skierowane do przodu w ziemię."""
     rots = {}
     for s, sfx in SIDES:
-        S, E, W = (mx(ARM[k], s) for k in ("shoulder", "elbow", "wrist"))
-        wrist = mx(WRIST_GROUND, s)
-        elbow = two_bone_ik(S, wrist, (E - S).length, (W - E).length, V(0.55 * s, 0.9, 0.7 + breath))
-        up_arm = (elbow - wrist).normalized()
-        back, out = V(0, 1, 0), V(s, 0, 0)
-        t = {
-            f"UpperArm.{sfx}": elbow - S,
-            f"Forearm.{sfx}": wrist - elbow,
-            f"Thumb.{sfx}": Quaternion(V(1, 0, 0), -0.45) @ THUMB_DIR,
-            f"Hand.{sfx}": up_arm + back * 0.2,
-        }
-        for k in range(4):
-            t[f"Finger{k + 1}.{sfx}"] = up_arm * 0.8 + back * (0.7 + 0.35 * k) + out * 0.12 - V(0, 0, 0.1 * k)
-        rots.update(aim_chain(t))
+        rots.update(planted_wing(s, sfx, mx(WRIST_GROUND, s), breath=breath))
     return rots
+
+
+def planted_leg(s: int, sfx: str, ball: Vector, body_off: Vector, toe_lift: float = 0.0):
+    """Noga z IK: biodro (przesunięte z ciałem) -> kolano -> kostka -> śródstopie w punkcie `ball`."""
+    L = {k: mx(v, s) for k, v in LEG.items()}
+    hip = L["hip"] + body_off
+    ankle = ball + (L["ankle"] - L["ball"])
+    knee = two_bone_ik(hip, ankle, (L["knee"] - L["hip"]).length, (L["ankle"] - L["knee"]).length, V(0, -1, 0.2))
+    return aim_chain({
+        f"Thigh.{sfx}": knee - hip,
+        f"Shin.{sfx}": ankle - knee,
+        f"Foot.{sfx}": ball - ankle,
+        f"Toes.{sfx}": V(0, -1, toe_lift),
+    })
+
+
+WALK_STRIDE = 1.6  # m na cykl
+WALK_FRAMES = 32  # 24 fps -> 1.33 s -> 1.2 m/s przy speed_scale = 1
+WALK_DUTY = 0.65
+
+
+def step_offset(p: float) -> tuple[float, float]:
+    """Faza kroku p∈[0,1) -> (przesunięcie wzdłuż Y względem ciała, uniesienie)."""
+    p %= 1.0
+    if p < WALK_DUTY:  # podparcie: stopa jedzie do tyłu względem ciała
+        return -WALK_STRIDE / 2 + WALK_STRIDE * p / WALK_DUTY, 0.0
+    q = (p - WALK_DUTY) / (1 - WALK_DUTY)
+    smooth = q * q * (3 - 2 * q)
+    return WALK_STRIDE / 2 - WALK_STRIDE * smooth, math.sin(math.pi * q)
+
+
+def pose_walk(t: float):
+    """Chód czworonożny (sekwencja boczna): lewa noga, lewe skrzydło, prawa noga, prawe skrzydło."""
+    ph = 2 * math.pi * t
+    body = V(0.04 * math.sin(ph), 0, -0.06 + 0.05 * math.cos(2 * ph))
+    rots = {}
+    phases = {"L": (0.0, 0.25), "R": (0.5, 0.75)}
+    for s, sfx in SIDES:
+        leg_p, wing_p = phases[sfx]
+        dy, lift = step_offset(t + leg_p)
+        ball = mx(LEG["ball"], s) + V(0, dy, 0.32 * lift)
+        rots.update(planted_leg(s, sfx, ball, body, toe_lift=0.4 * lift))
+        dy, lift = step_offset(t + wing_p)
+        wrist = mx(WRIST_GROUND, s) + V(0, dy, 0.45 * lift)
+        rots.update(planted_wing(s, sfx, wrist, body))
+    rots.update({
+        "Neck1": [(AX, 0.03 * math.cos(2 * ph))],
+        "Neck2": [(AZ, 0.04 * math.sin(ph))],
+        "Head": [(AX, -0.03 * math.cos(2 * ph + 0.6)), (AZ, -0.04 * math.sin(ph))],
+    })
+    for k in range(1, 7):
+        rots[f"Tail{k}"] = [(AZ, 0.08 * math.sin(ph - k * 0.5)), (AX, 0.015 * math.cos(2 * ph - k * 0.4))]
+    return rots, {"Hips": body}
 
 
 def tucked_legs(rots: dict) -> None:
@@ -805,6 +863,7 @@ def build_animations(arm) -> None:
     RIG = arm
     make_action(arm, "Idle", 144, pose_idle)
     make_action(arm, "Glide", 96, pose_glide)
+    make_action(arm, "Walk", WALK_FRAMES, pose_walk)
     make_action(arm, "Fly", 36, pose_fly)
     make_action(arm, "Roar", 60, pose_roar, loop=False)
 

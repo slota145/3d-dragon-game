@@ -1,0 +1,75 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/touch_joystick.gd" id="1_joy"]
+[ext_resource type="Script" path="res://scripts/game/updater.gd" id="2_upd"]
+
+[node name="HUD" type="CanvasLayer"]
+
+[node name="Joystick" type="Control" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = -380.0
+offset_right = 380.0
+offset_bottom = -60.0
+grow_vertical = 0
+script = ExtResource("1_joy")
+
+[node name="Help" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 900.0
+offset_bottom = 90.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.6)
+theme_override_font_sizes/font_size = 22
+text = "Ruch: gałka / WASD / lewa gałka pada
+Kamera: przeciągnij ekran / PPM / Q,E / prawa gałka pada"
+
+[node name="Version" type="Label" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -44.0
+offset_right = 400.0
+offset_bottom = -12.0
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 0.6)
+theme_override_font_sizes/font_size = 18
+text = "v0.0.0"
+
+[node name="Updater" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -460.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 160.0
+grow_horizontal = 0
+mouse_filter = 2
+script = ExtResource("2_upd")
+
+[node name="Panel" type="PanelContainer" parent="Updater"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="Updater/Panel"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Updater/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Dostępna aktualizacja"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Button" type="Button" parent="Updater/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Pobierz"

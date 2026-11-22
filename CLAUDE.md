@@ -20,13 +20,16 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 | Ścieżka | Zawartość |
 |---|---|
 | `project.godot` | konfiguracja projektu, input map |
-| `scenes/` | sceny `.tscn` (`main.tscn` = scena startowa) |
-| `scripts/` | skrypty GDScript |
+| `scenes/` | sceny: `boot.tscn` (start) → `world.tscn` (świat + `dragon_player.tscn` + `hud.tscn`), `dragon_showcase.tscn` |
+| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `follow_camera.gd`, `updater.gd`, `game_version.gd` |
+| `scripts/ui/` | interfejs: `touch_joystick.gd` (gałka) |
+| `scripts/` | pozostałe (np. `model_showcase.gd`) |
 | `assets/models/` | wygenerowane `.glb` (+ pliki `.import` — commitujemy je) |
 | `assets/textures/`, `materials/`, `audio/` | pozostałe zasoby |
 | `tools/blender/` | generatory assetów (Python + bpy): `gen_dragon.py` (smok), `meshkit.py` (lofty, rury, kolce, płaty, wagi), `common.py` (scena, materiały, render) |
 | `assets/models/*_import.gd` | skrypty post-importu (materiały, pętle animacji) |
-| `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu |
+| `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_updater.gd`) |
+| `export_presets.cfg`, `.github/workflows/release.yml` | eksport Windows; CI buduje `.exe` + łatkę przy wydaniu (`docs/RELEASE.md`) |
 | `docs/` | styl graficzny, research narzędzi, obrazki |
 | `ROADMAP.md` | plan rozwoju i status |
 
@@ -43,6 +46,8 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
    sceny lepiej budować skryptem lub w edytorze. Nie wpisuj ręcznie `uid://` —
    Godot nada je przy imporcie (ścieżki `res://` wystarczą).
 5. Aktualizuj `ROADMAP.md`, gdy zadanie zostaje ukończone lub zmienia się plan.
+6. Po zmianach w sterowaniu uruchom `tools/test_walk.gd` (patrz `docs/RELEASE.md`).
+   Nazwa klasy nie może kolidować z klasą Godota (np. `VirtualJoystick` istnieje w 4.7).
 
 ## Konwencje 3D
 

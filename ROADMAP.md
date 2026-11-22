@@ -27,10 +27,13 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 
 ## Faza 2 — Prototyp lotu (vertical slice mechaniki) ⬜
 
-- ⬜ Kontroler smoka: chodzenie po ziemi ↔ start ↔ lot ↔ lądowanie
+- ✅ Chód po ziemi: animacja Walk (IK nóg i nadgarstków), kontroler, kamera, świat testowy
+- ✅ Sterowanie: gałka na ekranie (dotyk/mysz), WASD, pad
+- ✅ Build Windows (.exe) + aktualizacje w grze z GitHub Releases + CI (`docs/RELEASE.md`)
+- ⬜ Start ↔ lot ↔ lądowanie
 - ⬜ Model lotu: prędkość, przechylenie (bank), nurkowanie, szybowanie, wznoszenie
 - ⬜ Kamera trzecioosobowa z opóźnieniem i dynamicznym FOV przy prędkości
-- ⬜ Sterowanie: klawiatura + mysz, gamepad
+- ⬜ Build Android (APK) — gałka już działa dotykiem
 - ✅ Szkielet (rig) smoka + animacje: machanie skrzydłami, szybowanie, idle (rozglądanie się, oddech), ryk
 - ⬜ Kolejne animacje: chód, start/lądowanie, zianie ogniem, obrót w locie
 - ⬜ Teren testowy: wzgórza, góry, woda (heightmap lub generator)

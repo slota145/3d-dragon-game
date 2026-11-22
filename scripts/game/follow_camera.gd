@@ -1,0 +1,60 @@
+class_name FollowCamera
+extends Node3D
+## Kamera trzecioosobowa: podąża za celem, obrót prawą gałką pada, Q/E, przeciąganiem myszy
+## lub palca po ekranie. Gdy gracz nie obraca kamerą, powoli ustawia się za smokiem.
+
+@export var target: Node3D
+@export var height: float = 3.0
+@export var distance: float = 17.0
+@export var pitch_deg: float = -16.0
+@export var follow_speed: float = 6.0
+@export var stick_speed: float = 2.2
+@export var drag_sensitivity: float = 0.006
+@export var auto_align_delay: float = 2.0
+@export var auto_align_speed: float = 1.2
+
+@onready var _arm: SpringArm3D = $SpringArm3D
+
+var _yaw: float = PI
+var _pitch: float = 0.0
+var _idle_time: float = 0.0
+
+
+func _ready() -> void:
+	top_level = true
+	_pitch = deg_to_rad(pitch_deg)
+	_arm.spring_length = distance
+	if target:
+		global_position = target.global_position + Vector3.UP * height
+		_yaw = target.global_rotation.y + PI
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	var rel := Vector2.ZERO
+	if event is InputEventScreenDrag:
+		rel = event.relative
+	elif event is InputEventMouseMotion and event.button_mask & (MOUSE_BUTTON_MASK_RIGHT | MOUSE_BUTTON_MASK_MIDDLE):
+		rel = event.relative
+	if rel != Vector2.ZERO:
+		_yaw -= rel.x * drag_sensitivity
+		_pitch = clampf(_pitch - rel.y * drag_sensitivity, deg_to_rad(-60), deg_to_rad(10))
+		_idle_time = 0.0
+
+
+func _process(delta: float) -> void:
+	if not target:
+		return
+	var look := Input.get_vector("cam_left", "cam_right", "cam_up", "cam_down")
+	if look != Vector2.ZERO:
+		_yaw -= look.x * stick_speed * delta
+		_pitch = clampf(_pitch - look.y * stick_speed * 0.6 * delta, deg_to_rad(-60), deg_to_rad(10))
+		_idle_time = 0.0
+	else:
+		_idle_time += delta
+	var body := target as CharacterBody3D
+	if _idle_time > auto_align_delay and body and Vector2(body.velocity.x, body.velocity.z).length() > 0.3:
+		var behind := target.global_rotation.y + PI
+		_yaw = rotate_toward(_yaw, behind, auto_align_speed * delta)
+	var goal := target.global_position + Vector3.UP * height
+	global_position = global_position.lerp(goal, clampf(follow_speed * delta, 0.0, 1.0))
+	rotation = Vector3(_pitch, _yaw, 0.0)
