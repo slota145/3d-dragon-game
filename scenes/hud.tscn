@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/touch_joystick.gd" id="1_joy"]
 [ext_resource type="Script" path="res://scripts/game/updater.gd" id="2_upd"]
+[ext_resource type="Script" path="res://scripts/ui/touch_button.gd" id="3_btn"]
 
 [node name="HUD" type="CanvasLayer"]
 
@@ -16,6 +17,30 @@ offset_bottom = -60.0
 grow_vertical = 0
 script = ExtResource("1_joy")
 
+[node name="FlapButton" type="Control" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -340.0
+offset_top = -340.0
+offset_right = -60.0
+offset_bottom = -60.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("3_btn")
+
+[node name="Status" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 96.0
+offset_right = 700.0
+offset_bottom = 130.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.9)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.6)
+theme_override_font_sizes/font_size = 24
+text = ""
+
 [node name="Help" type="Label" parent="."]
 offset_left = 24.0
 offset_top = 20.0
@@ -24,8 +49,8 @@ offset_bottom = 90.0
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.6)
 theme_override_font_sizes/font_size = 22
-text = "Ruch: gałka / WASD / lewa gałka pada
-Kamera: przeciągnij ekran / PPM / Q,E / prawa gałka pada"
+text = "Gałka: chód / w locie: przód = nurkuj, tył = w górę, boki = skręt
+Skrzydła (spacja / A): tap = skok / machnięcie, przytrzymaj = start / zawis"
 
 [node name="Version" type="Label" parent="."]
 anchors_preset = 2

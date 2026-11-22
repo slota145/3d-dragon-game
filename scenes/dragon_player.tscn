@@ -14,4 +14,8 @@ floor_snap_length = 0.5
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0.8)
 shape = SubResource("BoxShape3D_body")
 
-[node name="Model" parent="." instance=ExtResource("2_dragon")]
+[node name="Visual" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+
+[node name="Model" parent="Visual" instance=ExtResource("2_dragon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 0)

@@ -30,7 +30,10 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Chód po ziemi: animacja Walk (IK nóg i nadgarstków), kontroler, kamera, świat testowy
 - ✅ Sterowanie: gałka na ekranie (dotyk/mysz), WASD, pad
 - ✅ Build Windows (.exe) + aktualizacje w grze z GitHub Releases + CI (`docs/RELEASE.md`)
-- ⬜ Start ↔ lot ↔ lądowanie
+- ✅ Skok, start, lot: przycisk „Skrzydła” (tap/przytrzymanie), zawis, machanie,
+  szybowanie z modelem nośności i przeciągnięcia, nurkowanie, wyrównanie z rozpędu, lądowanie
+- ✅ Animacja Dive, góry i skalne słupy z kolizją, kamera lotu, status wys./prędkości
+- ⬜ Dopracowanie odczucia lotu na telefonie (strojenie parametrów w `dragon_controller.gd`)
 - ⬜ Model lotu: prędkość, przechylenie (bank), nurkowanie, szybowanie, wznoszenie
 - ⬜ Kamera trzecioosobowa z opóźnieniem i dynamicznym FOV przy prędkości
 - ✅ Build Android (APK, arm64) + osobna łatka `.pck` dla Androida w aktualizatorze

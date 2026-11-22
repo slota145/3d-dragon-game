@@ -48,7 +48,9 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
    sceny lepiej budować skryptem lub w edytorze. Nie wpisuj ręcznie `uid://` —
    Godot nada je przy imporcie (ścieżki `res://` wystarczą).
 5. Aktualizuj `ROADMAP.md`, gdy zadanie zostaje ukończone lub zmienia się plan.
-6. Po zmianach w sterowaniu uruchom `tools/test_walk.gd` (patrz `docs/RELEASE.md`).
+6. Po zmianach w sterowaniu uruchom `tools/test_walk.gd` i `tools/test_flight.gd`
+   (test lotu sprawdza całą specyfikację sterowania właściciela — patrz nagłówek
+   `scripts/game/dragon_controller.gd`). Parametry lotu są w `@export` (grupy w inspektorze).
    Nazwa klasy nie może kolidować z klasą Godota (np. `VirtualJoystick` istnieje w 4.7).
 
 ## Konwencje 3D

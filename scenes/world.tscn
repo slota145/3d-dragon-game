@@ -32,7 +32,7 @@ roughness = 1.0
 
 [sub_resource type="PlaneMesh" id="Mesh_ground"]
 material = SubResource("Mat_ground")
-size = Vector2(400, 400)
+size = Vector2(2000, 2000)
 
 [sub_resource type="WorldBoundaryShape3D" id="Shape_ground"]
 

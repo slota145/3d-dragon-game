@@ -15,8 +15,11 @@ w **Blenderze** (skrypty Pythona).
 
 Gra sama sprawdza aktualizacje na GitHubie (przycisk w prawym górnym rogu).
 
-Sterowanie: gałka na ekranie (mysz/dotyk), WASD/strzałki lub pad; kamera:
-przeciąganie ekranu, prawy przycisk myszy, Q/E lub prawa gałka pada.
+Sterowanie:
+- **gałka** (lewy dół): chód; w locie: przód = nurkowanie, tył = w górę / wyrównanie, boki = skręt
+- **Skrzydła** (prawy dół, spacja, A na padzie): na ziemi tap = skok, przytrzymanie = start;
+  w powietrzu tap = machnięcie w górę (z gałką w przód: w przód i w górę), trzymanie = zawis
+- **kamera:** przeciąganie ekranu (PPM, Q/E, prawa gałka pada)
 
 ## Uruchomienie ze źródeł
 

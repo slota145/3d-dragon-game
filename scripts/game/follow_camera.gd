@@ -12,6 +12,12 @@ extends Node3D
 @export var drag_sensitivity: float = 0.006
 @export var auto_align_delay: float = 2.0
 @export var auto_align_speed: float = 1.2
+@export_group("Lot")
+@export var flight_distance: float = 26.0
+@export var flight_height: float = 4.5
+@export var flight_follow_speed: float = 9.0
+@export var flight_align_delay: float = 0.6
+@export var flight_align_speed: float = 2.2
 
 @onready var _arm: SpringArm3D = $SpringArm3D
 
@@ -24,6 +30,8 @@ func _ready() -> void:
 	top_level = true
 	_pitch = deg_to_rad(pitch_deg)
 	_arm.spring_length = distance
+	if target is CollisionObject3D:
+		_arm.add_excluded_object(target.get_rid())
 	if target:
 		global_position = target.global_position + Vector3.UP * height
 		_yaw = target.global_rotation.y + PI
@@ -51,10 +59,15 @@ func _process(delta: float) -> void:
 		_idle_time = 0.0
 	else:
 		_idle_time += delta
+	var flying: bool = target.has_method("is_flying") and target.is_flying()
+	_arm.spring_length = lerpf(_arm.spring_length, flight_distance if flying else distance, clampf(1.5 * delta, 0.0, 1.0))
 	var body := target as CharacterBody3D
-	if _idle_time > auto_align_delay and body and Vector2(body.velocity.x, body.velocity.z).length() > 0.3:
+	var delay := flight_align_delay if flying else auto_align_delay
+	var align_speed := flight_align_speed if flying else auto_align_speed
+	if _idle_time > delay and body and Vector2(body.velocity.x, body.velocity.z).length() > 0.3:
 		var behind := target.global_rotation.y + PI
-		_yaw = rotate_toward(_yaw, behind, auto_align_speed * delta)
-	var goal := target.global_position + Vector3.UP * height
-	global_position = global_position.lerp(goal, clampf(follow_speed * delta, 0.0, 1.0))
+		_yaw = rotate_toward(_yaw, behind, align_speed * delta)
+	var goal := target.global_position + Vector3.UP * (flight_height if flying else height)
+	var follow := flight_follow_speed if flying else follow_speed
+	global_position = global_position.lerp(goal, clampf(follow * delta, 0.0, 1.0))
 	rotation = Vector3(_pitch, _yaw, 0.0)

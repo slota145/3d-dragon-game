@@ -789,6 +789,31 @@ def pose_fly(t: float):
     return rots, locs
 
 
+def pose_dive(t: float):
+    """Nurkowanie: skrzydła złożone do tyłu wzdłuż ciała (jak sokół), łapy podkulone,
+    szyja wyciągnięta, lekkie drżenie końcówek."""
+    ph = 2 * math.pi * t
+    rots = {}
+    for s, sfx in SIDES:
+        flutter = 0.04 * math.sin(ph * 2 + s)
+        t_dirs = {
+            f"UpperArm.{sfx}": V(0.75 * s, 0.55, 0.22),
+            f"Forearm.{sfx}": V(0.5 * s, 0.86, 0.02),
+            f"Thumb.{sfx}": Quaternion(V(1, 0, 0), 0.6) @ THUMB_DIR,
+            f"Hand.{sfx}": V(0.22 * s, 1.0, 0.0),
+        }
+        for k in range(4):
+            t_dirs[f"Finger{k + 1}.{sfx}"] = V((0.24 - 0.05 * k) * s, 1.0, -0.04 * k + flutter)
+        rots.update(aim_chain(t_dirs))
+    tucked_legs(rots)
+    rots["Neck1"] = [(AX, -0.2)]
+    rots["Neck2"] = [(AX, -0.05)]
+    rots["Head"] = [(AX, 0.12 + 0.02 * math.sin(ph))]
+    for k in range(1, 7):
+        rots[f"Tail{k}"] = [(AX, -0.03), (AZ, 0.02 * math.sin(ph - k * 0.6))]
+    return rots, {}
+
+
 def pose_glide(t: float):
     ph = 2 * math.pi * t
     rots = {}
@@ -863,6 +888,7 @@ def build_animations(arm) -> None:
     RIG = arm
     make_action(arm, "Idle", 144, pose_idle)
     make_action(arm, "Glide", 96, pose_glide)
+    make_action(arm, "Dive", 24, pose_dive)
     make_action(arm, "Walk", WALK_FRAMES, pose_walk)
     make_action(arm, "Fly", 36, pose_fly)
     make_action(arm, "Roar", 60, pose_roar, loop=False)
