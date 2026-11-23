@@ -23,10 +23,10 @@ const STAGE_MIN_SIZE := [0.0, 4.0, 9.0, 16.0]
 @export var growth_rate: float = 0.1
 ## Trawienie: zjedzony wzrost przybywa płynnie (m/s, minimum) — bez skoków rozmiaru.
 @export var digest_speed: float = 0.35
-## Spadek głodu (pkt/s): 100 -> 0 w ok. 3,7 min.
-@export var hunger_decay: float = 0.45
+## Spadek głodu (pkt/s): 100 -> 0 w ok. 9 min (prawie cały dzień gry).
+@export var hunger_decay: float = 0.18
 ## Ile głodu zaspokaja 1 punkt jedzenia.
-@export var hunger_per_food: float = 12.0
+@export var hunger_per_food: float = 30.0
 @export var starve_damage: float = 2.0
 @export_group("Wytrzymałość lotu")
 ## Odnowa siły lotu na ziemi (pkt/s) i opóźnienie po lądowaniu (s).
@@ -106,7 +106,8 @@ func can_fire() -> bool:
 func eat(food: float, prey_size: float, prey_name: String) -> void:
 	var meal := food * clampf(prey_size / size, 0.05, 1.0)
 	var growth := size * growth_rate * meal
-	hunger = minf(100.0, hunger + food * hunger_per_food * clampf(2.0 * prey_size / size, 0.1, 1.0))
+	# mała ofiara syci dużego smoka słabiej, ale zawsze co najmniej w 30%
+	hunger = minf(100.0, hunger + food * hunger_per_food * clampf(3.0 * prey_size / size, 0.3, 1.0))
 	pending_growth += growth
 	ate.emit(meal, prey_name, growth)
 

@@ -97,6 +97,8 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   przy każdym (na drzewie i łuku — tylko lotem); blisko łąki gęściej
 - ⬜ Farmy i wioski — w fazie 6
 
+- ✅ Balans głodu (0.9.1): głód spada 2,5× wolniej (~9 min), posiłki sycą 2,5× mocniej (uwaga właściciela)
+
 ## Faza 6 — Ludzie ⬜
 
 - ⬜ Wieśniacy, pasterze, drwale, myśliwi (łuki, sieci, pułapki), wozy kupieckie
