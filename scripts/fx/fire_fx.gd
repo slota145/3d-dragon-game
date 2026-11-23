@@ -20,7 +20,8 @@ static func _flame_material() -> StandardMaterial3D:
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.vertex_color_use_as_albedo = true
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	# zwykłe mieszanie (nie „add”) — w dzień płomienie zostają pomarańczowe, nie bieleją
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	return m
 
@@ -33,8 +34,8 @@ static func _particles(amount: int, lifetime: float, size: float) -> CPUParticle
 	quad.size = Vector2.ONE * size
 	quad.material = _flame_material()
 	p.mesh = quad
-	p.color_ramp = _ramp([Color(1.0, 0.95, 0.6, 1.0), Color(1.0, 0.55, 0.1, 0.9), Color(0.8, 0.2, 0.05, 0.6),
-		Color(0.2, 0.18, 0.16, 0.0)])
+	p.color_ramp = _ramp([Color(1.0, 0.88, 0.35, 0.95), Color(1.0, 0.5, 0.06, 0.92), Color(0.78, 0.17, 0.03, 0.75),
+		Color(0.16, 0.12, 0.1, 0.0)])
 	var grow := Curve.new()
 	grow.add_point(Vector2(0.0, 0.5))
 	grow.add_point(Vector2(0.4, 1.0))
@@ -78,7 +79,7 @@ static func explosion(parent: Node, at: Vector3, radius: float) -> void:
 
 ## Strumień ognia z pyska (dziecko smoka; emitting włącza/wyłącza DragonFire).
 static func flame_stream() -> CPUParticles3D:
-	var p := _particles(70, 0.55, 1.0)
+	var p := _particles(90, 0.6, 1.4)
 	p.local_coords = false
 	p.direction = Vector3(0, 0, 1)
 	p.spread = 9.0
