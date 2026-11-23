@@ -32,6 +32,7 @@ signal dashed
 signal bit
 signal killed_prey(prey: Prey)
 signal exhausted  ## próba machnięcia / startu bez siły lotu
+signal hit_by_arrow(damage: float)
 
 enum State { GROUND, AIR }
 
@@ -210,6 +211,11 @@ func _move_k() -> float:
 ## Skala prędkości lotu: młodzik lata wyraźnie wolniej niż dorosły.
 func _fly_k() -> float:
 	return clampf(sqrt(_k), 0.35, 1.3)
+
+
+## Środek ciała smoka (cel strzał, trafienia).
+func body_center() -> Vector3:
+	return global_position + Vector3.UP * (0.22 * stats.size + 0.1)
 
 
 func size_k() -> float:

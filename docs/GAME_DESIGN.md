@@ -81,6 +81,10 @@ Pisklę nie ma ognia ani lotu: przyciski są wtedy wyszarzone, a ich odblokowani
 
 ## Ludzie i rozgłos
 
+> **Decyzje właściciela (faza 6):** reakcja ludzi zależy od wielkości smoka — pisklę wieśniacy
+> przeganiają widłami, młodzika się boją (cofają się), przed dorosłym uciekają w panice.
+> Smok **może zjadać ludzi** (duży wzrost rozgłosu). Rozgłos ściąga myśliwych z łukami.
+
 - **Siedliska**: farmy i pastwiska (łatwe jedzenie, ale ryzyko), wioski, zamki.
 - **Ludzie w drodze**: drwale, pasterze, wozy kupieckie (złoto!), patrole, myśliwi z pułapkami.
 - **Rozgłos** (jak poziom poszukiwania): owca z pastwiska to mały rozgłos, spalona stodoła

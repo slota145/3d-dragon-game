@@ -106,10 +106,11 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Ludzie (0.10.0, `gen_people.py`, `villager.gd`): wieśniacy z widłami i pasterze; reakcja wg wielkości
   smoka: pisklę — dźgają widłami, młodzik — cofają się, dorosły — panika; smok może ich zjeść;
   zjedzeni mieszkańcy i owce wracają następnego dnia
-- ⬜ Rozgłos + myśliwi z łukami (decyzja właściciela: zakres pierwszej wersji fazy 6)
+- ✅ Rozgłos + myśliwi (0.10.1, `arrow.gd`): rozgłos rośnie od zjadania ludzi (+8), owiec z farm (+3)
+  i straszenia (+0,4), opada powoli i przez noc; poziomy Nieznany / Plotka / Postrach / Legenda →
+  0/1/2/3 myśliwych z łukami na wioskę (strzelają z dystansu z wyprzedzeniem, z bliska odskakują)
+- ⬜ Danina vs. palenie i łupienie wiosek; odbudowa (po ogniu — faza 7); wozy kupieckie
 
-- ⬜ Wieśniacy, pasterze, drwale, myśliwi (łuki, sieci, pułapki), wozy kupieckie
-- ⬜ Farmy i wioski; **rozgłos** i odwet
 - ⬜ Danina vs. palenie i łupienie wiosek; odbudowa
 
 ## Faza 7 — Ogień i łapanie ⬜

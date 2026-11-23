@@ -18,6 +18,9 @@ var sheep_model: PackedScene
 var _meshes: Dictionary = {}
 var _people: Dictionary = {}  # rola -> Array[[name, mesh, pivot Transform3D]]
 var _residents: Array[Node3D] = []
+var _hunters: Array[Villager] = []
+## Myśliwi na wioskę (zależy od rozgłosu smoka; ustawia świat).
+var hunters_per_village: int = 0
 
 
 func _ready() -> void:
@@ -132,6 +135,30 @@ func repopulate() -> void:
 		if sheep_model:
 			for k in sheep_per_pen:
 				_spawn_sheep(pc + Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-4, 4)), pc)
+	_hunters.clear()
+	set_hunters(hunters_per_village)
+
+
+## Myśliwi z łukami w każdej wiosce (więcej przy większym rozgłosie).
+func set_hunters(per_village: int) -> void:
+	hunters_per_village = per_village
+	_hunters = _hunters.filter(func(h: Villager) -> bool: return is_instance_valid(h) and h.is_alive())
+	for i in Terrain.VILLAGES.size():
+		var here := _hunters.filter(func(h: Villager) -> bool: return h.home.distance_to(center(i)) < 1.0)
+		for k in range(here.size(), per_village):
+			var c := center(i)
+			var a := randf() * TAU
+			var h := _spawn_person("Hunter", "Myśliwy", c + Vector3(cos(a), 0, sin(a)) * 12.0, c,
+				float(Terrain.VILLAGES[i][2]) * 0.8)
+			h.archer = true
+			h.max_health = 3.0
+			h.health = 3.0
+			h.shot_arrow.connect(func(arrow: Node3D) -> void: add_child(arrow))
+			_hunters.append(h)
+
+
+func hunters() -> Array[Villager]:
+	return _hunters.filter(func(h: Villager) -> bool: return is_instance_valid(h) and h.is_alive())
 
 
 func _spawn_person(role: String, label: String, pos: Vector3, home: Vector3, radius: float) -> Villager:

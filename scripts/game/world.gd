@@ -24,6 +24,13 @@ var _terrain: Terrain
 var _decor: TerrainDecor
 var _landmarks: Landmarks
 var _villages: Villages
+## Rozgłos smoka 0..100: rośnie od zjadania ludzi i owiec z farm i straszenia wieśniaków,
+## powoli opada (i przy śnie). Od poziomu „Plotka” wioski wystawiają myśliwych z łukami.
+var renown: float = 0.0
+const RENOWN_LEVELS := [0.0, 20.0, 50.0, 80.0]
+const RENOWN_NAMES := ["Nieznany", "Plotka", "Postrach", "Legenda"]
+var _renown_level: int = 0
+var _arrow_msg: int = -100000
 var _poke_msg: int = -100000
 var _day_night: DayNight
 var _sleeping: bool = false
@@ -67,6 +74,14 @@ func _ready() -> void:
 		if Time.get_ticks_msec() - _poke_msg > 3000:
 			_poke_msg = Time.get_ticks_msec()
 			_toast("%s dźga cię widłami! Uciekaj albo walcz" % by.display_name))
+	_villages.eaten_from_village.connect(func(p: Prey) -> void:
+		add_renown(8.0 if p is Villager else 3.0))
+	_villages.scared.connect(func(_by: Villager) -> void: add_renown(0.4))
+	_player.hit_by_arrow.connect(func(_dmg: float) -> void:
+		_flash = 0.6
+		if Time.get_ticks_msec() - _arrow_msg > 3000:
+			_arrow_msg = Time.get_ticks_msec()
+			_toast("Trafiony strzałą! Myśliwi polują na smoka"))
 	_lair = Lair.new()
 	_lair.name = "Lair"
 	_lair.position = Lair.POSITION
@@ -166,6 +181,9 @@ func _load_game(data: Dictionary) -> void:
 	_finds.taken_today = data.get("finds_taken", [])
 	_finds.caches_taken = data.get("caches_taken", [])
 	_landmarks.found = data.get("landmarks_found", [])
+	renown = float(data.get("renown", 0.0))
+	_renown_level = renown_level()
+	_villages.set_hunters(_hunters_for(_renown_level))
 	_player.stats.restore(data.get("stats", {}))
 	_lair.show_shells()
 	var p: Array = data.get("pos", [])
@@ -184,7 +202,7 @@ func save_game() -> void:
 	var pos := _player.global_position
 	SaveGame.write({"day": day, "hour": _day_night.hour, "treasure": treasure,
 		"finds_taken": _finds.taken_today, "caches_taken": _finds.caches_taken,
-		"landmarks_found": _landmarks.found, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
+		"landmarks_found": _landmarks.found, "renown": renown, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
 		"yaw": _player.rotation.y, "version": GameVersion.current()})
 
 
@@ -218,6 +236,30 @@ func _play_intro() -> void:
 		get_tree().create_timer(3.5).timeout.connect(func() -> void:
 			_toast("Ugryzienie: poluj na króliki"))
 		save_game())
+
+
+# --- Rozgłos -----------------------------------------------------------------------
+
+func renown_level() -> int:
+	var lvl := 0
+	for i in RENOWN_LEVELS.size():
+		if renown >= RENOWN_LEVELS[i]:
+			lvl = i
+	return lvl
+
+
+func _hunters_for(level: int) -> int:
+	return [0, 1, 2, 3][level]
+
+
+func add_renown(amount: float) -> void:
+	renown = clampf(renown + amount, 0.0, 100.0)
+	var lvl := renown_level()
+	if lvl > _renown_level:
+		_banner("ROZGŁOS: " + RENOWN_NAMES[lvl].to_upper(),
+			"Wioski wysyłają myśliwych z łukami!" if lvl == 1 else "Ludzie drżą na twój widok — myśliwych jest więcej")
+		_villages.set_hunters(_hunters_for(lvl))
+	_renown_level = lvl
 
 
 # --- Złoto -------------------------------------------------------------------------
@@ -260,7 +302,8 @@ func _update_gold() -> void:
 		save_game()
 		carried = 0
 	_gold_label.text = ("Złoto %d  ·  " % carried if carried > 0 else "") + "Skarb %d" % treasure \
-		+ "  ·  Miejsca %d/%d" % [_landmarks.found.size(), _landmarks.total()]
+		+ "  ·  Miejsca %d/%d" % [_landmarks.found.size(), _landmarks.total()] \
+		+ "  ·  Rozgłos: %s" % RENOWN_NAMES[_renown_level]
 
 
 # --- Sen w legowisku -------------------------------------------------------------
@@ -329,6 +372,9 @@ func _wake() -> void:
 			day += 1  # po północy dzień już się zmienił — śpisz tylko do rana
 		_day_night.set_hour(7.0)
 		_finds.setup(day, _cache_spots())  # nowy dzień — nowe znaleziska
+		renown = maxf(0.0, renown - 5.0)  # przez noc plotki cichną
+		_renown_level = renown_level()
+		_villages.hunters_per_village = _hunters_for(_renown_level)
 		_villages.repopulate()  # zjedzeni mieszkańcy i owce wracają
 		var st := _player.stats
 		st.health = 100.0
@@ -423,6 +469,8 @@ func _process(delta: float) -> void:
 	status.text = "Dzień %d, %s · %s · wys. %d m · %d km/h" % [day, _day_night.clock_text(), mode, int(_player.global_position.y),
 		int(v.length() * 3.6)]
 	_sleep_button.visible = can_sleep()
+	renown = maxf(0.0, renown - delta * 0.01)  # ok. 0,6 pkt na minutę
+	_renown_level = mini(_renown_level, renown_level())
 	_update_gold()
 	if use_save and not _intro:
 		_autosave_t += delta

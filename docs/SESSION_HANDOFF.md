@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-11-23 — po wersji v0.10.1 (faza 6: ludzie, w toku)
+
+```text
+Kontynuujemy pracę nad grą „3D Dragon Game” (Godot 4.7, Android, repo slota145/3d-dragon-game,
+gałąź main). Przeczytaj najpierw CLAUDE.md, docs/GAME_DESIGN.md i ROADMAP.md.
+
+Stan (v0.10.1, wydana, APK: releases/latest/download/DragonGame.apk). Fazy 0–5 gotowe, faza 6 w toku.
+- Rdzeń: pisklę → Młodzik (4 m, lot) → Dorosły (9 m) → Pradawny (16 m); polowanie, głód (balans 0.9.1:
+  ~9 min do zera, posiłki sycą mocno), jaskinia-legowisko (sen = zapis + dzień + leczenie + ulepszenia
+  „sen na skarbie”), dzień/noc, złoto i stos skarbu, świat 4×4 km (terrain.gd, LOD, 4 jeziora, 3 rzeki,
+  góry z legowiskiem), 40 ciekawych miejsc z odkrywaniem i skrzyniami (landmarks.gd).
+- Faza 6 (decyzje właściciela z ankiety: reakcja wg wielkości smoka, smok MOŻE jeść ludzi; zakres:
+  wioski+farmy, wieśniacy+pasterze, rozgłos, myśliwi):
+  * 0.10.0 wioski (Terrain.VILLAGES — 6 wyrównanych placów, pola wokół = kolor terenu), villages.gd:
+    chaty, stodoła, studnia, stogi, zagroda z owcami (Prey.home/home_radius), mieszkańcy;
+    modele: tools/blender/gen_village.py, gen_people.py (części Body/LegL/LegR/ArmL/ArmR animowane w kodzie).
+    villager.gd: pisklę → dźgają widłami, młodzik → cofają się, dorosły → panika; zjadanie ludzi.
+  * 0.10.1 rozgłos (world.gd: renown 0..100, poziomy Nieznany/Plotka/Postrach/Legenda w HUD, zapis)
+    + myśliwi z łukami (Villager.archer, arrow.gd), 0/1/2/3 na wioskę wg poziomu.
+- Testy: tools/check.sh + tools/test_walk/flight/hunt/pause/lair/world/village.gd
+  (testy: world.use_save = false; test_lair kasuje zapis).
+
+Uwagi otwarte:
+- Systemowy „wstecz” na Androidzie zamyka grę (zmiana ustawień projektu → base_api, pełne APK).
+- Właściciel jeszcze nie sprawdził na telefonie świata 4×4 km i wiosek (płynność!).
+
+Następny krok wg ROADMAP: reszta fazy 6 (danina vs. łupienie wiosek — złoto z wiosek, wozy kupieckie)
+albo faza 7 — ogień (kula ognia młodzika, strumień dorosłego, palenie budynków). Zapytaj ankietą.
+
+Komunikacja z właścicielem po polsku. Po każdym zadaniu: testy, commit, push na main,
+a dla zmian w grze — wydanie (podbicie wersji) i link do APK.
+```
+
+---
+
 ## 2026-11-23 — po wersji v0.9.0 (faza 5 zakończona)
 
 ```text

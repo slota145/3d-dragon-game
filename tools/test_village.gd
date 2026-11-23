@@ -98,6 +98,40 @@ func _init() -> void:
 			inside = inside and Vector2(s.global_position.x - pen.x, s.global_position.z - pen.z).length() < 10.0
 	_check(inside, "owce w obrębie płotu")
 
+	print("7) Rozgłos i myśliwi")
+	var r0: float = world.renown
+	_check(r0 > 0.0, "rozgłos rośnie od zjedzenia człowieka i straszenia (%.1f)" % r0)
+	_check(vil.hunters().is_empty() or world.renown_level() >= 1, "bez rozgłosu brak myśliwych")
+	world.add_renown(30.0)
+	await _frames(3)
+	var hunters := vil.hunters()
+	_check(world.renown_level() >= 1 and hunters.size() >= Terrain.VILLAGES.size(), "rozgłos „Plotka”: myśliwi %d" % hunters.size())
+	var hunter: Villager = null
+	for h: Villager in hunters:
+		if h.home.distance_to(c0) < 1.0:
+			hunter = h
+			break
+	player.stats.set_size_instant(6.0)
+	player.stats.health = 100.0
+	player.velocity = Vector3.ZERO
+	player.global_position = hunter.global_position + Vector3(0, 0.5, 40)
+	player.rotation.y = 0.0
+	player.reset_physics_interpolation()
+	var hits := [0]
+	player.hit_by_arrow.connect(func(_d: float) -> void: hits[0] += 1)
+	cam.snap_behind()
+	await _seconds(1.5)
+	player.rotation.y = PI
+	cam.snap_behind()
+	await _seconds(1.0)
+	await _shot("village_hunter.png")
+	await _seconds(6.0)
+	_check(hits[0] >= 1, "myśliwy trafia strzałami (%d trafień, zdrowie %.0f)" % [hits[0], player.stats.health])
+	player.global_position = hunter.global_position + Vector3(0, 0.5, 5)
+	player.reset_physics_interpolation()
+	await _seconds(1.0)
+	_check(hunter.mood == Villager.Mood.WARY or hunter.mood == Villager.Mood.PANIC, "z bliska myśliwy odskakuje")
+
 	print("WYNIK: ", "OK" if _fails == 0 else "%d błędów" % _fails)
 	quit(1 if _fails else 0)
 

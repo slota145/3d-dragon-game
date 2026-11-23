@@ -9,6 +9,7 @@ extends Prey
 
 signal poked_dragon(villager: Villager, damage: float)
 signal scared(villager: Villager)
+signal shot_arrow(arrow: Node3D)
 
 enum Mood { CALM, BOLD, WARY, PANIC }
 
@@ -17,6 +18,13 @@ enum Mood { CALM, BOLD, WARY, PANIC }
 @export var run_speed: float = 4.6
 ## Poniżej działa tylko, gdy smok jest bliżej (oszczędność na telefonie).
 @export var active_range: float = 260.0
+@export_group("Myśliwy")
+## Myśliwy z łukiem: trzyma dystans i strzela (zamiast dźgać widłami / uciekać).
+@export var archer: bool = false
+@export var shoot_range: float = 55.0
+@export var shoot_cooldown: float = 2.6
+@export var arrow_damage: float = 6.0
+@export var arrow_speed: float = 34.0
 
 var mood: int = Mood.CALM
 var _poke_cd: float = 0.0
@@ -53,6 +61,9 @@ func _physics_process(delta: float) -> void:
 	_poke_t += delta
 	_timer -= delta
 	var flying: bool = dc.is_flying() and dc.global_position.y - global_position.y > 6.0
+	if archer:
+		_archer_logic(delta, dc, to_dragon, dist, dsize)
+		return
 	mood = Mood.CALM
 	if dsize < DragonStats.STAGE_MIN_SIZE[1]:
 		if dist < 16.0 and not flying:
@@ -92,6 +103,46 @@ func _physics_process(delta: float) -> void:
 	_move(delta)
 	if mood == Mood.WARY:  # cofa się, ale patrzy na smoka
 		rotation.y = lerp_angle(rotation.y, atan2(to_dragon.x, to_dragon.z), clampf(6.0 * delta, 0.0, 1.0))
+
+
+## Myśliwy: podchodzi na odległość strzału, strzela z łuku (z wyprzedzeniem), a gdy smok
+## jest blisko — odskakuje. Bardzo duży smok z bliska = panika.
+func _archer_logic(delta: float, dc: DragonController, to_dragon: Vector3, dist: float, dsize: float) -> void:
+	var too_close := 10.0 + dsize * 1.2
+	mood = Mood.CALM
+	if dist < shoot_range * 1.8:
+		mood = Mood.BOLD
+		var dir := to_dragon.normalized()
+		if dist < too_close:
+			mood = Mood.PANIC if dsize >= DragonStats.STAGE_MIN_SIZE[2] else Mood.WARY
+			_dir = -dir
+			_speed = run_speed
+			_mark_scared()
+		elif dist > shoot_range:
+			_dir = dir
+			_speed = run_speed * 0.8
+		else:
+			_speed = 0.0
+			if _poke_cd <= 0.0:
+				_shoot(dc)
+		_move(delta)
+		rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), clampf(8.0 * delta, 0.0, 1.0))
+		_poke_cd = maxf(0.0, _poke_cd - delta) if dist <= shoot_range else _poke_cd
+		return
+	_was_scared = false
+	if _timer <= 0.0:
+		_pick_wander()
+	_move(delta)
+
+
+func _shoot(dc: DragonController) -> void:
+	_poke_cd = shoot_cooldown * randf_range(0.8, 1.2)
+	_poke_t = 0.0
+	var from := global_position + Vector3.UP * 1.45 + global_basis.z * 0.4
+	var target := dc.body_center()
+	var lead := target + dc.velocity * (from.distance_to(target) / arrow_speed) * 0.7
+	var arrow := Arrow.create(from, lead, arrow_speed, arrow_damage, dc)
+	shot_arrow.emit(arrow)
 
 
 func _poke() -> void:
