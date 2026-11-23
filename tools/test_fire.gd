@@ -89,7 +89,7 @@ func _init() -> void:
 	player.stats.set_size_instant(12.0)
 	world.call("_update_buttons")
 	_check(fire_btn.label == "STRUMIEŃ", "przycisk: %s" % fire_btn.label)
-	var sheep: Prey = vil.residents().filter(func(r: Node3D) -> bool: return not r is Villager and (r as Prey).is_alive())[0]
+	var sheep: Prey = vil.residents().filter(func(r: Node3D) -> bool: return not (r is Villager) and (r as Prey).is_alive())[0]
 	sheep.max_health = 3.0
 	_aim_at(player, sheep.global_position, 9.0)
 	cam.snap_behind()

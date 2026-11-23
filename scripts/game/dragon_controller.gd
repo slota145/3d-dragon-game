@@ -224,7 +224,7 @@ func _fly_k() -> float:
 func fire_direction() -> Vector3:
 	if state == State.AIR:
 		return _facing_3d().rotated(_facing_flat().cross(Vector3.UP).normalized(), deg_to_rad(-8.0))
-	return (_facing_flat() + Vector3.DOWN * 0.12).normalized()
+	return (_facing_flat() + Vector3.DOWN * 0.015).normalized()
 
 
 ## Pysk smoka (start kuli ognia / strumienia).

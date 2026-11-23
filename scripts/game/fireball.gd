@@ -38,14 +38,14 @@ func _physics_process(delta: float) -> void:
 	if _done:
 		return
 	_life -= delta
-	velocity.y -= 4.0 * delta
+	velocity.y -= 2.0 * delta
 	global_position += velocity * delta
 	var p := global_position
-	var hit := p.y < Terrain.height(p.x, p.z) + 0.3 or _life <= 0.0
+	var hit := p.y < Terrain.height(p.x, p.z) + 0.05 or _life <= 0.0
 	if not hit:
 		for n in get_tree().get_nodes_in_group("prey"):
 			var prey := n as Prey
-			if prey and prey.is_alive() and prey.center().distance_to(p) < prey.radius + 0.6 * size:
+			if prey and prey.is_alive() and prey.center().distance_to(p) < prey.radius + 1.0 * size:
 				hit = true
 				break
 	if not hit:
