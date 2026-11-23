@@ -84,6 +84,10 @@ func _ready() -> void:
 			_toast("Trafiony strzałą! Myśliwi polują na smoka"))
 	_villages.building_burnt.connect(func(_b: Node3D) -> void: add_renown(5.0))
 	_player.fire.fire_hit.connect(_on_fire_hit)
+	_player.grabbed.connect(func(prey: Prey) -> void:
+		_toast("Porwany: %s · Ugryzienie = puść" % prey.display_name)
+		if prey is Villager:
+			add_renown(2.0))
 	_lair = Lair.new()
 	_lair.name = "Lair"
 	_lair.position = Lair.POSITION
@@ -448,6 +452,7 @@ func _on_stage_changed(_stage: int, stage_name: String) -> void:
 
 
 func _on_died() -> void:
+	_player.release_carried()
 	_banner("Zemdlałeś z głodu…", "Budzisz się w legowisku" if use_save else "Budzisz się w bezpiecznym miejscu")
 	_player.global_position = _spawn_point
 	_player.velocity = Vector3.ZERO
@@ -494,6 +499,12 @@ func _process(delta: float) -> void:
 		int(v.length() * 3.6)]
 	_sleep_button.visible = can_sleep()
 	(_hud.get_node("FireButton") as TouchActionButton).charge = _player.fire.readiness
+	var bite_btn := _hud.get_node("BiteButton") as TouchActionButton
+	var carrying := _player.carried != null and is_instance_valid(_player.carried)
+	if carrying:
+		bite_btn.label = "PUŚĆ" if _player.is_flying() else "ZJEDZ"
+	else:
+		bite_btn.label = "ŁAP" if _player.is_flying() and _player.stats.can_fly() else "UGRYZIENIE"
 	renown = maxf(0.0, renown - delta * 0.01)  # ok. 0,6 pkt na minutę
 	_renown_level = mini(_renown_level, renown_level())
 	_update_gold()

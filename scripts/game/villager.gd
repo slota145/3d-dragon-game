@@ -49,7 +49,10 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	var dc := dragon as DragonController
-	if state == State.DEAD or not dc:
+	if _process_fall(delta) or state == State.DEAD or not dc:
+		if carried:
+			mood = Mood.PANIC  # wierzga w szponach
+			_animate(delta)
 		return
 	var to_dragon := dragon.global_position - global_position
 	to_dragon.y = 0.0

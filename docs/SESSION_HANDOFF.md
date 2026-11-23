@@ -5,6 +5,14 @@
 
 ---
 
+## 2026-11-23 — po wersji v0.12.1 (łapanie w locie)
+
+Jak wpisy niżej, plus łapanie w locie: DragonController.carried / _try_grab / _drop_carried /
+_eat_carried (Ugryzienie: w powietrzu ŁAP/PUŚĆ, na ziemi ZJEDZ — etykieta w world._process),
+Prey.pick_up / drop / _process_fall (upadek zabija → Prey.roasted = truchło do zjedzenia).
+Test: tools/test_catch.gd. Następny krok: reszta fazy 6 (danina vs. łupienie, wozy kupieckie)
+albo faza 8 (gryfy, rycerze, zamek). Zapytaj ankietą.
+
 ## 2026-11-23 — po wersji v0.12.0 (celowanie)
 
 Jak wpis v0.11.0 poniżej, plus (uwagi właściciela): pysk otwiera się w dół (DragonProportions.jaw_angle

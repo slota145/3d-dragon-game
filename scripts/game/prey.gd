@@ -61,7 +61,7 @@ func center() -> Vector3:
 
 
 func _physics_process(delta: float) -> void:
-	if state == State.DEAD:
+	if _process_fall(delta) or state == State.DEAD:
 		return
 	var to_dragon := Vector3.ZERO
 	var dist := INF
@@ -143,8 +143,63 @@ func _animate(delta: float) -> void:
 		_body.rotation.x = lerpf(_body.rotation.x, 0.12 if _speed < 0.05 else 0.0, clampf(3.0 * delta, 0.0, 1.0))
 
 
-## Upieczona ogniem (martwa, do zjedzenia).
+## Martwe ciało do zjedzenia (upieczone ogniem albo zabite upadkiem z wysokości).
 var roasted: bool = false
+## Niesiona w szponach smoka (AI i ruch wyłączone; pozycję ustawia smok).
+var carried: bool = false
+var _falling: bool = false
+var _fall_velocity: Vector3
+
+
+## Złapana przez smoka w locie.
+func pick_up() -> void:
+	carried = true
+	_falling = false
+	_speed = 0.0
+
+
+## Upuszczona: spada; upadek z wysokości zabija (truchło do zjedzenia), z niska — ogłusza.
+func drop(velocity: Vector3) -> void:
+	carried = false
+	_falling = true
+	_fall_velocity = velocity
+
+
+## Spadanie po upuszczeniu. Zwraca true, gdy ofiara jest w locie (wtedy bez AI).
+func _process_fall(delta: float) -> bool:
+	if carried:
+		_animate_carried(delta)
+		return true
+	if not _falling:
+		return false
+	_fall_velocity.y -= 18.0 * delta
+	global_position += _fall_velocity * delta
+	rotation.x += delta * 4.0
+	var ground := Terrain.height(global_position.x, global_position.z)
+	if global_position.y <= ground:
+		global_position.y = ground
+		rotation.x = 0.0
+		_falling = false
+		var impact := -_fall_velocity.y
+		if impact > 13.0 and state != State.DEAD:
+			health = 0.0
+			state = State.DEAD
+			roasted = true  # truchło — smok może je zjeść
+			rotation.z = PI / 2.0
+			killed.emit(self)
+			get_tree().create_timer(90.0).timeout.connect(func() -> void:
+				if is_instance_valid(self):
+					queue_free())
+		elif state != State.DEAD:
+			state = State.FLEE
+			_flee_time = 3.0
+	return true
+
+
+## Szarpanie się w szponach.
+func _animate_carried(_delta: float) -> void:
+	if _body and state != State.DEAD:
+		_body.rotation.z = sin(Time.get_ticks_msec() / 90.0 + get_instance_id()) * 0.35
 
 
 ## Obrażenia od ognia. Zabita ofiara zostaje upieczona — smok może ją zjeść ugryzieniem.

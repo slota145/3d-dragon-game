@@ -123,7 +123,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   ogień leci w punkt celownika (kierunek kamery podniesiony o jej nachylenie), pomoc w celowaniu łapie cel
   w stożku ~10° (pomarańczowa obwódka); celowanie żyroskopem — opcja w menu pauzy (domyślnie wył.);
   „wstecz” na Androidzie = pauza (base_api 6 → pełne APK)
-- ⬜ Łapanie w locie (Ugryzienie w powietrzu): niesienie, upuszczanie z wysokości
+- ✅ Łapanie w locie (0.12.1): Ugryzienie w powietrzu = ŁAP (zwierzę / człowiek / truchło pod smokiem,
+  do 60% jego wielkości), niesienie w szponach (słabsze machnięcia, większe zużycie siły), ponownie = PUŚĆ
+  (upadek > ~13 m/s zabija → truchło do zjedzenia), na ziemi = ZJEDZ; porwanie człowieka +2 rozgłosu
 
 ## Faza 8 — Wielcy przeciwnicy i zamki ⬜
 

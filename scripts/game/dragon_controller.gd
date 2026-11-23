@@ -33,6 +33,8 @@ signal bit
 signal killed_prey(prey: Prey)
 signal exhausted  ## próba machnięcia / startu bez siły lotu
 signal hit_by_arrow(damage: float)
+signal grabbed(prey: Prey)
+signal dropped(prey: Prey)
 
 enum State { GROUND, AIR }
 
@@ -166,6 +168,10 @@ const HEAD_PITCH_MIN := deg_to_rad(-45.0)
 const HEAD_PITCH_MAX := deg_to_rad(35.0)
 ## O ile podnieść kierunek kamery przy celowaniu (≈ domyślne nachylenie kamery w dół).
 const AIM_RAISE_DEG := 16.0
+## Łapanie w locie: ofiara w szponach (Ugryzienie w powietrzu łapie / puszcza, na ziemi — zjada).
+var carried: Prey
+## Największa ofiara do udźwignięcia: długość ≤ rozmiar smoka × tyle.
+const MAX_LIFT := 0.6
 ## Stożek pomocy w celowaniu (stopnie).
 const ASSIST_DEG := 9.0
 
@@ -339,6 +345,13 @@ func _physics_process(delta: float) -> void:
 		pressed = false
 		held = false
 		stick = Vector2.ZERO
+	elif Input.is_action_just_pressed("bite") and carried and is_instance_valid(carried):
+		if state == State.AIR and not _hopping:
+			_drop_carried()
+		else:
+			_eat_carried()
+	elif state == State.AIR and not _hopping and Input.is_action_just_pressed("bite") and _bite_cd <= 0.0:
+		_try_grab()
 	elif state == State.GROUND and Input.is_action_just_pressed("bite") and _bite_cd <= 0.0:
 		_start_bite()
 	if state == State.AIR and not _hopping and stats.stamina <= 0.0:
@@ -347,6 +360,7 @@ func _physics_process(delta: float) -> void:
 		_process_ground(delta, stick, pressed, held)
 	else:
 		_process_air(delta, stick, pressed, held)
+	_carry_update()
 	_update_visual(delta, stick)
 	_update_animation(held)
 	var speed := velocity.length()
@@ -542,7 +556,7 @@ func _process_hop(delta: float) -> void:
 
 
 func _flap(fwd: float) -> void:
-	if not stats.use_stamina(stamina_flap):
+	if not stats.use_stamina(stamina_flap * (1.0 + carry_load() * 1.5)):
 		_flap_buffered = false
 		exhausted.emit()
 		return
@@ -550,7 +564,8 @@ func _flap(fwd: float) -> void:
 	_flap_cd = flap_cooldown
 	flapped.emit()
 	_flap_timer = flap_interval
-	velocity.y = clampf(maxf(velocity.y, 0.0) + flap_lift * _move_k(), 0.0, max_climb_speed * _fly_k())
+	var lift := flap_lift * _move_k() * (1.0 - carry_load() * 0.5)  # z ciężarem w szponach — słabiej
+	velocity.y = clampf(maxf(velocity.y, 0.0) + lift, 0.0, max_climb_speed * _fly_k())
 	if fwd > 0.1:
 		var flat := Vector3(velocity.x, 0.0, velocity.z)
 		var boosted := flat + _facing_flat() * flap_thrust * _fly_k() * fwd
@@ -624,6 +639,80 @@ func _update_visual(delta: float, stick: Vector2) -> void:
 
 func _mouth_position() -> Vector3:
 	return global_position + _facing_flat() * (bite_reach * _k) + Vector3.UP * (1.2 * _k)
+
+
+# --- Łapanie w locie ---------------------------------------------------------------
+
+## Punkt w szponach (pod tułowiem).
+func talon_position() -> Vector3:
+	return global_position + Vector3.DOWN * (0.15 * stats.size) + _facing_flat() * (0.1 * stats.size)
+
+
+## Obciążenie lotu niesioną ofiarą (0 = nic, do ~0,6).
+func carry_load() -> float:
+	if not carried or not is_instance_valid(carried):
+		return 0.0
+	return clampf(carried.body_size / stats.size * 1.2, 0.05, 0.6)
+
+
+func _try_grab() -> void:
+	_bite_cd = bite_cooldown
+	var talon := talon_position()
+	var reach := 1.6 + stats.size * 0.45
+	var best: Prey = null
+	var best_d := INF
+	for node in get_tree().get_nodes_in_group("prey"):
+		var prey := node as Prey
+		if not prey or not prey.is_edible() or prey.carried:
+			continue
+		if prey.body_size > stats.size * MAX_LIFT:
+			continue  # za duża — nie udźwignie
+		var d := prey.center().distance_to(talon)
+		if d < reach and d < best_d:
+			best = prey
+			best_d = d
+	if not best:
+		return
+	carried = best
+	best.pick_up()
+	if _anim:
+		_anim.play("Bite", 0.08)
+	grabbed.emit(best)
+
+
+func _carry_update() -> void:
+	if not carried:
+		return
+	if not is_instance_valid(carried):
+		carried = null
+		return
+	carried.global_position = talon_position() + Vector3.DOWN * carried.radius
+	carried.rotation.y = rotation.y
+
+
+## Puść niesioną ofiarę (np. przy śmierci smoka).
+func release_carried() -> void:
+	if carried and is_instance_valid(carried):
+		_drop_carried()
+	carried = null
+
+
+func _drop_carried() -> void:
+	var prey := carried
+	carried = null
+	prey.drop(velocity)
+	dropped.emit(prey)
+
+
+func _eat_carried() -> void:
+	var prey := carried
+	carried = null
+	prey.carried = false
+	if prey.is_alive():
+		prey.health = 0.0
+		prey.state = Prey.State.DEAD
+		prey.killed.emit(prey)
+	_eat(prey)
 
 
 func _start_bite() -> void:

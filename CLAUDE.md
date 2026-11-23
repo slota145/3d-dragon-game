@@ -32,7 +32,7 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 | `assets/textures/`, `materials/`, `audio/` | pozostałe zasoby |
 | `tools/blender/` | generatory assetów (Python + bpy): `gen_dragon.py` (smok), `gen_animals.py` (królik, owca), `gen_lair.py` (jaskinia-legowisko), `gen_treasure.py` (moneta, kielich, korona, skrzynia, klejnot), `gen_landmarks.py` (kamienny krąg, wieża, drzewo, szkielet, łuk), `gen_village.py` (chata, stodoła, studnia, płot, stóg), `gen_people.py` (wieśniak, pasterz, myśliwy — części do animacji w kodzie), `meshkit.py` (lofty, rury, kolce, płaty, wagi), `common.py` (scena, materiały, render) |
 | `assets/models/*_import.gd` | skrypty post-importu (materiały, pętle animacji) |
-| `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_flight.gd`, `test_hunt.gd`, `test_pause.gd`, `test_lair.gd`, `test_world.gd`, `test_village.gd`, `test_fire.gd`, `test_updater.gd`) |
+| `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_flight.gd`, `test_hunt.gd`, `test_pause.gd`, `test_lair.gd`, `test_world.gd`, `test_village.gd`, `test_fire.gd`, `test_catch.gd`, `test_updater.gd`) |
 | `export_presets.cfg`, `.github/workflows/release.yml` | eksport Android (+ Windows wstrzymany); CI buduje APK + łatkę `.pck` przy podbiciu wersji (`docs/RELEASE.md`) |
 | `docs/` | `GAME_DESIGN.md` (koncepcja), `SESSION_HANDOFF.md` (prompt dla następnej sesji), styl graficzny, wydania, research narzędzi |
 | `ROADMAP.md` | plan rozwoju i status |
