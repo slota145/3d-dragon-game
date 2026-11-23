@@ -100,10 +100,11 @@ func _init() -> void:
 	var caches := all.filter(func(f: Node3D) -> bool: return f.get_meta("cache", false))
 	_check(all.size() > 10, "znaleziska na łące: %d" % all.size())
 	_check(caches.size() > 0, "skrytki na skalnych słupach: %d" % caches.size())
-	var top_ok := true
-	for c: Node3D in caches:
-		top_ok = top_ok and c.global_position.y > 10.0
-	_check(top_ok, "skrytki leżą wysoko (tylko dla latających)")
+	var tops: Array = (world.get_node("Props") as Node).pillar_tops
+	var top_ok := tops.size() > 0
+	for t: Vector3 in tops:
+		top_ok = top_ok and t.y > 10.0
+	_check(top_ok, "skrytki na słupach leżą wysoko (tylko dla latających)")
 	var find: Node3D = all.filter(func(f: Node3D) -> bool: return not f.get_meta("cache", false))[0]
 	var value: int = find.get_meta("value")
 	(world.get_node("DayNight") as DayNight).set_hour(11.0)
