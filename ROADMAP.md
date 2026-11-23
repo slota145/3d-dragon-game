@@ -74,7 +74,7 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Wyszarzone przyciski z kłódką + animacja odblokowania (0.6.4): napis stadium,
   przycisk podskakuje i pulsuje złotem, fale; podpowiedź „Przytrzymaj SKRZYDŁA…”
 
-## Faza 5 — Legowisko i świat ⬜
+## Faza 5 — Legowisko i świat ✅
 
 - ✅ Jaskinia-legowisko (0.7.0, `gen_lair.py`): wyklucie z jaja w gnieździe (intro nowej gry),
   przycisk ŚPIJ w komorze = zapis + nowy dzień + leczenie; autozapis co 60 s i przy wyjściu;
@@ -90,8 +90,12 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   pasmo gór na północy z legowiskiem u podnóża, jezioro + rzeka (wschód), las (zachód), stawy,
   łąka w środku; kawałki 128 m z LOD (4/8/16 m), kolizja HeightMapShape tylko wokół smoka,
   roślinność MultiMesh na kawałek (trawa tylko blisko), ściany na krawędzi świata
-- ⬜ Sprawdzić płynność na telefonie → rozszerzyć do **4 × 4 km** (stała `Terrain.SIZE`),
-  gęstość: punkty POI, farmy (faza 6), zasada 20 s (`docs/GAME_DESIGN.md` → Skala i gęstość)
+- ✅ Świat **4 × 4 km** (0.9.0): pasmo gór z wyżyną i jeziorem za nim, 4 jeziora, 3 rzeki, LOD 4 poziomy,
+  zasięg rysowania 1,5 km + mgła, roślinność tylko wokół smoka (pierścień kawałków)
+- ✅ **Ciekawe miejsca** (0.9.0, `gen_landmarks.py`, `landmarks.gd`): 40 miejsc — kamienne kręgi, ruiny
+  wież, pradawne drzewa, szkielety smoków, skalne łuki; odkrywanie (licznik w HUD, zapis) + skrzynia skarbów
+  przy każdym (na drzewie i łuku — tylko lotem); blisko łąki gęściej
+- ⬜ Farmy i wioski — w fazie 6
 
 ## Faza 6 — Ludzie ⬜
 

@@ -10,7 +10,7 @@ extends Node3D
 ## własną normalną i kolor (płaskie cieniowanie), kolor zależy od wysokości, nachylenia i biomu.
 ## Roślinność (las, skały, trawa) dokłada TerrainDecor.
 
-const SIZE := 2048.0
+const SIZE := 4096.0
 const HALF := SIZE / 2.0
 const CHUNK := 128.0
 const CHUNKS := int(SIZE / CHUNK)
@@ -18,10 +18,20 @@ const CHUNKS := int(SIZE / CHUNK)
 const WATER_LEVEL := -1.2
 const LAKE_CENTER := Vector2(430.0, 270.0)
 const LAKE_RADIUS := 170.0
+## Jeziora: [środek x, środek z, promień]. Pierwsze to jezioro przy łące (LAKE_CENTER).
+const LAKES := [[430.0, 270.0, 170.0], [-760.0, 1180.0, 250.0], [1350.0, -260.0, 210.0], [140.0, -1620.0, 160.0]]
+## Rzeki: łamane od gór do jezior.
+const RIVERS := [
+	[Vector2(250, -620), Vector2(290, -380), Vector2(310, -170), Vector2(345, -10), Vector2(395, 140), Vector2(430, 270)],
+	[Vector2(900, -1150), Vector2(1030, -860), Vector2(1180, -560), Vector2(1350, -260)],
+	[Vector2(-300, 420), Vector2(-480, 700), Vector2(-620, 950), Vector2(-760, 1180)],
+]
 const RIVER := [Vector2(250, -620), Vector2(290, -380), Vector2(310, -170), Vector2(345, -10),
 	Vector2(395, 140), Vector2(430, 270)]
-## Gęstość siatki dla LOD 0/1/2 (kratki na bok chunka).
-const LOD_RES := [32, 16, 8]
+## Gęstość siatki dla LOD 0/1/2/3 (kratki na bok chunka).
+const LOD_RES := [32, 16, 8, 4]
+## Teren dalej niż tyle metrów od kamery nie jest rysowany (mgła i tak go zasłania).
+const VIEW_DISTANCE := 1500.0
 
 signal chunk_built(coord: Vector2i, lod: int)
 
@@ -75,18 +85,22 @@ static func height(x: float, z: float) -> float:
 	# góry na północy: grzbiety z szumu „ridged”
 	var ridge := 1.0 - absf(_ridge.get_noise_2d(x, z))
 	ridge *= ridge
-	var north := smoothstep(-150.0, -460.0, z)
+	# pasmo gór na północy (za nim wyżyna z jeziorem)
+	var north := smoothstep(-150.0, -460.0, z) * (1.0 - smoothstep(-1150.0, -1450.0, z))
 	h += north * (55.0 + 190.0 * ridge) + north * north * 50.0
+	h += smoothstep(-1150.0, -1450.0, z) * 30.0
 	# brzeg świata: wzgórza i turnie zamykające mapę
 	var edge := maxf(absf(x), absf(z))
-	h += smoothstep(800.0, 1000.0, edge) * (90.0 + 80.0 * ridge)
-	# jezioro (postrzępiony brzeg)
-	var ld := Vector2(x, z).distance_to(LAKE_CENTER) + _detail.get_noise_2d(x * 0.5, z * 0.5) * 30.0
-	var lake := 1.0 - smoothstep(LAKE_RADIUS * 0.55, LAKE_RADIUS, ld)
-	h = lerpf(h, -6.0, lake)
+	h += smoothstep(HALF - 230.0, HALF - 30.0, edge) * (90.0 + 80.0 * ridge)
+	# jeziora (postrzępiony brzeg)
+	var shore := _detail.get_noise_2d(x * 0.5, z * 0.5) * 30.0
+	for lk: Array in LAKES:
+		var ld := Vector2(x, z).distance_to(Vector2(lk[0], lk[1])) + shore
+		var lr: float = lk[2]
+		h = lerpf(h, -6.0, 1.0 - smoothstep(lr * 0.55, lr, ld))
 	# rzeka: koryto wzdłuż łamanej (w górach głęboki wąwóz)
 	var rd := river_distance(x, z)
-	var width := 9.0 + 25.0 * north
+	var width := 9.0 + 25.0 * smoothstep(-150.0, -460.0, z)
 	var river := 1.0 - smoothstep(width * 0.5, width * 1.6, rd)
 	h = lerpf(h, minf(h, -3.0), river)
 	# plac pod legowiskiem
@@ -98,12 +112,13 @@ static func height(x: float, z: float) -> float:
 static func river_distance(x: float, z: float) -> float:
 	var p := Vector2(x, z)
 	var best := INF
-	for i in RIVER.size() - 1:
-		var a: Vector2 = RIVER[i]
-		var b: Vector2 = RIVER[i + 1]
-		var ab := b - a
-		var t := clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
-		best = minf(best, p.distance_to(a + ab * t))
+	for river: Array in RIVERS:
+		for i in river.size() - 1:
+			var a: Vector2 = river[i]
+			var b: Vector2 = river[i + 1]
+			var ab := b - a
+			var t := clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+			best = minf(best, p.distance_to(a + ab * t))
 	return best
 
 
@@ -157,7 +172,7 @@ func chunk_origin(c: Vector2i) -> Vector3:
 
 func _lod_for(c: Vector2i) -> int:
 	var d := maxi(absi(c.x - _focus_chunk.x), absi(c.y - _focus_chunk.y))
-	return 0 if d <= 1 else (1 if d <= 3 else 2)
+	return 0 if d <= 1 else (1 if d <= 3 else (2 if d <= 6 else 3))
 
 
 func lod_of(c: Vector2i) -> int:
@@ -176,8 +191,8 @@ func _process(_delta: float) -> void:
 		_focus_chunk = c
 		_queue.clear()
 		# najpierw najbliższe (kolizja pod smokiem jest najważniejsza)
-		for dx in range(-4, 5):
-			for dz in range(-4, 5):
+		for dx in range(-8, 9):
+			for dz in range(-8, 9):
 				var n := c + Vector2i(dx, dz)
 				if n.x < 0 or n.y < 0 or n.x >= CHUNKS or n.y >= CHUNKS:
 					continue
@@ -201,6 +216,7 @@ func _build_chunk(c: Vector2i, lod: int) -> void:
 		var mi := MeshInstance3D.new()
 		mi.mesh = _chunk_mesh(c, LOD_RES[lod])
 		mi.position = chunk_origin(c)
+		mi.visibility_range_end = VIEW_DISTANCE
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if lod == 0 \
 			else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)

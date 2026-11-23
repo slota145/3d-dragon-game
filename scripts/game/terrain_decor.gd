@@ -1,8 +1,9 @@
 class_name TerrainDecor
 extends Node3D
-## Roślinność i skały na kawałkach terenu (MultiMesh na kawałek — tanie na telefonie):
-## - drzewa (las wg Terrain.forest) i głazy — dla każdego kawałka od razu,
-## - trawa, kwiaty i krzaki (punkty odniesienia przy ziemi) — dopiero gdy smok jest blisko.
+## Roślinność i skały na kawałkach terenu (MultiMesh na kawałek — tanie na telefonie),
+## tworzone w pierścieniu wokół smoka i usuwane, gdy się oddali (świat 4×4 km):
+## - drzewa (las wg Terrain.forest) i głazy — do BIG_RING kawałków od smoka,
+## - trawa, kwiaty i krzaki (punkty odniesienia przy ziemi) — do SMALL_RING.
 ## Wszystko stoi na wysokości terenu i omija wodę, legowisko i strome zbocza.
 
 @export var trees_per_chunk: int = 140
@@ -13,13 +14,20 @@ extends Node3D
 
 var terrain: Terrain
 
+const BIG_RING := 5
+const SMALL_RING := 1
+## Ile kawałków roślinności tworzyć na klatkę (bez przycięć).
+const PER_FRAME := 2
+
 var _tree_mesh: Mesh
 var _rock_mesh: Mesh
 var _grass_mesh: Mesh
 var _flower_mesh: Mesh
 var _bush_mesh: Mesh
-var _done_big: Dictionary = {}
-var _done_small: Dictionary = {}
+var _big: Dictionary = {}  # Vector2i -> Node3D (drzewa + skały)
+var _small: Dictionary = {}  # Vector2i -> Node3D (trawa, kwiaty, krzaki)
+var _center := Vector2i(-999, -999)
+var _todo: Array[Vector2i] = []
 
 
 func _ready() -> void:
@@ -28,16 +36,62 @@ func _ready() -> void:
 	_grass_mesh = _make_grass_mesh()
 	_flower_mesh = _make_flower_mesh()
 	_bush_mesh = _make_bush_mesh()
-	terrain.chunk_built.connect(_on_chunk_built)
 
 
-func _on_chunk_built(c: Vector2i, lod: int) -> void:
-	if not _done_big.has(c):
-		_done_big[c] = true
-		_scatter_big(c)
-	if lod == 0 and not _done_small.has(c):
-		_done_small[c] = true
-		_scatter_small(c)
+## Od razu zbuduj roślinność wokół punktu (start gry, teleport).
+func build_around(at: Vector3) -> void:
+	_center = terrain.chunk_of(at)
+	_refresh_todo()
+	while not _todo.is_empty():
+		_build(_todo.pop_front())
+
+
+func _process(_delta: float) -> void:
+	if not terrain.focus:
+		return
+	var c := terrain.chunk_of(terrain.focus.global_position)
+	if c != _center:
+		_center = c
+		_refresh_todo()
+		_drop_far()
+	for i in PER_FRAME:
+		if _todo.is_empty():
+			break
+		_build(_todo.pop_front())
+
+
+func _ring(c: Vector2i) -> int:
+	return maxi(absi(c.x - _center.x), absi(c.y - _center.y))
+
+
+func _refresh_todo() -> void:
+	_todo.clear()
+	for dx in range(-BIG_RING, BIG_RING + 1):
+		for dz in range(-BIG_RING, BIG_RING + 1):
+			var c := _center + Vector2i(dx, dz)
+			if c.x < 0 or c.y < 0 or c.x >= Terrain.CHUNKS or c.y >= Terrain.CHUNKS:
+				continue
+			if not _big.has(c) or (_ring(c) <= SMALL_RING and not _small.has(c)):
+				_todo.append(c)
+	_todo.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return _ring(a) < _ring(b))
+
+
+func _build(c: Vector2i) -> void:
+	if not _big.has(c):
+		_big[c] = _scatter_big(c)
+	if _ring(c) <= SMALL_RING and not _small.has(c):
+		_small[c] = _scatter_small(c)
+
+
+func _drop_far() -> void:
+	for c: Vector2i in _big.keys():
+		if _ring(c) > BIG_RING + 1:
+			(_big[c] as Node).queue_free()
+			_big.erase(c)
+	for c: Vector2i in _small.keys():
+		if _ring(c) > SMALL_RING + 2:
+			(_small[c] as Node).queue_free()
+			_small.erase(c)
 
 
 static func _blocked(x: float, z: float) -> bool:
@@ -52,7 +106,9 @@ func _rng_for(c: Vector2i, salt: int) -> RandomNumberGenerator:
 	return rng
 
 
-func _scatter_big(c: Vector2i) -> void:
+func _scatter_big(c: Vector2i) -> Node3D:
+	var group := Node3D.new()
+	add_child(group)
 	var o := terrain.chunk_origin(c)
 	var rng := _rng_for(c, 1)
 	var trees: Array[Transform3D] = []
@@ -71,7 +127,7 @@ func _scatter_big(c: Vector2i) -> void:
 		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.9, 1.25), s))
 		trees.append(Transform3D(basis, Vector3(x, h - 0.2, z)))
 		tree_cols.append(Color(1, 1, 1).darkened(rng.randf() * 0.25))
-	_add_multimesh(_tree_mesh, trees, tree_cols, 900.0, true)
+	_add_multimesh(group, _tree_mesh, trees, tree_cols, 700.0, true)
 	var rocks: Array[Transform3D] = []
 	for i in rocks_per_chunk:
 		var x := o.x + rng.randf() * Terrain.CHUNK
@@ -82,10 +138,13 @@ func _scatter_big(c: Vector2i) -> void:
 		var basis := Basis.from_euler(Vector3(rng.randf() * TAU, rng.randf() * TAU, rng.randf() * TAU)) \
 			.scaled(Vector3(s * rng.randf_range(0.8, 1.5), s * rng.randf_range(0.5, 0.9), s * rng.randf_range(0.8, 1.4)))
 		rocks.append(Transform3D(basis, Vector3(x, Terrain.height(x, z) + s * 0.1, z)))
-	_add_multimesh(_rock_mesh, rocks, [], 700.0, true)
+	_add_multimesh(group, _rock_mesh, rocks, [], 700.0, true)
+	return group
 
 
-func _scatter_small(c: Vector2i) -> void:
+func _scatter_small(c: Vector2i) -> Node3D:
+	var group := Node3D.new()
+	add_child(group)
 	var o := terrain.chunk_origin(c)
 	var rng := _rng_for(c, 2)
 	for kind in 3:
@@ -104,10 +163,11 @@ func _scatter_small(c: Vector2i) -> void:
 			if kind == 1:
 				cols.append([Color(0.95, 0.85, 0.3), Color(0.9, 0.45, 0.6), Color(0.95, 0.95, 0.95),
 					Color(0.6, 0.55, 0.95)][rng.randi() % 4])
-		_add_multimesh(mesh, xs, cols, 160.0 if kind < 2 else 300.0, kind == 2)
+		_add_multimesh(group, mesh, xs, cols, 160.0 if kind < 2 else 300.0, kind == 2)
+	return group
 
 
-func _add_multimesh(mesh: Mesh, xs: Array[Transform3D], cols: Array, vis_range: float, shadows: bool) -> void:
+func _add_multimesh(parent: Node3D, mesh: Mesh, xs: Array[Transform3D], cols: Array, vis_range: float, shadows: bool) -> void:
 	if xs.is_empty():
 		return
 	var mm := MultiMesh.new()
@@ -126,7 +186,7 @@ func _add_multimesh(mesh: Mesh, xs: Array[Transform3D], cols: Array, vis_range: 
 	inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows \
 		else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(inst)
+	parent.add_child(inst)
 
 
 # --- Siatki (low-poly, kolor wierzchołków) ------------------------------------------

@@ -48,7 +48,7 @@ func setup(day: int, cache_spots: Array[Vector3]) -> void:
 		if not id in taken_today:
 			_spawn(id, kind, pos, value, rng.randf() * TAU)
 	for i in cache_spots.size():
-		var id := "cache_%d" % i
+		var id := "cache_%d_%d" % [int(cache_spots[i].x), int(cache_spots[i].z)]  # stałe id wg miejsca
 		if not id in caches_taken:
 			_spawn(id, "chest", cache_spots[i], 90 + (i * 37) % 71, float(i))
 

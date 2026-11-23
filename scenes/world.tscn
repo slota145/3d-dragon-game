@@ -27,7 +27,7 @@ tonemap_mode = 4
 ssao_enabled = true
 fog_enabled = true
 fog_light_color = Color(0.72, 0.8, 0.88, 1)
-fog_density = 0.0012
+fog_density = 0.0015
 
 [node name="World" type="Node3D"]
 script = ExtResource("1_world")

@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-11-23 — po wersji v0.9.0 (faza 5 zakończona)
+
+```text
+Kontynuujemy pracę nad grą „3D Dragon Game” (Godot 4.7, Android, repo slota145/3d-dragon-game,
+gałąź main). Przeczytaj najpierw CLAUDE.md, docs/GAME_DESIGN.md i ROADMAP.md.
+
+Stan (v0.9.0, wydana, APK: releases/latest/download/DragonGame.apk). Fazy 0–5 gotowe.
+- Rdzeń: pisklę poluje, je, rośnie (Młodzik 4 m = lot, Dorosły 9 m, Pradawny 16 m), siła lotu,
+  zoom kamery, menu pauzy + tryb deweloperski, jaskinia-legowisko (wyklucie z jaja, sen = zapis
+  + nowy dzień + leczenie, śmierć = pobudka w gnieździe), dzień/noc, złoto (znaleziska, skrytki,
+  stos skarbu), ulepszenia „sen na skarbie” (łuski, skrzydła, zdrowie, oko).
+- Świat (ta sesja, decyzje właściciela z ankiet): proceduralny teren 4×4 km (scripts/game/terrain.gd:
+  Terrain.height(x,z) statyczna; kawałki 128 m, LOD 32/16/8/4, kolizja HeightMapShape wokół smoka,
+  zasięg 1,5 km + mgła), las/skały/trawa w pierścieniu wokół smoka (terrain_decor.gd), pasmo gór
+  na północy z legowiskiem u podnóża (Lair.POSITION (0,0,-80)), wyżyna za górami, 4 jeziora, 3 rzeki,
+  łąka startowa płaska wokół (0,0,0). 40 ciekawych miejsc (landmarks.gd + tools/blender/gen_landmarks.py)
+  z odkrywaniem (licznik w HUD, zapis) i skrzynią skarbów przy każdym.
+- Właściciel: świat 2×2 km działał na telefonie dobrze; 4×4 km — do sprawdzenia płynności.
+- Testy: tools/check.sh + tools/test_walk/flight/hunt/pause/lair/world.gd (test_world: teren, LOD,
+  jeziora, miejsca, odkrycie, zrzuty). Testy: world.use_save = false (łąka, bez zapisu i intro).
+
+Uwagi otwarte:
+- Systemowy „wstecz” na Androidzie zamyka grę (zmiana ustawień projektu → base_api, pełne APK).
+- Pisklę ma duże kolce/zęby — ew. łagodniejsze pisklę w generatorze.
+
+Następny krok wg ROADMAP: faza 6 — ludzie (wieśniacy, pasterze, myśliwi; farmy i wioski; rozgłos
+i odwet; danina vs. łupienie). Zapytaj właściciela ankietą o zakres pierwszej wersji ludzi.
+
+Komunikacja z właścicielem po polsku. Po każdym zadaniu: testy, commit, push na main,
+a dla zmian w grze — wydanie (podbicie wersji) i link do APK.
+```
+
+---
+
 ## 2026-11-22 — po wersji v0.7.2 (faza 5: legowisko, dzień/noc, złoto)
 
 ```text

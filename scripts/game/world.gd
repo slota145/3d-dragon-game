@@ -21,6 +21,8 @@ var _hoard: HoardMenu
 var _gold_label: Label
 var _lair: Lair
 var _terrain: Terrain
+var _decor: TerrainDecor
+var _landmarks: Landmarks
 var _day_night: DayNight
 var _sleeping: bool = false
 var _intro: bool = false
@@ -42,10 +44,18 @@ func _ready() -> void:
 	_terrain = Terrain.new()
 	_terrain.name = "Terrain"
 	add_child(_terrain)
-	var decor := TerrainDecor.new()
+	_decor = TerrainDecor.new()
+	var decor := _decor
 	decor.name = "TerrainDecor"
 	decor.terrain = _terrain
 	_terrain.add_child(decor)
+	_landmarks = Landmarks.new()
+	_landmarks.name = "Landmarks"
+	_landmarks.dragon = _player
+	add_child(_landmarks)
+	_landmarks.discovered.connect(func(label: String, count: int, all: int) -> void:
+		_banner("ODKRYTO: " + label.to_upper(), "Ciekawe miejsca: %d / %d · w pobliżu leży skarb" % [count, all])
+		save_game())
 	_lair = Lair.new()
 	_lair.name = "Lair"
 	_lair.position = Lair.POSITION
@@ -60,7 +70,7 @@ func _ready() -> void:
 	_day_night.set_hour(8.0)
 	_day_night.midnight.connect(func() -> void:
 		day += 1
-		_finds.setup(day, ($Props as Node).pillar_tops))
+		_finds.setup(day, _cache_spots()))
 	_finds = GoldFinds.new()
 	_finds.name = "GoldFinds"
 	_finds.dragon = _player
@@ -114,7 +124,8 @@ func _ready() -> void:
 	# teren: od razu cały świat (wokół smoka najdokładniej, z kolizją), potem LOD w biegu
 	_terrain.focus = _player
 	_terrain.build_all(_player.global_position)
-	_finds.setup(day, ($Props as Node).pillar_tops)
+	_decor.build_around(_player.global_position)
+	_finds.setup(day, _cache_spots())
 	_lair.pile.set_gold(treasure)
 	if _intro:
 		_play_intro()
@@ -143,6 +154,7 @@ func _load_game(data: Dictionary) -> void:
 	treasure = int(data.get("treasure", 0))
 	_finds.taken_today = data.get("finds_taken", [])
 	_finds.caches_taken = data.get("caches_taken", [])
+	_landmarks.found = data.get("landmarks_found", [])
 	_player.stats.restore(data.get("stats", {}))
 	_lair.show_shells()
 	var p: Array = data.get("pos", [])
@@ -160,7 +172,8 @@ func save_game() -> void:
 		return
 	var pos := _player.global_position
 	SaveGame.write({"day": day, "hour": _day_night.hour, "treasure": treasure,
-		"finds_taken": _finds.taken_today, "caches_taken": _finds.caches_taken, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
+		"finds_taken": _finds.taken_today, "caches_taken": _finds.caches_taken,
+		"landmarks_found": _landmarks.found, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
 		"yaw": _player.rotation.y, "version": GameVersion.current()})
 
 
@@ -198,6 +211,12 @@ func _play_intro() -> void:
 
 # --- Złoto -------------------------------------------------------------------------
 
+## Skrytki ze złotem: szczyty skalnych słupów + skrzynie przy ciekawych miejscach.
+func _cache_spots() -> Array[Vector3]:
+	var spots: Array[Vector3] = ($Props as Node).pillar_tops.duplicate()
+	spots.append_array(_landmarks.cache_spots())
+	return spots
+
 func _build_gold_label() -> void:
 	_gold_label = Label.new()
 	_gold_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -229,7 +248,8 @@ func _update_gold() -> void:
 		DustBurst.spawn(self, _lair.pile.global_position, 0.8, Color(1.0, 0.82, 0.3))
 		save_game()
 		carried = 0
-	_gold_label.text = ("Złoto %d  ·  " % carried if carried > 0 else "") + "Skarb %d" % treasure
+	_gold_label.text = ("Złoto %d  ·  " % carried if carried > 0 else "") + "Skarb %d" % treasure \
+		+ "  ·  Miejsca %d/%d" % [_landmarks.found.size(), _landmarks.total()]
 
 
 # --- Sen w legowisku -------------------------------------------------------------
@@ -297,7 +317,7 @@ func _wake() -> void:
 		if _day_night.hour >= 7.0:
 			day += 1  # po północy dzień już się zmienił — śpisz tylko do rana
 		_day_night.set_hour(7.0)
-		_finds.setup(day, ($Props as Node).pillar_tops)  # nowy dzień — nowe znaleziska
+		_finds.setup(day, _cache_spots())  # nowy dzień — nowe znaleziska
 		var st := _player.stats
 		st.health = 100.0
 		st.stamina = 100.0

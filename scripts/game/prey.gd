@@ -91,8 +91,8 @@ func _physics_process(delta: float) -> void:
 			_pick_wander()
 
 	var pos := global_position + _dir * _speed * delta
-	pos.x = clampf(pos.x, -900.0, 900.0)
-	pos.z = clampf(pos.z, -900.0, 900.0)
+	pos.x = clampf(pos.x, -Terrain.HALF + 150.0, Terrain.HALF - 150.0)
+	pos.z = clampf(pos.z, -Terrain.HALF + 150.0, Terrain.HALF - 150.0)
 	# nie wchodź do wody ani na strome / wysokie zbocza — zawróć
 	if _speed > 0.01 and not Terrain.is_walkable(pos.x + _dir.x * 1.5, pos.z + _dir.z * 1.5):
 		_dir = -_dir.rotated(Vector3.UP, _rng.randf_range(-0.8, 0.8))
