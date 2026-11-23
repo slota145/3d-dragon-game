@@ -115,7 +115,10 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 
 ## Faza 7 — Ogień i łapanie ⬜
 
-- ⬜ Kula ognia młodzika (czas odnowienia), strumień ognia dorosłego, palenie budynków
+- ✅ Ogień (0.11.0, `dragon_fire.gd`, `fireball.gd`, `fire_fx.gd`): od Młodzika kula ognia (tap, odnowienie
+  2,2 s, pierścień na przycisku), od Dorosłego strumień ognia (trzymanie do 3,5 s); pysk otwiera się
+  (kość Jaw w `dragon_proportions.gd`); ogień piecze zwierzęta i ludzi (pieczeń do zjedzenia), podpala
+  chaty, stodoły i stogi (płoną 12 s → zgliszcza z dymem, rozgłos +5); odbudowa po nocy
 - ⬜ Łapanie w locie (Ugryzienie w powietrzu): niesienie, upuszczanie z wysokości
 
 ## Faza 8 — Wielcy przeciwnicy i zamki ⬜

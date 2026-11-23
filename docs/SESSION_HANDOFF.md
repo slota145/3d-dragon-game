@@ -5,6 +5,39 @@
 
 ---
 
+## 2026-11-23 — po wersji v0.11.0 (faza 7: ogień)
+
+```text
+Kontynuujemy pracę nad grą „3D Dragon Game” (Godot 4.7, Android, repo slota145/3d-dragon-game,
+gałąź main). Przeczytaj najpierw CLAUDE.md, docs/GAME_DESIGN.md i ROADMAP.md.
+
+Stan (v0.11.0, wydana, APK: releases/latest/download/DragonGame.apk). Fazy 0–5 gotowe, faza 6 w dużej
+części (wioski, ludzie, rozgłos, myśliwi), faza 7 — ogień gotowy.
+- Rdzeń: pisklę → Młodzik (4 m: lot + kula ognia) → Dorosły (9 m: strumień ognia) → Pradawny (16 m);
+  polowanie, głód, jaskinia-legowisko (sen = zapis + dzień + leczenie + ulepszenia „sen na skarbie”),
+  dzień/noc, złoto i stos skarbu, świat 4×4 km (terrain.gd), 40 ciekawych miejsc (landmarks.gd),
+  6 wiosek (villages.gd, villager.gd: reakcja wg wielkości smoka, ludzi można jeść), rozgłos + myśliwi.
+- Ogień (ta sesja): dragon_fire.gd (węzeł „Fire” smoka; kula ognia młodzika / strumień dorosłego,
+  sygnał fire_hit -> world._on_fire_hit: Prey.burn (pieczeń do zjedzenia), Villages.ignite_near
+  (chaty/stodoły/stogi płoną 12 s → zgliszcza, rozgłos +5, odbudowa po nocy)), fireball.gd, fire_fx.gd
+  (CPUParticles3D, mieszanie MIX — w dzień płomienie pomarańczowe), szczęka: DragonProportions.jaw_open.
+- Testy: tools/check.sh + tools/test_walk/flight/hunt/pause/lair/world/village/fire.gd
+  (testy: world.use_save = false; test_lair kasuje zapis). test_fire trwa ~10 min (zrzuty + pożar).
+
+Uwagi otwarte:
+- Systemowy „wstecz” na Androidzie zamyka grę (zmiana ustawień projektu → base_api, pełne APK).
+- Właściciel nie sprawdził jeszcze na telefonie: świat 4×4 km, wioski, ogień (płynność cząsteczek!).
+- Drzewa (MultiMesh) nie płoną — ew. później.
+
+Następny krok wg ROADMAP: faza 7 — łapanie w locie (Ugryzienie w powietrzu: niesienie, upuszczanie),
+albo reszta fazy 6 (danina vs. łupienie wiosek, wozy kupieckie). Zapytaj ankietą.
+
+Komunikacja z właścicielem po polsku. Po każdym zadaniu: testy, commit, push na main,
+a dla zmian w grze — wydanie (podbicie wersji) i link do APK.
+```
+
+---
+
 ## 2026-11-23 — po wersji v0.10.1 (faza 6: ludzie, w toku)
 
 ```text
