@@ -20,6 +20,11 @@ const LAKE_CENTER := Vector2(430.0, 270.0)
 const LAKE_RADIUS := 170.0
 ## Jeziora: [środek x, środek z, promień]. Pierwsze to jezioro przy łące (LAKE_CENTER).
 const LAKES := [[430.0, 270.0, 170.0], [-760.0, 1180.0, 250.0], [1350.0, -260.0, 210.0], [140.0, -1620.0, 160.0]]
+## Wioski: [środek x, środek z, promień placu]. Plac jest wyrównany, wokół pola uprawne.
+const VILLAGES := [[160.0, 640.0, 70.0], [-640.0, 480.0, 65.0], [1150.0, 860.0, 70.0], [880.0, 120.0, 60.0],
+	[-260.0, 1450.0, 70.0], [-1300.0, -120.0, 60.0]]
+## Szerokość pierścienia pól wokół wioski (m).
+const FIELDS := 80.0
 ## Rzeki: łamane od gór do jezior.
 const RIVERS := [
 	[Vector2(250, -620), Vector2(290, -380), Vector2(310, -170), Vector2(345, -10), Vector2(395, 140), Vector2(430, 270)],
@@ -42,6 +47,7 @@ static var _hills: FastNoiseLite
 static var _ridge: FastNoiseLite
 static var _detail: FastNoiseLite
 static var _forest: FastNoiseLite
+static var _village_h: Dictionary = {}
 
 var _chunks: Dictionary = {}  # Vector2i -> {"mesh": MeshInstance3D, "lod": int, "body": StaticBody3D}
 var _material: StandardMaterial3D
@@ -74,8 +80,32 @@ static func _smooth(a: float, b: float, x: float) -> float:
 	return smoothstep(a, b, x) if a < b else 1.0 - smoothstep(b, a, x)
 
 
-## Wysokość terenu (m) w punkcie (x, z).
+## Wysokość terenu (m) w punkcie (x, z) — z wyrównanymi placami wiosek.
 static func height(x: float, z: float) -> float:
+	var h := _raw_height(x, z)
+	for i in VILLAGES.size():
+		var v: Array = VILLAGES[i]
+		var d := Vector2(x - v[0], z - v[1]).length()
+		var r: float = v[2]
+		if d < r + FIELDS:
+			if not _village_h.has(i):
+				_village_h[i] = maxf(_raw_height(v[0], v[1]), 1.0)
+			# plac zupełnie płasko, pola łagodnie przechodzą w okoliczne wzgórza
+			h = lerpf(h, _village_h[i], 1.0 - smoothstep(r, r + FIELDS, d))
+	return h
+
+
+## 0..1 — gdzie leżą pola wioski (pierścień wokół placu); -1 gdy daleko od wiosek.
+static func farmland(x: float, z: float) -> float:
+	for v: Array in VILLAGES:
+		var d := Vector2(x - v[0], z - v[1]).length()
+		var r: float = v[2]
+		if d < r + FIELDS:
+			return clampf((d - r * 0.85) / FIELDS, 0.0, 1.0) if d > r * 0.85 else 0.0
+	return -1.0
+
+
+static func _raw_height(x: float, z: float) -> float:
 	_init_noise()
 	var r := Vector2(x, z).length()
 	# wzgórza: łagodne w środku (łąka), wyraźne dalej; zupełnie płasko wokół startu
@@ -127,6 +157,8 @@ static func forest(x: float, z: float) -> float:
 	_init_noise()
 	var f := _forest.get_noise_2d(x, z) * 0.8 + 0.6 * smoothstep(-80.0, -380.0, x) - 0.08
 	f *= smoothstep(130.0, 220.0, Vector2(x, z).length())  # łąka w środku bez lasu
+	for v: Array in VILLAGES:  # wioski i pola bez lasu
+		f *= smoothstep(v[2] + FIELDS * 0.8, v[2] + FIELDS + 60.0, Vector2(x - v[0], z - v[1]).length())
 	return clampf(f * 2.0, 0.0, 1.0)
 
 
@@ -137,7 +169,7 @@ static func is_water(x: float, z: float) -> bool:
 ## Czy tu mogą chodzić zwierzęta / leżeć złoto (sucho i niezbyt stromo / wysoko).
 static func is_walkable(x: float, z: float) -> bool:
 	var h := height(x, z)
-	if h < WATER_LEVEL + 0.4 or h > 30.0:
+	if h < WATER_LEVEL + 0.4 or (h > 30.0 and farmland(x, z) < 0.0):
 		return false
 	return absf(height(x + 3.0, z) - h) < 2.2 and absf(height(x, z + 3.0) - h) < 2.2
 
@@ -315,6 +347,10 @@ static func _face_color(x: float, z: float, h: float, ny: float) -> Color:
 		col = Color(0.92, 0.93, 0.96)  # śnieg
 	elif h > 60.0:
 		col = Color(0.42, 0.45, 0.32).lerp(Color(0.5, 0.48, 0.44), clampf((h - 60.0) / 80.0, 0.0, 1.0))
+	elif farmland(x, z) > 0.05 and farmland(x, z) < 0.95:
+		# pola: pasy zboża, zaoranej ziemi i łąki (kierunek pasów zależy od miejsca)
+		var stripe := int(floor((x * 0.8 + z * 0.6) / 9.0 + floor(x / 60.0) * 3.0)) % 3
+		col = [Color(0.85, 0.7, 0.3), Color(0.45, 0.32, 0.2), Color(0.55, 0.65, 0.28)][absi(stripe)]
 	else:
 		var f := forest(x, z)
 		var meadow := Color(0.38, 0.55, 0.27).lerp(Color(0.45, 0.58, 0.28), 0.5 + 0.5 * _detail.get_noise_2d(x * 0.3, z * 0.3))

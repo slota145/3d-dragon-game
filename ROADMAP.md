@@ -101,6 +101,13 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 
 ## Faza 6 — Ludzie ⬜
 
+- ✅ Wioski i farmy (0.10.0, `gen_village.py`, `villages.gd`): 6 wiosek na wyrównanych placach — studnia,
+  chaty ze strzechą, stodoła, stogi, zagroda z owcami, pola wokół; kolizje budynków
+- ✅ Ludzie (0.10.0, `gen_people.py`, `villager.gd`): wieśniacy z widłami i pasterze; reakcja wg wielkości
+  smoka: pisklę — dźgają widłami, młodzik — cofają się, dorosły — panika; smok może ich zjeść;
+  zjedzeni mieszkańcy i owce wracają następnego dnia
+- ⬜ Rozgłos + myśliwi z łukami (decyzja właściciela: zakres pierwszej wersji fazy 6)
+
 - ⬜ Wieśniacy, pasterze, drwale, myśliwi (łuki, sieci, pułapki), wozy kupieckie
 - ⬜ Farmy i wioski; **rozgłos** i odwet
 - ⬜ Danina vs. palenie i łupienie wiosek; odbudowa

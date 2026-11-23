@@ -23,6 +23,8 @@ var _lair: Lair
 var _terrain: Terrain
 var _decor: TerrainDecor
 var _landmarks: Landmarks
+var _villages: Villages
+var _poke_msg: int = -100000
 var _day_night: DayNight
 var _sleeping: bool = false
 var _intro: bool = false
@@ -56,6 +58,15 @@ func _ready() -> void:
 	_landmarks.discovered.connect(func(label: String, count: int, all: int) -> void:
 		_banner("ODKRYTO: " + label.to_upper(), "Ciekawe miejsca: %d / %d · w pobliżu leży skarb" % [count, all])
 		save_game())
+	_villages = Villages.new()
+	_villages.name = "Villages"
+	_villages.dragon = _player
+	_villages.sheep_model = _spawner.sheep_model
+	add_child(_villages)
+	_villages.poked.connect(func(by: Villager, _dmg: float) -> void:
+		if Time.get_ticks_msec() - _poke_msg > 3000:
+			_poke_msg = Time.get_ticks_msec()
+			_toast("%s dźga cię widłami! Uciekaj albo walcz" % by.display_name))
 	_lair = Lair.new()
 	_lair.name = "Lair"
 	_lair.position = Lair.POSITION
@@ -318,6 +329,7 @@ func _wake() -> void:
 			day += 1  # po północy dzień już się zmienił — śpisz tylko do rana
 		_day_night.set_hour(7.0)
 		_finds.setup(day, _cache_spots())  # nowy dzień — nowe znaleziska
+		_villages.repopulate()  # zjedzeni mieszkańcy i owce wracają
 		var st := _player.stats
 		st.health = 100.0
 		st.stamina = 100.0

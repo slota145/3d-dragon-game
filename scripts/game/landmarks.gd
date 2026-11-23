@@ -101,6 +101,9 @@ func _good_spot(kind: String, p: Vector2, radius: float) -> bool:
 		return false
 	if p.distance_to(Vector2(Lair.POSITION.x, Lair.POSITION.z)) < Lair.RADIUS + 60.0:
 		return false
+	for v: Array in Terrain.VILLAGES:  # z dala od wiosek i pól
+		if p.distance_to(Vector2(v[0], v[1])) < v[2] + Terrain.FIELDS + 40.0:
+			return false
 	# blisko łąki gęściej (pisklę ma szybko coś odkryć), dalej co ~400 m
 	var spacing := 230.0 if p.length() < 600.0 else MIN_SPACING
 	for other in _places:

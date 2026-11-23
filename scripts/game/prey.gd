@@ -26,6 +26,9 @@ enum State { GRAZE, FLEE, DEAD }
 ## Bazowy zasięg czujności (m), rośnie z rozmiarem smoka.
 @export var alert_range: float = 7.0
 
+## Zwierzę z zagrody: nie oddala się od `home` dalej niż `home_radius` (0 = bez uwiązania).
+var home: Vector3
+var home_radius: float = 0.0
 var dragon: Node3D
 var state: State = State.GRAZE
 var health: float = 1.0
@@ -90,6 +93,17 @@ func _physics_process(delta: float) -> void:
 		if _timer <= 0.0:
 			_pick_wander()
 
+	_move(delta)
+
+
+## Ruch po terenie: granice świata, zagroda, omijanie wody i stromizn.
+func _move(delta: float) -> void:
+	if home_radius > 0.0:
+		var off := global_position + _dir * 1.5 - home
+		off.y = 0.0
+		if off.length() > home_radius:  # płot — zawróć do środka zagrody
+			_dir = (home - global_position).normalized().rotated(Vector3.UP, _rng.randf_range(-0.6, 0.6))
+			_dir.y = 0.0
 	var pos := global_position + _dir * _speed * delta
 	pos.x = clampf(pos.x, -Terrain.HALF + 150.0, Terrain.HALF - 150.0)
 	pos.z = clampf(pos.z, -Terrain.HALF + 150.0, Terrain.HALF - 150.0)
