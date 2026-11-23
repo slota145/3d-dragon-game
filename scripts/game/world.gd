@@ -141,6 +141,13 @@ func _ready() -> void:
 	pause.on_stats_changed = _update_buttons
 	if use_save:
 		pause.on_new_game = new_game
+	pause.on_gyro_changed = func(on: bool) -> void: _camera.gyro_enabled = on
+	_camera.gyro_enabled = PauseMenu.gyro_enabled()
+	var crosshair := Crosshair.new()
+	crosshair.name = "Crosshair"
+	crosshair.dragon = _player
+	_hud.add_child(crosshair)
+	_hud.move_child(crosshair, 1)
 	add_child(pause)
 	_spawner.dragon = _player
 	_spawner.populate()

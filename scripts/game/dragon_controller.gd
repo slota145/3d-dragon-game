@@ -154,6 +154,18 @@ var _proportions: DragonProportions
 ## 0..1 — otwarcie pyska (ziejąc ogniem); ustawia DragonFire, wykonuje DragonProportions.
 var jaw_open: float = 0.0
 var fire: DragonFire
+## Celowanie (ogień): punkt pod celownikiem (środek ekranu) i cel złapany przez pomoc w celowaniu.
+var aim_point: Vector3
+var aim_target: Node3D
+var _aim_dir: Vector3 = Vector3.BACK
+var _head_yaw: float = 0.0
+var _head_pitch: float = 0.0
+## Granice obrotu głowy względem tułowia.
+const HEAD_YAW_MAX := deg_to_rad(95.0)
+const HEAD_PITCH_MIN := deg_to_rad(-45.0)
+const HEAD_PITCH_MAX := deg_to_rad(35.0)
+## Stożek pomocy w celowaniu (stopnie).
+const ASSIST_DEG := 9.0
 
 @onready var stats: DragonStats = $Stats
 @onready var _visual: Node3D = $Visual
@@ -220,16 +232,75 @@ func _fly_k() -> float:
 	return clampf(sqrt(_k), 0.35, 1.3)
 
 
-## Kierunek ziania ogniem: wzdłuż dzioba (w locie z pochyleniem), na ziemi lekko w dół.
+## Kierunek ziania ogniem: tam, gdzie celuje kamera (środek ekranu / cel pomocy w celowaniu),
+## w granicach obrotu głowy. Bez kamery — wzdłuż dzioba.
 func fire_direction() -> Vector3:
+	if camera:
+		return _aim_dir
 	if state == State.AIR:
 		return _facing_3d().rotated(_facing_flat().cross(Vector3.UP).normalized(), deg_to_rad(-8.0))
 	return (_facing_flat() + Vector3.DOWN * 0.015).normalized()
 
 
-## Pysk smoka (start kuli ognia / strumienia).
+## Pysk smoka (start kuli ognia / strumienia) — z uwzględnieniem obrotu głowy.
 func mouth_position() -> Vector3:
-	return global_position + _facing_3d() * (bite_reach * 0.9 * _k) + Vector3.UP * (1.9 * _k)
+	var head_dir := _facing_3d().rotated(Vector3.UP, _head_yaw * 0.8)
+	return global_position + head_dir * (bite_reach * 0.9 * _k) + Vector3.UP * (1.9 * _k + sin(_head_pitch) * 1.5 * _k)
+
+
+## Celowanie: promień z kamery przez środek ekranu → punkt celu; pomoc w celowaniu łapie
+## najbliższy cel w wąskim stożku; głowa obraca się w jego stronę (w granicach szyi).
+func _update_aim(delta: float) -> void:
+	if not camera:
+		return
+	var fwd := -camera.global_basis.z
+	var from := camera.global_position
+	var far := from + fwd * 220.0
+	var q := PhysicsRayQueryParameters3D.create(from + fwd * 2.0, far)
+	q.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	aim_point = hit.get("position", far)
+	var mouth := mouth_position()
+	var want := (aim_point - mouth).normalized()
+	# pomoc w celowaniu (tylko gdy smok może ziać)
+	aim_target = null
+	if stats.can_fire():
+		var best := deg_to_rad(ASSIST_DEG + stats.size * 0.3)
+		var reach := 70.0 + stats.size * 4.0
+		var candidates: Array = get_tree().get_nodes_in_group("prey")
+		candidates.append_array(get_tree().get_nodes_in_group("flammable"))
+		for n in candidates:
+			var node := n as Node3D
+			if not node or (node is Prey and not (node as Prey).is_alive()):
+				continue
+			var c := (node as Prey).center() if node is Prey else node.global_position + Vector3.UP * 2.5
+			var to := c - mouth
+			if to.length() > reach or to.length() < 1.0:
+				continue
+			var ang := to.normalized().angle_to(want)
+			if ang < best:
+				best = ang
+				aim_target = node
+				aim_point = c
+		if aim_target:
+			want = (aim_point - mouth).normalized()
+	# granice obrotu głowy względem tułowia
+	var facing := _facing_flat()
+	var flat := Vector3(want.x, 0.0, want.z)
+	var yaw := 0.0
+	if flat.length() > 0.01:
+		yaw = clampf(facing.signed_angle_to(flat.normalized(), Vector3.UP), -HEAD_YAW_MAX, HEAD_YAW_MAX)
+	var body_pitch := pitch if state == State.AIR else 0.0
+	var p := clampf(asin(clampf(want.y, -1.0, 1.0)) - body_pitch, HEAD_PITCH_MIN, HEAD_PITCH_MAX)
+	var dir := facing.rotated(Vector3.UP, yaw)
+	_aim_dir = (dir * cos(p + body_pitch) + Vector3.UP * sin(p + body_pitch)).normalized()
+	# głowa: pełny obrót przy staniu, w biegu / locie mniej (patrzy też przed siebie)
+	var moving := Vector2(velocity.x, velocity.z).length() > walk_speed * _move_k() * 1.2
+	var k := 0.45 if (moving or state == State.AIR) else 1.0
+	if _eating > 0.0 or _bite_t < 0.5:
+		k = 0.0  # gryzienie / jedzenie — głowa wg animacji
+	_head_yaw = lerpf(_head_yaw, yaw * k, clampf(8.0 * delta, 0.0, 1.0))
+	_head_pitch = lerpf(_head_pitch, p * k, clampf(8.0 * delta, 0.0, 1.0))
 
 
 ## Środek ciała smoka (cel strzał, trafienia).
@@ -533,8 +604,11 @@ func _land() -> void:
 # --- Wygląd ------------------------------------------------------------------
 
 func _update_visual(delta: float, stick: Vector2) -> void:
+	_update_aim(delta)
 	if _proportions:
 		_proportions.jaw_open = jaw_open
+		_proportions.head_yaw = _head_yaw
+		_proportions.head_pitch = _head_pitch
 	var target_bank := stick.x * deg_to_rad(max_bank_deg) if state == State.AIR else 0.0
 	_bank = lerpf(_bank, target_bank, clampf(4.0 * delta, 0.0, 1.0))
 	var vis_pitch := pitch if state == State.AIR else 0.0

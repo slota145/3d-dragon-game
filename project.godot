@@ -12,11 +12,13 @@ config_version=5
 
 config/name="3D Dragon Game"
 config/description="Gra o smoku w Godot 4 — prototyp."
-config/version="0.11.0"
+config/version="0.12.0"
 ; Numer zgodności „bazy” (APK/EXE). Podbij, gdy zmieniasz coś, czego łatka .pck nie przeniesie
 ; (input map, ustawienia projektu, eksportu, wersja silnika) — gracze dostaną wtedy pełną aktualizację.
-config/base_api=5
+config/base_api=6
 run/main_scene="res://scenes/boot.tscn"
+; „wstecz” na Androidzie otwiera menu pauzy (PauseMenu), zamiast zamykać grę
+config/quit_on_go_back=false
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://assets/icon.png"
 
@@ -82,6 +84,7 @@ fire={
 [input_devices]
 
 pointing/emulate_touch_from_mouse=true
+sensors/enable_gyroscope=true
 
 [physics]
 

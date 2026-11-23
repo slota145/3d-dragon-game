@@ -15,6 +15,10 @@ var stats: DragonStats
 var on_stats_changed: Callable
 ## Nowa gra (kasuje zapis) — ustawia świat; pusty = opcja ukryta.
 var on_new_game: Callable
+## Zmiana opcji „Celowanie żyroskopem” (świat przekazuje ją kamerze).
+var on_gyro_changed: Callable
+
+var _gyro_toggle: CheckButton
 
 var _new_game_button: Button
 var _new_game_armed: bool = false
@@ -61,6 +65,15 @@ func close() -> void:
 	_pause_button.visible = true
 	get_tree().paused = false
 	resumed.emit()
+
+
+func _notification(what: int) -> void:
+	# Android: systemowy „wstecz” otwiera / zamyka pauzę (quit_on_go_back = false)
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if is_open():
+			close()
+		else:
+			open()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -141,6 +154,18 @@ func _build_menu() -> void:
 	_dev_toggle.focus_mode = Control.FOCUS_NONE
 	_dev_toggle.toggled.connect(_on_dev_toggled)
 	box.add_child(_dev_toggle)
+
+	_gyro_toggle = CheckButton.new()
+	_gyro_toggle.text = "Celowanie żyroskopem"
+	_gyro_toggle.custom_minimum_size = Vector2(0, BUTTON_H)
+	_gyro_toggle.add_theme_font_size_override("font_size", FONT)
+	_gyro_toggle.focus_mode = Control.FOCUS_NONE
+	_gyro_toggle.set_pressed_no_signal(gyro_enabled())
+	_gyro_toggle.toggled.connect(func(on: bool) -> void:
+		_save_setting("controls", "gyro", on)
+		if on_gyro_changed.is_valid():
+			on_gyro_changed.call(on))
+	box.add_child(_gyro_toggle)
 
 	_new_game_button = _button("Nowa gra", _on_new_game)
 	box.add_child(_new_game_button)
@@ -234,10 +259,22 @@ func _changed() -> void:
 
 func _on_dev_toggled(on: bool) -> void:
 	_dev_panel.visible = on
+	_save_setting("dev", "enabled", on)
+
+
+func _save_setting(section: String, key: String, value: Variant) -> void:
 	var cfg := ConfigFile.new()
 	cfg.load(SETTINGS_PATH)
-	cfg.set_value("dev", "enabled", on)
+	cfg.set_value(section, key, value)
 	cfg.save(SETTINGS_PATH)
+
+
+## Zapisana opcja celowania żyroskopem (domyślnie wyłączona).
+static func gyro_enabled() -> bool:
+	var cfg := ConfigFile.new()
+	if cfg.load(SETTINGS_PATH) != OK:
+		return false
+	return bool(cfg.get_value("controls", "gyro", false))
 
 
 func _load_dev_enabled() -> bool:

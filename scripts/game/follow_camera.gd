@@ -24,6 +24,11 @@ extends Node3D
 @export var user_zoom_max: float = 1.6
 @export var wheel_step: float = 1.12
 
+@export_group("Żyroskop")
+## Celowanie przechylaniem telefonu (opcja w menu pauzy, domyślnie wyłączona).
+@export var gyro_enabled: bool = false
+@export var gyro_sensitivity: float = 1.0
+
 @export_group("Lot")
 @export var flight_distance: float = 26.0
 @export var flight_height: float = 4.5
@@ -140,6 +145,13 @@ func _process(delta: float) -> void:
 		_idle_time = 0.0
 	else:
 		_idle_time += delta
+	if gyro_enabled:
+		# obrót telefonu (rad/s): wokół osi pionowej ekranu = rozglądanie, wokół poziomej = góra/dół
+		var g := Input.get_gyroscope()
+		if g.length() > 0.02:
+			_yaw += g.y * gyro_sensitivity * delta
+			_pitch = clampf(_pitch + g.x * gyro_sensitivity * delta, deg_to_rad(-60), deg_to_rad(10))
+			_idle_time = 0.0
 	var flying: bool = target.has_method("is_flying") and target.is_flying()
 	var zoom := clampf(pow(size_k, zoom_exponent), 0.18, 1.8)
 	var flight_zoom := maxf(zoom, 0.35)

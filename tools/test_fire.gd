@@ -106,6 +106,35 @@ func _init() -> void:
 	_check(not sheep.is_alive(), "owca upieczona strumieniem")
 	_check(not player.fire.streaming and player.fire.readiness < 1.0, "po strumieniu odpoczynek")
 
+	print("4b) Celowanie: głowa za kamerą, pomoc w celowaniu")
+	player.global_position = Vector3(0, 0.2, 0)
+	player.rotation.y = 0.0
+	player.velocity = Vector3.ZERO
+	player.reset_physics_interpolation()
+	cam.snap_behind()
+	cam.set("_yaw", PI + deg_to_rad(50.0))  # kamera patrzy 50° w lewo od smoka
+	await _seconds(1.0)
+	var fd := player.fire_direction()
+	var fwd := Vector3(sin(player.rotation.y), 0, cos(player.rotation.y))
+	var ang := rad_to_deg(fwd.signed_angle_to(Vector3(fd.x, 0, fd.z).normalized(), Vector3.UP))
+	_check(ang > 30.0, "ogień leci tam, gdzie kamera (%.0f° od dzioba)" % ang)
+	_check(player.get("_head_yaw") > 0.4, "głowa obrócona (%.2f rad)" % player.get("_head_yaw"))
+	await _shot("aim_head.png")
+	# cel prawie na środku ekranu -> pomoc w celowaniu go łapie
+	var target_sheep: Prey = null
+	for r in vil.residents():
+		if r is Prey and not (r is Villager) and (r as Prey).is_alive():
+			target_sheep = r
+			break
+	var aim_fwd := -cam.global_basis.z
+	target_sheep.global_position = player.mouth_position() + Vector3(aim_fwd.x, 0, aim_fwd.z).normalized() * 25.0 + Vector3.RIGHT.rotated(Vector3.UP, cam.rotation.y) * 2.0
+	target_sheep.global_position.y = Terrain.height(target_sheep.global_position.x, target_sheep.global_position.z)
+	target_sheep.home_radius = 0.0
+	target_sheep.set_physics_process(false)
+	await _seconds(0.5)
+	_check(player.aim_target == target_sheep, "pomoc w celowaniu złapała owcę")
+	await _shot("aim_lock.png")
+
 	print("5) Odbudowa")
 	vil.rebuild()
 	await _frames(3)
