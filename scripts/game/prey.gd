@@ -143,6 +143,33 @@ func _animate(delta: float) -> void:
 		_body.rotation.x = lerpf(_body.rotation.x, 0.12 if _speed < 0.05 else 0.0, clampf(3.0 * delta, 0.0, 1.0))
 
 
+## Upieczona ogniem (martwa, do zjedzenia).
+var roasted: bool = false
+
+
+## Obrażenia od ognia. Zabita ofiara zostaje upieczona — smok może ją zjeść ugryzieniem.
+func burn(damage: float) -> void:
+	if state == State.DEAD:
+		return
+	if take_bite(damage):
+		roasted = true
+		for mi: MeshInstance3D in find_children("*", "MeshInstance3D", true, false):
+			var dark := StandardMaterial3D.new()
+			dark.albedo_color = Color(0.12, 0.08, 0.05, 0.75)
+			dark.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			mi.material_overlay = dark
+		var tw := create_tween()  # przewraca się
+		tw.tween_property(self, "rotation:z", PI / 2.0, 0.4)
+		get_tree().create_timer(90.0).timeout.connect(func() -> void:
+			if is_instance_valid(self):
+				queue_free())
+
+
+## Czy smok może to zjeść (żywe lub upieczone).
+func is_edible() -> bool:
+	return is_alive() or roasted
+
+
 ## Ugryzienie przez smoka. Zwraca true, jeśli ofiara zginęła.
 func take_bite(damage: float) -> bool:
 	if state == State.DEAD:

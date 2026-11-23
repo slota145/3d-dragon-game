@@ -14,6 +14,8 @@ extends Control
 @export var color_pressed: Color = Color(1, 0.85, 0.5, 0.5)
 
 var _touch_index: int = -1
+## 0..1 — gotowość (np. odnowienie kuli ognia); < 1 rysuje pierścień ładowania.
+var charge: float = 1.0
 ## Czas pozostały animacji odblokowania (s) — pulsowanie i złote fale.
 var _celebrate_t: float = 0.0
 
@@ -84,6 +86,9 @@ func _draw() -> void:
 	if glow > 0.0:
 		draw_arc(c, radius, 0.0, TAU, 64, Color(GOLD, glow), 8.0, true)
 	draw_arc(c, radius, 0.0, TAU, 64, Color(1, 1, 1, 0.2 if locked else 0.45), 4.0, true)
+	if not locked and charge < 0.999:  # odnawianie: przyciemnienie + pierścień
+		draw_circle(c, radius, Color(0, 0, 0, 0.25))
+		draw_arc(c, radius - 6.0, -PI / 2.0, -PI / 2.0 + TAU * charge, 48, Color(1.0, 0.6, 0.2, 0.9), 8.0, true)
 	var wing := Color(1, 1, 1, 0.3 if locked else 0.85)
 	var k := radius / 120.0
 	if icon == "bite":  # paszcza: dwa rzędy zębów

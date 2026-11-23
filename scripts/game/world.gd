@@ -82,6 +82,8 @@ func _ready() -> void:
 		if Time.get_ticks_msec() - _arrow_msg > 3000:
 			_arrow_msg = Time.get_ticks_msec()
 			_toast("Trafiony strzałą! Myśliwi polują na smoka"))
+	_villages.building_burnt.connect(func(_b: Node3D) -> void: add_renown(5.0))
+	_player.fire.fire_hit.connect(_on_fire_hit)
 	_lair = Lair.new()
 	_lair.name = "Lair"
 	_lair.position = Lair.POSITION
@@ -238,6 +240,17 @@ func _play_intro() -> void:
 		save_game())
 
 
+# --- Ogień --------------------------------------------------------------------------
+
+## Ogień smoka (kula / strumień): rani i piecze zwierzęta i ludzi, podpala budynki.
+func _on_fire_hit(at: Vector3, radius: float, damage: float) -> void:
+	for n in get_tree().get_nodes_in_group("prey"):
+		var prey := n as Prey
+		if prey and prey.is_alive() and prey.center().distance_to(at) < radius + prey.radius:
+			prey.burn(damage)
+	_villages.ignite_near(at, radius)
+
+
 # --- Rozgłos -----------------------------------------------------------------------
 
 func renown_level() -> int:
@@ -376,6 +389,7 @@ func _wake() -> void:
 		_renown_level = renown_level()
 		_villages.hunters_per_village = _hunters_for(_renown_level)
 		_villages.repopulate()  # zjedzeni mieszkańcy i owce wracają
+		_villages.rebuild()  # spalone chaty odbudowane
 		var st := _player.stats
 		st.health = 100.0
 		st.stamina = 100.0
@@ -403,16 +417,19 @@ func _on_landed(impact: float) -> void:
 func _update_buttons() -> void:
 	var flap: TouchActionButton = _hud.get_node("FlapButton")
 	flap.label = "SKRZYDŁA" if _player.stats.can_fly() else "SKOK"
-	# ogień pojawi się w fazie 7 — na razie przycisk zablokowany
-	(_hud.get_node("FireButton") as TouchActionButton).locked = true
+	# ogień od stadium Młodzika (kula ognia), od Dorosłego strumień
+	var fire_btn := _hud.get_node("FireButton") as TouchActionButton
+	fire_btn.locked = not _player.stats.can_fire()
+	fire_btn.label = "STRUMIEŃ" if _player.stats.stage >= DragonStats.Stage.ADULT else "OGIEŃ"
 
 
 func _on_stage_changed(_stage: int, stage_name: String) -> void:
 	var unlocks := ""
 	var unlocked: Array[TouchActionButton] = []
 	if _player.stats.stage == DragonStats.Stage.JUVENILE:
-		unlocks = "Odblokowano: LOT!"
+		unlocks = "Odblokowano: LOT i KULA OGNIA!"
 		unlocked.append(_hud.get_node("FlapButton"))
+		unlocked.append(_hud.get_node("FireButton"))
 	_banner(stage_name.to_upper() + "!", unlocks)
 	_update_buttons()
 	for b in unlocked:
@@ -469,6 +486,7 @@ func _process(delta: float) -> void:
 	status.text = "Dzień %d, %s · %s · wys. %d m · %d km/h" % [day, _day_night.clock_text(), mode, int(_player.global_position.y),
 		int(v.length() * 3.6)]
 	_sleep_button.visible = can_sleep()
+	(_hud.get_node("FireButton") as TouchActionButton).charge = _player.fire.readiness
 	renown = maxf(0.0, renown - delta * 0.01)  # ok. 0,6 pkt na minutę
 	_renown_level = mini(_renown_level, renown_level())
 	_update_gold()

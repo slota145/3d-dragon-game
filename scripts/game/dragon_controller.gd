@@ -151,6 +151,9 @@ var _k: float = 1.0  # skala smoka (rozmiar / rozmiar modelu)
 var _base_shape_size: Vector3
 var _base_shape_pos: Vector3
 var _proportions: DragonProportions
+## 0..1 — otwarcie pyska (ziejąc ogniem); ustawia DragonFire, wykonuje DragonProportions.
+var jaw_open: float = 0.0
+var fire: DragonFire
 
 @onready var stats: DragonStats = $Stats
 @onready var _visual: Node3D = $Visual
@@ -169,6 +172,10 @@ func _ready() -> void:
 	stats.upgraded.connect(func(id: String, lvl: int) -> void:
 		if id == "scales":
 			_apply_scale_tint(lvl))
+	fire = DragonFire.new()
+	fire.name = "Fire"
+	fire.dragon = self
+	add_child(fire)
 	stats.size_changed.connect(_apply_size)
 	_apply_size(stats.size)
 	if _anim:
@@ -211,6 +218,18 @@ func _move_k() -> float:
 ## Skala prędkości lotu: młodzik lata wyraźnie wolniej niż dorosły.
 func _fly_k() -> float:
 	return clampf(sqrt(_k), 0.35, 1.3)
+
+
+## Kierunek ziania ogniem: wzdłuż dzioba (w locie z pochyleniem), na ziemi lekko w dół.
+func fire_direction() -> Vector3:
+	if state == State.AIR:
+		return _facing_3d().rotated(_facing_flat().cross(Vector3.UP).normalized(), deg_to_rad(-8.0))
+	return (_facing_flat() + Vector3.DOWN * 0.12).normalized()
+
+
+## Pysk smoka (start kuli ognia / strumienia).
+func mouth_position() -> Vector3:
+	return global_position + _facing_3d() * (bite_reach * 0.9 * _k) + Vector3.UP * (1.9 * _k)
 
 
 ## Środek ciała smoka (cel strzał, trafienia).
@@ -514,6 +533,8 @@ func _land() -> void:
 # --- Wygląd ------------------------------------------------------------------
 
 func _update_visual(delta: float, stick: Vector2) -> void:
+	if _proportions:
+		_proportions.jaw_open = jaw_open
 	var target_bank := stick.x * deg_to_rad(max_bank_deg) if state == State.AIR else 0.0
 	_bank = lerpf(_bank, target_bank, clampf(4.0 * delta, 0.0, 1.0))
 	var vis_pitch := pitch if state == State.AIR else 0.0
@@ -536,7 +557,7 @@ func _start_bite() -> void:
 	var best_d := (bite_reach + 4.0) * _k + 2.0
 	for node in get_tree().get_nodes_in_group("prey"):
 		var prey := node as Prey
-		if not prey or not prey.is_alive():
+		if not prey or not prey.is_edible():
 			continue
 		var to := prey.global_position - global_position
 		to.y = 0.0
@@ -565,8 +586,13 @@ func _bite_hit() -> void:
 	var damage := bite_damage * pow(stats.size / stats.start_size, 0.8)
 	for node in get_tree().get_nodes_in_group("prey"):
 		var prey := node as Prey
-		if not prey or not prey.is_alive():
+		if not prey or not prey.is_edible():
 			continue
+		if prey.roasted and Vector2(prey.global_position.x - mouth.x, prey.global_position.z - mouth.z).length() \
+				< bite_radius * _k + 1.0 + prey.radius:
+			prey.roasted = false  # zjedzona — nie zjadaj drugi raz
+			_eat(prey)
+			return
 		var d := Vector2(prey.global_position.x - mouth.x, prey.global_position.z - mouth.z).length()
 		if d < reach + prey.radius and absf(prey.global_position.y - global_position.y) < 2.0 + 2.0 * _k:
 			if prey.take_bite(damage):

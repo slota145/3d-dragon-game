@@ -8,6 +8,7 @@ extends Node3D
 signal poked(by: Villager, damage: float)
 signal scared(by: Villager)
 signal eaten_from_village(prey: Prey)
+signal building_burnt(building: Node3D)
 
 @export var villagers_per_village: int = 5
 @export var sheep_per_pen: int = 5
@@ -19,6 +20,9 @@ var _meshes: Dictionary = {}
 var _people: Dictionary = {}  # rola -> Array[[name, mesh, pivot Transform3D]]
 var _residents: Array[Node3D] = []
 var _hunters: Array[Villager] = []
+var _burnable: Array[MeshInstance3D] = []
+## Jak długo płonie budynek, zanim zostanie zgliszczem (s).
+const BURN_TIME := 12.0
 ## Myśliwi na wioskę (zależy od rozgłosu smoka; ustawia świat).
 var hunters_per_village: int = 0
 
@@ -104,6 +108,9 @@ func _place(root: Node3D, item: String, pos: Vector3, yaw: float, collide: bool 
 	mi.rotation.y = yaw
 	mi.visibility_range_end = 1300.0
 	root.add_child(mi)
+	if item in ["Cottage", "Barn", "Hay"]:
+		mi.add_to_group("flammable")
+		_burnable.append(mi)
 	if collide and mi.mesh:
 		var aabb: AABB = mi.mesh.get_aabb()
 		var body := StaticBody3D.new()
@@ -114,6 +121,62 @@ func _place(root: Node3D, item: String, pos: Vector3, yaw: float, collide: bool 
 		cs.position = aabb.get_center()
 		body.add_child(cs)
 		mi.add_child(body)
+
+
+## Ogień smoka w punkcie: podpala budynki w zasięgu.
+func ignite_near(at: Vector3, radius: float) -> void:
+	for mi in _burnable:
+		if not mi.is_in_group("flammable"):
+			continue
+		var half: Vector3 = mi.mesh.get_aabb().size * 0.5
+		var d := Vector2(mi.global_position.x - at.x, mi.global_position.z - at.z).length()
+		if d < radius + maxf(half.x, half.z) and at.y < mi.global_position.y + half.y * 2.5 + radius:
+			_ignite(mi)
+
+
+func _ignite(mi: MeshInstance3D) -> void:
+	mi.remove_from_group("flammable")
+	var size: Vector3 = mi.mesh.get_aabb().size
+	var flames := FireFx.building_fire(size)
+	flames.name = "Fire"
+	mi.add_child(flames)
+	var light := OmniLight3D.new()
+	light.name = "FireLight"
+	light.light_color = Color(1.0, 0.55, 0.2)
+	light.omni_range = maxf(size.x, size.z) * 1.6
+	light.light_energy = 2.5
+	light.position = Vector3(0, size.y * 0.7, 0)
+	mi.add_child(light)
+	get_tree().create_timer(BURN_TIME).timeout.connect(func() -> void:
+		if not is_instance_valid(mi):
+			return
+		flames.emitting = false
+		light.queue_free()
+		var burnt := StandardMaterial3D.new()  # zgliszcza
+		burnt.albedo_color = Color(0.08, 0.06, 0.05, 0.85)
+		burnt.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mi.material_overlay = burnt
+		var smoke := FireFx.smoke(size)
+		smoke.name = "Smoke"
+		mi.add_child(smoke)
+		building_burnt.emit(mi))
+
+
+func burning_or_burnt() -> Array[MeshInstance3D]:
+	return _burnable.filter(func(mi: MeshInstance3D) -> bool: return not mi.is_in_group("flammable"))
+
+
+## Odbudowa spalonych budynków (nowy dzień).
+func rebuild() -> void:
+	for mi in _burnable:
+		if mi.is_in_group("flammable"):
+			continue
+		mi.material_overlay = null
+		for n in ["Fire", "Smoke", "FireLight"]:
+			var c := mi.get_node_or_null(n)
+			if c:
+				c.queue_free()
+		mi.add_to_group("flammable")
 
 
 ## Mieszkańcy i owce w zagrodach (nowa gra / nowy dzień — zjedzeni wracają).

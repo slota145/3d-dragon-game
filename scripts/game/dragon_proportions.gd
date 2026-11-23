@@ -7,6 +7,10 @@ extends SkeletonModifier3D
 
 ## 0..1 — ustawiane przez kontroler smoka wg rozmiaru (DragonStats.youth()).
 @export_range(0.0, 1.0) var youth: float = 0.0
+## 0..1 — dodatkowe otwarcie pyska (zianie ogniem), niezależnie od animacji.
+var jaw_open: float = 0.0
+## Kąt pełnego otwarcia pyska (rad, oś X kości Jaw).
+@export var jaw_angle: float = 0.55
 
 @export_group("Pisklę (youth = 1)")
 ## Głowa: X = szerokość, Y = długość (pysk), Z = wysokość — pisklę ma krótki pyszczek.
@@ -31,18 +35,23 @@ func _cache_ids() -> void:
 	var skel := get_skeleton()
 	if skel == null:
 		return
-	for bone_name in NECK_CHILDREN + WINGS + LEGS + ["Tail1"]:
+	for bone_name in NECK_CHILDREN + WINGS + LEGS + ["Tail1", "Jaw"]:
 		_ids[bone_name] = skel.find_bone(bone_name)
 
 
 func _process_modification_with_delta(_delta: float) -> void:
-	if youth <= 0.001:
-		return
 	var skel := get_skeleton()
 	if skel == null:
 		return
 	if _ids.is_empty():
 		_cache_ids()
+	if jaw_open > 0.01:
+		var jid: int = _ids.get("Jaw", -1)
+		if jid >= 0:
+			var q := skel.get_bone_pose_rotation(jid) * Quaternion(Vector3.RIGHT, jaw_angle * jaw_open)
+			skel.set_bone_pose_rotation(jid, q)
+	if youth <= 0.001:
+		return
 	var y := youth
 	var neck := lerpf(1.0, neck_length, y)
 	for bone_name in NECK_CHILDREN:
