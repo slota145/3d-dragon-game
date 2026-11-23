@@ -164,6 +164,8 @@ var _head_pitch: float = 0.0
 const HEAD_YAW_MAX := deg_to_rad(95.0)
 const HEAD_PITCH_MIN := deg_to_rad(-45.0)
 const HEAD_PITCH_MAX := deg_to_rad(35.0)
+## O ile podnieść kierunek kamery przy celowaniu (≈ domyślne nachylenie kamery w dół).
+const AIM_RAISE_DEG := 16.0
 ## Stożek pomocy w celowaniu (stopnie).
 const ASSIST_DEG := 9.0
 
@@ -253,7 +255,9 @@ func mouth_position() -> Vector3:
 func _update_aim(delta: float) -> void:
 	if not camera:
 		return
-	var fwd := -camera.global_basis.z
+	# kierunek kamery podniesiony o jej domyślne nachylenie: przy zwykłym ustawieniu kamery
+	# (z góry, zza smoka) ogień leci poziomo, a celownik wypada nad smokiem
+	var fwd := (-camera.global_basis.z).rotated(camera.global_basis.x.normalized(), deg_to_rad(AIM_RAISE_DEG))
 	var from := camera.global_position
 	var far := from + fwd * 220.0
 	var q := PhysicsRayQueryParameters3D.create(from + fwd * 2.0, far)

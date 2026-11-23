@@ -126,7 +126,7 @@ func _init() -> void:
 		if r is Prey and not (r is Villager) and (r as Prey).is_alive():
 			target_sheep = r
 			break
-	var aim_fwd := -cam.global_basis.z
+	var aim_fwd := player.fire_direction()
 	target_sheep.global_position = player.mouth_position() + Vector3(aim_fwd.x, 0, aim_fwd.z).normalized() * 25.0 + Vector3.RIGHT.rotated(Vector3.UP, cam.rotation.y) * 2.0
 	target_sheep.global_position.y = Terrain.height(target_sheep.global_position.x, target_sheep.global_position.z)
 	target_sheep.home_radius = 0.0
