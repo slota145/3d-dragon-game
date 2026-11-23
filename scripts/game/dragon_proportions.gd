@@ -10,7 +10,7 @@ extends SkeletonModifier3D
 ## 0..1 — dodatkowe otwarcie pyska (zianie ogniem), niezależnie od animacji.
 var jaw_open: float = 0.0
 ## Kąt pełnego otwarcia pyska (rad, oś X kości Jaw).
-@export var jaw_angle: float = 0.55
+@export var jaw_angle: float = -0.55
 
 @export_group("Pisklę (youth = 1)")
 ## Głowa: X = szerokość, Y = długość (pysk), Z = wysokość — pisklę ma krótki pyszczek.
