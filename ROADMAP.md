@@ -86,9 +86,12 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   odkładane na stos w komorze; śmierć = utrata połowy niesionego; licznik w HUD
 - ✅ Ulepszenia za złoto (0.7.3) — „sen na skarbie”: przy śnie smok wtapia złoto ze stosu w ciało
   (stos maleje); Twarde łuski (łuski złocieją), Silne skrzydła, Smocze zdrowie, Bystre oko; po 3 poziomy
-- ⬜ Baśniowy region **~4 × 4 km, gęsty** (zasada 20 s, węzły POI, punkty orientacyjne;
-  `docs/GAME_DESIGN.md` → Skala i gęstość): teren, las, łąki, farmy, jezioro, góry
-- ⬜ Strumieniowanie świata kawałkami, LOD, MultiMesh (wydajność na telefonie)
+- ✅ Proceduralny region **2 × 2 km** (0.8.0, `terrain.gd`, `terrain_decor.gd`): wzgórza i doliny,
+  pasmo gór na północy z legowiskiem u podnóża, jezioro + rzeka (wschód), las (zachód), stawy,
+  łąka w środku; kawałki 128 m z LOD (4/8/16 m), kolizja HeightMapShape tylko wokół smoka,
+  roślinność MultiMesh na kawałek (trawa tylko blisko), ściany na krawędzi świata
+- ⬜ Sprawdzić płynność na telefonie → rozszerzyć do **4 × 4 km** (stała `Terrain.SIZE`),
+  gęstość: punkty POI, farmy (faza 6), zasada 20 s (`docs/GAME_DESIGN.md` → Skala i gęstość)
 
 ## Faza 6 — Ludzie ⬜
 

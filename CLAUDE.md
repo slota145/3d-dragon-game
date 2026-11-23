@@ -24,7 +24,7 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 |---|---|
 | `project.godot` | konfiguracja projektu, input map |
 | `scenes/` | sceny: `boot.tscn` (start) → `world.tscn` (świat + `dragon_player.tscn` + `hud.tscn`), `dragon_showcase.tscn` |
-| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `dragon_proportions.gd` (proporcje pisklęcia — modyfikator szkieletu), `lair.gd` (legowisko: jaskinia, gniazdo, jajo), `save_game.gd` (zapis `user://save.json`), `day_night.gd` (cykl dnia i nocy), `gold_finds.gd` (złoto w świecie), `treasure_pile.gd` (stos skarbu), `treasure.gd` (siatki skarbów), `upgrades.gd` (ulepszenia za złoto), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
+| `scripts/game/` | rozgrywka: `boot.gd` (łatki), `world.gd`, `terrain.gd` (proceduralny teren z kawałków: wysokość, LOD, kolizja, woda), `terrain_decor.gd` (las, skały, trawa), `world_props.gd` (skalne słupy), `dragon_controller.gd`, `dragon_stats.gd` (rozmiar, stadia, zdrowie, głód), `dragon_proportions.gd` (proporcje pisklęcia — modyfikator szkieletu), `lair.gd` (legowisko: jaskinia, gniazdo, jajo), `save_game.gd` (zapis `user://save.json`), `day_night.gd` (cykl dnia i nocy), `gold_finds.gd` (złoto w świecie), `treasure_pile.gd` (stos skarbu), `treasure.gd` (siatki skarbów), `upgrades.gd` (ulepszenia za złoto), `prey.gd` + `prey_spawner.gd` (zwierzyna), `follow_camera.gd`, `updater.gd`, `game_version.gd` |
 | `scripts/ui/` | interfejs: `touch_joystick.gd` (gałka), `touch_button.gd` (Skrzydła/Zryw/Ugryzienie/Ogień), `stat_bars.gd` (paski), `hoard_menu.gd` (okno „Sen na skarbie” — ulepszenia), `pause_menu.gd` (menu pauzy + okienko trybu deweloperskiego: stadia, reset wzrostu) |
 | `scripts/fx/`, `assets/shaders/` | efekty: `dust_burst.gd` (pył), `speed_lines.gdshader` (linie pędu) |
 | `scripts/` | pozostałe (np. `model_showcase.gd`) |
@@ -32,7 +32,7 @@ tools/screenshot.sh res://scenes/dragon_showcase.tscn "$PWD/build/d.png" 20 cam=
 | `assets/textures/`, `materials/`, `audio/` | pozostałe zasoby |
 | `tools/blender/` | generatory assetów (Python + bpy): `gen_dragon.py` (smok), `gen_animals.py` (królik, owca), `gen_lair.py` (jaskinia-legowisko), `gen_treasure.py` (moneta, kielich, korona, skrzynia, klejnot), `meshkit.py` (lofty, rury, kolce, płaty, wagi), `common.py` (scena, materiały, render) |
 | `assets/models/*_import.gd` | skrypty post-importu (materiały, pętle animacji) |
-| `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_flight.gd`, `test_hunt.gd`, `test_pause.gd`, `test_lair.gd`, `test_updater.gd`) |
+| `tools/*.sh`, `tools/*.gd` | setup, weryfikacja, zrzuty ekranu, testy (`test_walk.gd`, `test_flight.gd`, `test_hunt.gd`, `test_pause.gd`, `test_lair.gd`, `test_world.gd`, `test_updater.gd`) |
 | `export_presets.cfg`, `.github/workflows/release.yml` | eksport Android (+ Windows wstrzymany); CI buduje APK + łatkę `.pck` przy podbiciu wersji (`docs/RELEASE.md`) |
 | `docs/` | `GAME_DESIGN.md` (koncepcja), `SESSION_HANDOFF.md` (prompt dla następnej sesji), styl graficzny, wydania, research narzędzi |
 | `ROADMAP.md` | plan rozwoju i status |
@@ -88,6 +88,9 @@ Nowe narzędzia testowe dodawaj w `scripts/ui/pause_menu.gd` (`_build_dev_panel`
   glTF patrzy w **+Z** w Godocie (`Vector3.MODEL_FRONT`). Przy `look_at()`
   używaj `use_model_front = true`.
 - **Pivot** na ziemi, pod środkiem modelu.
+- **Teren:** świat nie jest płaski — wysokość gruntu daje `Terrain.height(x, z)` (statyczna,
+  deterministyczna). Wszystko, co stawiasz na ziemi, ustaw na tej wysokości; `Terrain.is_walkable`
+  odrzuca wodę i strome/wysokie zbocza. Łąka wokół (0, 0, 0) i plac legowiska są płaskie (y = 0).
 - **Styl: stylizowany low-poly** (decyzja właściciela, patrz `docs/ART_STYLE.md`):
   flat shading, jednolite kolory materiałów bez tekstur + losowa jasność ścianek
   (atrybut koloru `Col`, mnożony w materiale). Organiczne bryły: lofty → voxel

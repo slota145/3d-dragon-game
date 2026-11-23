@@ -7,8 +7,8 @@ extends Node3D
 
 @export var trees_per_chunk: int = 140
 @export var rocks_per_chunk: int = 10
-@export var grass_per_chunk: int = 700
-@export var flowers_per_chunk: int = 220
+@export var grass_per_chunk: int = 1100
+@export var flowers_per_chunk: int = 300
 @export var bushes_per_chunk: int = 28
 
 var terrain: Terrain
