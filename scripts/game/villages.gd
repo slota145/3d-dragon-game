@@ -205,7 +205,7 @@ func repopulate() -> void:
 ## Myśliwi z łukami w każdej wiosce (więcej przy większym rozgłosie).
 func set_hunters(per_village: int) -> void:
 	hunters_per_village = per_village
-	_hunters = _hunters.filter(func(h: Villager) -> bool: return is_instance_valid(h) and h.is_alive())
+	_hunters = hunters()
 	for i in Terrain.VILLAGES.size():
 		var here := _hunters.filter(func(h: Villager) -> bool: return h.home.distance_to(center(i)) < 1.0)
 		for k in range(here.size(), per_village):
@@ -221,7 +221,11 @@ func set_hunters(per_village: int) -> void:
 
 
 func hunters() -> Array[Villager]:
-	return _hunters.filter(func(h: Villager) -> bool: return is_instance_valid(h) and h.is_alive())
+	var out: Array[Villager] = []
+	for h in _hunters:
+		if is_instance_valid(h) and h.is_alive():
+			out.append(h)
+	return out
 
 
 func _spawn_person(role: String, label: String, pos: Vector3, home: Vector3, radius: float) -> Villager:
@@ -281,4 +285,9 @@ func _spawn_sheep(pos: Vector3, pen: Vector3) -> void:
 
 
 func residents() -> Array[Node3D]:
-	return _residents.filter(func(r: Node3D) -> bool: return is_instance_valid(r))
+	# bez typu parametru — zwolnione (zjedzone) obiekty nie mogą przerwać filtrowania
+	var out: Array[Node3D] = []
+	for r in _residents:
+		if is_instance_valid(r):
+			out.append(r)
+	return out
