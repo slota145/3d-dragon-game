@@ -216,6 +216,7 @@ func has_collision(c: Vector2i) -> bool:
 
 
 func _process(_delta: float) -> void:
+	_check_depth_task()
 	if not focus:
 		return
 	var c := chunk_of(focus.global_position)
@@ -459,16 +460,62 @@ func _add_water() -> void:
 	water.name = "Water"
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(SIZE + 400.0, SIZE + 400.0)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.2, 0.62, 0.72, 0.8)  # turkus
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.roughness = 0.08
-	mat.metallic = 0.25
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://assets/shaders/water.gdshader")
+	for k in 2:  # zmarszczki: dwie przesuwane mapy normalnych z szumu
+		var tex := NoiseTexture2D.new()
+		tex.width = 256
+		tex.height = 256
+		tex.seamless = true
+		tex.as_normal_map = true
+		tex.bump_strength = 6.0 if k == 0 else 3.0
+		var n := FastNoiseLite.new()
+		n.seed = 11 + k
+		n.frequency = 0.02 if k == 0 else 0.045
+		tex.noise = n
+		mat.set_shader_parameter("ripples_a" if k == 0 else "ripples_b", tex)
 	plane.material = mat
+	_water_mat = mat
+	# mapa głębokości wody — w tle (kilka sekund na telefonie), potem piana przy brzegach
+	for v: Array in VILLAGES:  # wartości z pamięci podręcznej najpierw w głównym wątku
+		height(v[0], v[1])
+	_depth_task = WorkerThreadPool.add_task(_bake_depth_map)
 	water.mesh = plane
 	water.position.y = WATER_LEVEL
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
+
+
+var _water_mat: ShaderMaterial
+var _depth_task: int = -1
+var _depth_image: Image
+const DEPTH_RES := 512
+
+
+## Głębokość wody (R = (poziom wody − teren) / 8 m) na siatce 8 m — dla shadera wody.
+func _bake_depth_map() -> void:
+	var img := Image.create(DEPTH_RES, DEPTH_RES, false, Image.FORMAT_R8)
+	var step := SIZE / DEPTH_RES
+	for j in DEPTH_RES:
+		for i in DEPTH_RES:
+			var h := height(-HALF + (i + 0.5) * step, -HALF + (j + 0.5) * step)
+			img.set_pixel(i, j, Color(clampf((WATER_LEVEL - h) / 8.0, 0.0, 1.0), 0, 0))
+	_depth_image = img
+
+
+func _check_depth_task() -> void:
+	if _depth_task < 0 or not WorkerThreadPool.is_task_completed(_depth_task):
+		return
+	WorkerThreadPool.wait_for_task_completion(_depth_task)
+	_depth_task = -1
+	_water_mat.set_shader_parameter("depth_map", ImageTexture.create_from_image(_depth_image))
+	_water_mat.set_shader_parameter("world_size", SIZE)
+	_water_mat.set_shader_parameter("has_depth_map", true)
+
+
+func _exit_tree() -> void:
+	if _depth_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_depth_task)
 
 
 ## Niewidzialne ściany na krawędzi świata.

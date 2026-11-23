@@ -49,10 +49,13 @@ func _ready() -> void:
 	for mi: MeshInstance3D in scene.find_children("*", "MeshInstance3D", true, false):
 		_nature[String(mi.name)] = mi.mesh
 	scene.free()
-	_far_cone = _make_far_tree(true)
-	_far_round = _make_far_tree(false)
-	_grass_mesh = _make_grass_mesh()
-	_flower_mesh = _make_flower_mesh()
+	for k: String in _nature.keys():
+		if k.begins_with("Tree_"):
+			_nature[k] = windify(_nature[k], 0.022, 2.5)  # korony kołyszą się na wietrze
+	_far_cone = windify(_make_far_tree(true), 0.02, 2.5)
+	_far_round = windify(_make_far_tree(false), 0.02, 2.5)
+	_grass_mesh = windify(_make_grass_mesh(), 0.28, 0.0)
+	_flower_mesh = windify(_make_flower_mesh(), 0.16, 0.0)
 
 
 ## Od razu zbuduj roślinność wokół punktu (start gry, teleport).
@@ -271,6 +274,25 @@ static func _cone(st: SurfaceTool, base_y: float, top_y: float, r0: float, r1: f
 		st.add_vertex(b0); st.add_vertex(t0); st.add_vertex(b1)
 		if r1 > 0.001:
 			st.add_vertex(b1); st.add_vertex(t0); st.add_vertex(t1)
+
+
+static var _wind_shader: Shader
+
+
+## Kopia siatki z materiałami „wiatru” (assets/shaders/wind.gdshader): ta sama barwa, kołysanie.
+static func windify(mesh: Mesh, strength: float, sway_start: float) -> Mesh:
+	if _wind_shader == null:
+		_wind_shader = load("res://assets/shaders/wind.gdshader")
+	var m := mesh.duplicate() as Mesh
+	for i in m.get_surface_count():
+		var src := m.surface_get_material(i) as BaseMaterial3D
+		var mat := ShaderMaterial.new()
+		mat.shader = _wind_shader
+		mat.set_shader_parameter("albedo", src.albedo_color if src else Color.WHITE)
+		mat.set_shader_parameter("strength", strength)
+		mat.set_shader_parameter("sway_start", sway_start)
+		m.surface_set_material(i, mat)
+	return m
 
 
 ## Tania sylwetka drzewa z daleka (kolor z instancji): stożek lub kula na pniu.

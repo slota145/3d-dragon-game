@@ -42,6 +42,7 @@ PALETTE = {
     "Nature_Moss": (0.16, 0.42, 0.08),
     "Nature_Bush": (0.1, 0.38, 0.1),
     "Nature_Berry": (0.75, 0.05, 0.12),
+    "Nature_Cloud": (0.92, 0.94, 0.98),
 }
 NAMES = list(PALETTE)
 
@@ -153,6 +154,17 @@ def stone_wall(mats) -> bpy.types.Object:
     return b.to_object("StoneWall", mats)
 
 
+def cloud(mats, name: str, seed: int) -> bpy.types.Object:
+    """Chmura low-poly: kilka spłaszczonych kul (ok. 12 × 7 m przed skalowaniem w grze)."""
+    b = MeshBuilder(NAMES)
+    rnd = random.Random(seed)
+    for k in range(rnd.randint(5, 7)):
+        c = (rnd.uniform(-5, 5), rnd.uniform(-2.5, 2.5), rnd.uniform(0, 1.2))
+        r = rnd.uniform(2.0, 3.4)
+        blob(b, c, (r, r * 0.9, r * 0.6), "Nature_Cloud", seg=7, rings=4, jitter=0.1, rnd=rnd)
+    return b.to_object(name, mats)
+
+
 if __name__ == "__main__":
     common.reset_scene()
     MATS = make_materials(PALETTE)
@@ -168,6 +180,7 @@ if __name__ == "__main__":
         rock(MATS, "Rock_Mossy", (1.1, 1.0, 0.8), "Nature_Rock", 4, moss=True),
         bush(MATS, "Bush_Round", False, 5), bush(MATS, "Bush_Berry", True, 6),
         hedge(MATS), stone_wall(MATS),
+        cloud(MATS, "Cloud_A", 31), cloud(MATS, "Cloud_B", 32),
     ]
     for i, o in enumerate(objs):
         flat_shade(o)

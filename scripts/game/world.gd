@@ -88,6 +88,9 @@ func _ready() -> void:
 		_toast("Porwany: %s · Ugryzienie = puść" % prey.display_name)
 		if prey is Villager:
 			add_renown(2.0))
+	var clouds := Clouds.new()
+	clouds.name = "Clouds"
+	add_child(clouds)
 	_lair = Lair.new()
 	_lair.name = "Lair"
 	_lair.position = Lair.POSITION

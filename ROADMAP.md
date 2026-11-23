@@ -132,7 +132,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ 0.13.0: różnorodne drzewa (sosny, dęby, brzozy, jesienne, kwitnące) i kamienie (`gen_nature.py`),
   LOD drzew (z daleka sylwetki), usunięte kamienne słupy; baśniowy pastel (Filmic, żywsza zieleń, turkusowa
   woda); łąki kwiatów; pola w kolorowych działkach z żywopłotami / kamiennymi murkami, ogrodzone pastwiska
-- ⬜ 0.13.1: wiatr (trawa, drzewa) i chmury; ładniejsza woda (fale, błyski, piana)
+- ✅ 0.13.1: wiatr (`wind.gdshader` — trawa, kwiaty, korony drzew), chmury low-poly dryfujące nad światem
+  (`clouds.gd`), woda (`water.gdshader`: zmarszczki, błyski, turkus→błękit, piana przy brzegu z mapy głębokości
+  liczonej w tle z terenu — bez bufora głębi, działa na każdym telefonie)
 - ⬜ 0.13.2: noc z gwiazdami i księżycem, świetliki, światła w oknach; ptaki i motyle
 
 ## Faza 8 — Wielcy przeciwnicy i zamki ⬜
