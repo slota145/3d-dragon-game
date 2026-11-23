@@ -20,6 +20,7 @@ var _finds: GoldFinds
 var _hoard: HoardMenu
 var _gold_label: Label
 var _lair: Lair
+var _terrain: Terrain
 var _day_night: DayNight
 var _sleeping: bool = false
 var _intro: bool = false
@@ -38,6 +39,13 @@ func _ready() -> void:
 	_camera.target = _player
 	_player.camera = _camera
 	_player.joystick = _hud.get_node("Joystick")
+	_terrain = Terrain.new()
+	_terrain.name = "Terrain"
+	add_child(_terrain)
+	var decor := TerrainDecor.new()
+	decor.name = "TerrainDecor"
+	decor.terrain = _terrain
+	_terrain.add_child(decor)
 	_lair = Lair.new()
 	_lair.name = "Lair"
 	_lair.position = Lair.POSITION
@@ -103,6 +111,9 @@ func _ready() -> void:
 	_player.launched.connect(func() -> void: DustBurst.spawn(self, _player.global_position, 1.4 * _player.size_k()))
 	_player.landed.connect(_on_landed)
 	_player.dashed.connect(func() -> void: _flash = 1.0)
+	# teren: od razu cały świat (wokół smoka najdokładniej, z kolizją), potem LOD w biegu
+	_terrain.focus = _player
+	_terrain.build_all(_player.global_position)
 	_finds.setup(day, ($Props as Node).pillar_tops)
 	_lair.pile.set_gold(treasure)
 	if _intro:

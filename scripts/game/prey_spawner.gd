@@ -52,6 +52,17 @@ func _process(delta: float) -> void:
 
 
 func _random_point(r_min: float, r_max: float) -> Vector3:
+	# szukaj suchego, niezbyt stromego miejsca na łące (nie w wodzie, nie w górach)
+	var p := Vector3.ZERO
+	for i in 12:
+		p = _random_point_raw(r_min, r_max)
+		if Terrain.is_walkable(p.x, p.z):
+			break
+	p.y = Terrain.height(p.x, p.z)
+	return p
+
+
+func _random_point_raw(r_min: float, r_max: float) -> Vector3:
 	var center := dragon.global_position if dragon else Vector3.ZERO
 	var a := _rng.randf() * TAU
 	var r := _rng.randf_range(r_min, r_max)

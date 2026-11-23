@@ -14,8 +14,8 @@ const ITEMS := {  # rodzaj: [siatka, nazwa, wartość min, wartość maks., skal
 	"chest": ["Chest", "Skrzynia skarbów", 90, 160, 1.3],
 }
 
-@export var finds_per_day: int = 26
-@export var area: float = 150.0
+@export var finds_per_day: int = 34
+@export var area: float = 320.0
 
 var dragon: DragonController
 ## Znaleziska zebrane dzisiaj (id) i skrytki zebrane na zawsze (id) — zapisywane w save.
@@ -42,6 +42,9 @@ func setup(day: int, cache_spots: Array[Vector3]) -> void:
 		var value := rng.randi_range(ITEMS[kind][2], ITEMS[kind][3])
 		if Vector2(pos.x - Lair.POSITION.x, pos.z - Lair.POSITION.z).length() < Lair.RADIUS + 3.0:
 			continue
+		if not Terrain.is_walkable(pos.x, pos.z):
+			continue
+		pos.y = Terrain.height(pos.x, pos.z)
 		if not id in taken_today:
 			_spawn(id, kind, pos, value, rng.randf() * TAU)
 	for i in cache_spots.size():

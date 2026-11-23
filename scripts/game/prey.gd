@@ -93,7 +93,11 @@ func _physics_process(delta: float) -> void:
 	var pos := global_position + _dir * _speed * delta
 	pos.x = clampf(pos.x, -900.0, 900.0)
 	pos.z = clampf(pos.z, -900.0, 900.0)
-	pos.y = 0.0
+	# nie wchodź do wody ani na strome / wysokie zbocza — zawróć
+	if _speed > 0.01 and not Terrain.is_walkable(pos.x + _dir.x * 1.5, pos.z + _dir.z * 1.5):
+		_dir = -_dir.rotated(Vector3.UP, _rng.randf_range(-0.8, 0.8))
+		pos = global_position
+	pos.y = Terrain.height(pos.x, pos.z)
 	global_position = pos
 	if _speed > 0.05:
 		rotation.y = lerp_angle(rotation.y, atan2(_dir.x, _dir.z), clampf(8.0 * delta, 0.0, 1.0))
