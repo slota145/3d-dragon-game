@@ -30,12 +30,29 @@ var _center := Vector2i(-999, -999)
 var _todo: Array[Vector2i] = []
 
 
+## Siatki z nature.glb (tools/blender/gen_nature.py): drzewa, kamienie, krzewy.
+var _nature: Dictionary = {}
+## Tanie sylwetki drzew na dalszy plan (LOD): stożek (iglaste) i kula (liściaste).
+var _far_cone: Mesh
+var _far_round: Mesh
+## Kolor sylwetki z daleka wg gatunku.
+const SPECIES_FAR_COLOR := {
+	"Pine": Color(0.16, 0.4, 0.22), "PineTall": Color(0.14, 0.36, 0.2), "Oak": Color(0.32, 0.62, 0.2),
+	"Birch": Color(0.55, 0.78, 0.3), "Autumn": Color(0.95, 0.52, 0.15), "Blossom": Color(0.98, 0.7, 0.78),
+}
+## Drzewa szczegółowe do tej odległości, dalej sylwetki.
+const TREE_NEAR := 230.0
+
+
 func _ready() -> void:
-	_tree_mesh = _make_tree_mesh()
-	_rock_mesh = _make_rock_mesh()
+	var scene: Node = (load("res://assets/models/nature.glb") as PackedScene).instantiate()
+	for mi: MeshInstance3D in scene.find_children("*", "MeshInstance3D", true, false):
+		_nature[String(mi.name)] = mi.mesh
+	scene.free()
+	_far_cone = _make_far_tree(true)
+	_far_round = _make_far_tree(false)
 	_grass_mesh = _make_grass_mesh()
 	_flower_mesh = _make_flower_mesh()
-	_bush_mesh = _make_bush_mesh()
 
 
 ## Od razu zbuduj roślinność wokół punktu (start gry, teleport).
@@ -111,8 +128,11 @@ func _scatter_big(c: Vector2i) -> Node3D:
 	add_child(group)
 	var o := terrain.chunk_origin(c)
 	var rng := _rng_for(c, 1)
-	var trees: Array[Transform3D] = []
-	var tree_cols: Array[Color] = []
+	var by_species: Dictionary = {}  # gatunek -> Array[Transform3D]
+	var far_cone: Array[Transform3D] = []
+	var far_cone_cols: Array[Color] = []
+	var far_round: Array[Transform3D] = []
+	var far_round_cols: Array[Color] = []
 	for i in trees_per_chunk:
 		var x := o.x + rng.randf() * Terrain.CHUNK
 		var z := o.z + rng.randf() * Terrain.CHUNK
@@ -123,22 +143,43 @@ func _scatter_big(c: Vector2i) -> Node3D:
 			continue
 		if absf(Terrain.height(x + 2.0, z) - h) > 1.6:
 			continue
-		var s := rng.randf_range(0.7, 1.35) * (1.0 + 0.3 * f)
-		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.9, 1.25), s))
-		trees.append(Transform3D(basis, Vector3(x, h - 0.2, z)))
-		tree_cols.append(Color(1, 1, 1).darkened(rng.randf() * 0.25))
-	_add_multimesh(group, _tree_mesh, trees, tree_cols, 700.0, true)
-	var rocks: Array[Transform3D] = []
+		var s := rng.randf_range(0.75, 1.3) * (1.0 + 0.25 * f)
+		var sp := Terrain.tree_species(x, z, rng.randf())
+		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.9, 1.2), s))
+		var xf := Transform3D(basis, Vector3(x, h - 0.2, z))
+		if not by_species.has(sp):
+			by_species[sp] = [] as Array[Transform3D]
+		by_species[sp].append(xf)
+		var far_col: Color = SPECIES_FAR_COLOR[sp]
+		if sp.begins_with("Pine"):
+			far_cone.append(xf)
+			far_cone_cols.append(far_col.darkened(rng.randf() * 0.15))
+		else:
+			far_round.append(xf)
+			far_round_cols.append(far_col.darkened(rng.randf() * 0.15))
+	for sp: String in by_species:
+		_add_multimesh(group, _nature["Tree_" + sp], by_species[sp], [], TREE_NEAR, true)
+	_add_multimesh(group, _far_cone, far_cone, far_cone_cols, 700.0, false, TREE_NEAR - 15.0)
+	_add_multimesh(group, _far_round, far_round, far_round_cols, 700.0, false, TREE_NEAR - 15.0)
+	# kamienie: kilka rodzajów, w górach więcej
+	var rock_kinds := ["Rock_A", "Rock_B", "Rock_Flat", "Rock_Mossy"]
+	var rocks: Dictionary = {}
 	for i in rocks_per_chunk:
 		var x := o.x + rng.randf() * Terrain.CHUNK
 		var z := o.z + rng.randf() * Terrain.CHUNK
 		if _blocked(x, z):
 			continue
-		var s := rng.randf_range(0.6, 3.2)
-		var basis := Basis.from_euler(Vector3(rng.randf() * TAU, rng.randf() * TAU, rng.randf() * TAU)) \
-			.scaled(Vector3(s * rng.randf_range(0.8, 1.5), s * rng.randf_range(0.5, 0.9), s * rng.randf_range(0.8, 1.4)))
-		rocks.append(Transform3D(basis, Vector3(x, Terrain.height(x, z) + s * 0.1, z)))
-	_add_multimesh(group, _rock_mesh, rocks, [], 700.0, true)
+		var h := Terrain.height(x, z)
+		var kind: String = rock_kinds[rng.randi() % 4]
+		if Terrain.forest(x, z) > 0.4:
+			kind = "Rock_Mossy"
+		var s := rng.randf_range(0.5, 2.6) * (1.6 if h > 40.0 else 1.0)
+		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s * rng.randf_range(0.8, 1.3), s, s * rng.randf_range(0.8, 1.3)))
+		if not rocks.has(kind):
+			rocks[kind] = [] as Array[Transform3D]
+		rocks[kind].append(Transform3D(basis, Vector3(x, h - 0.1 * s, z)))
+	for kind: String in rocks:
+		_add_multimesh(group, _nature[kind], rocks[kind], [], 700.0, true)
 	return group
 
 
@@ -147,9 +188,9 @@ func _scatter_small(c: Vector2i) -> Node3D:
 	add_child(group)
 	var o := terrain.chunk_origin(c)
 	var rng := _rng_for(c, 2)
-	for kind in 3:
-		var n: int = [grass_per_chunk, flowers_per_chunk, bushes_per_chunk][kind]
-		var mesh: Mesh = [_grass_mesh, _flower_mesh, _bush_mesh][kind]
+	for kind in 4:
+		var n: int = [grass_per_chunk, flowers_per_chunk, bushes_per_chunk, bushes_per_chunk / 3][kind]
+		var mesh: Mesh = [_grass_mesh, _flower_mesh, _nature["Bush_Round"], _nature["Bush_Berry"]][kind]
 		var xs: Array[Transform3D] = []
 		var cols: Array[Color] = []
 		for i in n:
@@ -158,16 +199,32 @@ func _scatter_small(c: Vector2i) -> Node3D:
 			var h := Terrain.height(x, z)
 			if h > 45.0 or _blocked(x, z):
 				continue
-			var s: float = [rng.randf_range(0.25, 0.45), rng.randf_range(0.25, 0.4), rng.randf_range(0.6, 1.4)][kind]
+			var patch := Terrain.flower_patch(x, z)
+			if kind == 1 and patch < 0 and rng.randf() < 0.6:
+				continue  # poza łąkami kwiatów kwiatki rzadziej
+			var s: float = [rng.randf_range(0.25, 0.45), rng.randf_range(0.28, 0.45), rng.randf_range(0.6, 1.3),
+				rng.randf_range(0.6, 1.1)][kind]
 			xs.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * s), Vector3(x, h, z)))
 			if kind == 1:
-				cols.append([Color(0.95, 0.85, 0.3), Color(0.9, 0.45, 0.6), Color(0.95, 0.95, 0.95),
-					Color(0.6, 0.55, 0.95)][rng.randi() % 4])
-		_add_multimesh(group, mesh, xs, cols, 160.0 if kind < 2 else 300.0, kind == 2)
+				cols.append(Terrain.FLOWER_COLORS[patch] if patch >= 0 else
+					Terrain.FLOWER_COLORS[rng.randi() % Terrain.FLOWER_COLORS.size()])
+		# na łąkach kwiatów — dodatkowe gęste kępy kwiatów
+		if kind == 1:
+			for i in n * 2:
+				var x := o.x + rng.randf() * Terrain.CHUNK
+				var z := o.z + rng.randf() * Terrain.CHUNK
+				var patch := Terrain.flower_patch(x, z)
+				if patch < 0 or _blocked(x, z):
+					continue
+				var s := rng.randf_range(0.3, 0.5)
+				xs.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * s), Vector3(x, Terrain.height(x, z), z)))
+				cols.append(Terrain.FLOWER_COLORS[patch])
+		_add_multimesh(group, mesh, xs, cols, 160.0 if kind < 2 else 300.0, kind >= 2)
 	return group
 
 
-func _add_multimesh(parent: Node3D, mesh: Mesh, xs: Array[Transform3D], cols: Array, vis_range: float, shadows: bool) -> void:
+func _add_multimesh(parent: Node3D, mesh: Mesh, xs: Array[Transform3D], cols: Array, vis_range: float,
+		shadows: bool, vis_begin: float = 0.0) -> void:
 	if xs.is_empty():
 		return
 	var mm := MultiMesh.new()
@@ -181,6 +238,7 @@ func _add_multimesh(parent: Node3D, mesh: Mesh, xs: Array[Transform3D], cols: Ar
 			mm.set_instance_color(i, cols[i])
 	var inst := MultiMeshInstance3D.new()
 	inst.multimesh = mm
+	inst.visibility_range_begin = vis_begin
 	inst.visibility_range_end = vis_range
 	inst.visibility_range_end_margin = vis_range * 0.1
 	inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
@@ -213,6 +271,22 @@ static func _cone(st: SurfaceTool, base_y: float, top_y: float, r0: float, r1: f
 		st.add_vertex(b0); st.add_vertex(t0); st.add_vertex(b1)
 		if r1 > 0.001:
 			st.add_vertex(b1); st.add_vertex(t0); st.add_vertex(t1)
+
+
+## Tania sylwetka drzewa z daleka (kolor z instancji): stożek lub kula na pniu.
+func _make_far_tree(cone: bool) -> Mesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_cone(st, 0.0, 2.5, 0.3, 0.2, 4, Color(0.55, 0.42, 0.35))
+	if cone:
+		_cone(st, 1.5, 9.5, 2.6, 0.0, 6, Color.WHITE)
+	else:
+		_cone(st, 2.5, 5.0, 2.6, 2.8, 6, Color.WHITE)
+		_cone(st, 5.0, 8.0, 2.8, 0.4, 6, Color.WHITE)
+	st.generate_normals()
+	var m := st.commit()
+	m.surface_set_material(0, _vc_material())
+	return m
 
 
 func _make_tree_mesh() -> Mesh:

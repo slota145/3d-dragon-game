@@ -127,6 +127,14 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   do 60% jego wielkości), niesienie w szponach (słabsze machnięcia, większe zużycie siły), ponownie = PUŚĆ
   (upadek > ~13 m/s zabija → truchło do zjedzenia), na ziemi = ZJEDZ; porwanie człowieka +2 rozgłosu
 
+## Wygląd świata (uwagi właściciela)
+
+- ✅ 0.13.0: różnorodne drzewa (sosny, dęby, brzozy, jesienne, kwitnące) i kamienie (`gen_nature.py`),
+  LOD drzew (z daleka sylwetki), usunięte kamienne słupy; baśniowy pastel (Filmic, żywsza zieleń, turkusowa
+  woda); łąki kwiatów; pola w kolorowych działkach z żywopłotami / kamiennymi murkami, ogrodzone pastwiska
+- ⬜ 0.13.1: wiatr (trawa, drzewa) i chmury; ładniejsza woda (fale, błyski, piana)
+- ⬜ 0.13.2: noc z gwiazdami i księżycem, świetliki, światła w oknach; ptaki i motyle
+
 ## Faza 8 — Wielcy przeciwnicy i zamki ⬜
 
 - ⬜ Gryfy (dzikie, w górach), rycerze, balisty

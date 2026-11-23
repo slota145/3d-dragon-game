@@ -340,22 +340,94 @@ static func _face_color(x: float, z: float, h: float, ny: float) -> Color:
 	var jitter := 1.0 + 0.06 * sin(x * 12.9898 + z * 78.233) * 1.0
 	var col: Color
 	if h < WATER_LEVEL + 0.8:
-		col = Color(0.62, 0.56, 0.4) if h > WATER_LEVEL - 1.0 else Color(0.42, 0.4, 0.32)
+		col = Color(0.88, 0.78, 0.52) if h > WATER_LEVEL - 1.0 else Color(0.5, 0.56, 0.4)  # piasek / dno
 	elif ny < 0.72:
-		col = Color(0.45, 0.43, 0.4)  # skała
+		col = Color(0.52, 0.49, 0.48)  # skała (ciepła szarość)
 	elif h > 150.0 and ny > 0.8:
-		col = Color(0.92, 0.93, 0.96)  # śnieg
+		col = Color(0.97, 0.98, 1.0)  # śnieg
 	elif h > 60.0:
-		col = Color(0.42, 0.45, 0.32).lerp(Color(0.5, 0.48, 0.44), clampf((h - 60.0) / 80.0, 0.0, 1.0))
+		col = Color(0.36, 0.54, 0.24).lerp(Color(0.55, 0.52, 0.5), clampf((h - 60.0) / 80.0, 0.0, 1.0))
 	elif farmland(x, z) > 0.05 and farmland(x, z) < 0.95:
-		# pola: pasy zboża, zaoranej ziemi i łąki (kierunek pasów zależy od miejsca)
-		var stripe := int(floor((x * 0.8 + z * 0.6) / 9.0 + floor(x / 60.0) * 3.0)) % 3
-		col = [Color(0.85, 0.7, 0.3), Color(0.45, 0.32, 0.2), Color(0.55, 0.65, 0.28)][absi(stripe)]
+		col = field_color(x, z)
 	else:
 		var f := forest(x, z)
-		var meadow := Color(0.38, 0.55, 0.27).lerp(Color(0.45, 0.58, 0.28), 0.5 + 0.5 * _detail.get_noise_2d(x * 0.3, z * 0.3))
-		col = meadow.lerp(Color(0.24, 0.38, 0.2), f)
+		var meadow := Color(0.3, 0.54, 0.2).lerp(Color(0.42, 0.6, 0.22), 0.5 + 0.5 * _detail.get_noise_2d(x * 0.3, z * 0.3))
+		col = meadow.lerp(Color(0.2, 0.44, 0.17), f)
+		var patch := flower_patch(x, z)
+		if patch >= 0:  # łąka kwiatów widoczna z daleka
+			col = col.lerp(FLOWER_COLORS[patch], 0.35)
 	return Color(col.r * jitter, col.g * jitter, col.b * jitter)
+
+
+# --- Pola, łąki kwiatów, gatunki drzew ----------------------------------------------
+
+## Kolory łąk kwiatów: maki, łubin, jaskry, rumianek, lawenda.
+const FLOWER_COLORS := [Color(0.95, 0.25, 0.2), Color(0.55, 0.45, 0.95), Color(1.0, 0.85, 0.25),
+	Color(0.98, 0.97, 0.92), Color(0.78, 0.55, 0.95)]
+## Uprawy na działkach pól: pszenica, zaorana ziemia, młode zboże, lawenda, kapusta, rzepak.
+const CROPS := [Color(0.92, 0.7, 0.25), Color(0.5, 0.33, 0.2), Color(0.45, 0.7, 0.22),
+	Color(0.6, 0.45, 0.85), Color(0.3, 0.55, 0.38), Color(0.95, 0.82, 0.15)]
+## Działki: tyle wycinków kąta × 2 pierścienie wokół wioski.
+const FIELD_SECTORS := 10
+
+
+## Numer działki pola (wioska, wycinek, pierścień) albo -1 poza polami.
+static func field_parcel(x: float, z: float) -> Vector3i:
+	for i in VILLAGES.size():
+		var v: Array = VILLAGES[i]
+		var d := Vector2(x - v[0], z - v[1])
+		var r: float = v[2]
+		if d.length() > r and d.length() < r + FIELDS:
+			var sector := int(floor((d.angle() + PI) / TAU * FIELD_SECTORS)) % FIELD_SECTORS
+			var ring := 0 if d.length() < r + FIELDS * 0.5 else 1
+			return Vector3i(i, sector, ring)
+	return Vector3i(-1, -1, -1)
+
+
+## Pastwisko: jedna działka wewnętrznego pierścienia każdej wioski (ogrodzona, z owcami).
+static func is_pasture(p: Vector3i) -> bool:
+	return p.x >= 0 and p.z == 0 and p.y == (p.x * 3 + 2) % FIELD_SECTORS
+
+
+static func field_color(x: float, z: float) -> Color:
+	var p := field_parcel(x, z)
+	if p.x < 0 or is_pasture(p):
+		return Color(0.34, 0.62, 0.2)
+	var crop := absi(hash(p)) % CROPS.size()
+	var col: Color = CROPS[crop]
+	# rzędy upraw: delikatne pasy w poprzek działki
+	var stripe := sin((x * 0.7 + z * 0.7) * 0.9 + p.y) > 0.0
+	return col.darkened(0.08) if stripe else col
+
+
+## Numer koloru łąki kwiatów (FLOWER_COLORS) albo -1.
+static func flower_patch(x: float, z: float) -> int:
+	_init_noise()
+	if forest(x, z) > 0.35 or farmland(x, z) >= 0.0:
+		return -1
+	var n := _forest.get_noise_2d(x * 3.1 + 500.0, z * 3.1 - 300.0)
+	if n < 0.32:
+		return -1
+	return absi(hash(Vector2i(int(floor(x / 160.0)), int(floor(z / 160.0))))) % FLOWER_COLORS.size()
+
+
+## Gatunek drzewa w danym miejscu: iglaste w górach i na północy, liściaste kępami
+## (dąb, brzoza, jesienne, kwitnące), `r` = los 0..1 dla domieszek.
+static func tree_species(x: float, z: float, r: float) -> String:
+	_init_noise()
+	var h := height(x, z)
+	if h > 35.0 or z < -170.0:
+		return "PineTall" if r < 0.5 else "Pine"
+	var n := _hills.get_noise_2d(x * 2.3 + 900.0, z * 2.3)  # „rodzina” kępy
+	if r < 0.15:
+		return "Pine"
+	if n > 0.35:
+		return "Autumn" if r < 0.8 else "Oak"
+	if n < -0.35:
+		return "Birch" if r < 0.75 else "Pine"
+	if n > 0.15 and r > 0.85:
+		return "Blossom"
+	return "Oak" if r < 0.7 else "Birch"
 
 
 func _chunk_body(c: Vector2i) -> StaticBody3D:
@@ -388,7 +460,7 @@ func _add_water() -> void:
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(SIZE + 400.0, SIZE + 400.0)
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.22, 0.45, 0.62, 0.78)
+	mat.albedo_color = Color(0.2, 0.62, 0.72, 0.8)  # turkus
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.roughness = 0.08
 	mat.metallic = 0.25

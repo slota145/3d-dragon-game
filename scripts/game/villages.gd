@@ -89,6 +89,7 @@ func _build_village(i: int) -> void:
 		if rng.randf() < 0.6:
 			var hp := p + Vector3(cos(a + 0.5), 0, sin(a + 0.5)) * 9.0
 			_place(root, "Hay", hp, rng.randf() * TAU)
+	_build_fields(i, root)
 	# zagroda: płot na okręgu
 	var pc := pen_center(i)
 	var pen_r := 9.0
@@ -99,6 +100,87 @@ func _build_village(i: int) -> void:
 		if k == 0:
 			continue  # brama
 		_place(root, "Fence", mid, -(a0 + PI / segs) + PI / 2.0, true)
+
+
+## Granice działek pól: żywopłoty albo kamienne murki (z przerwami-przejściami),
+## pastwisko ogrodzone płotem. MultiMesh — setki odcinków bez setek węzłów.
+func _build_fields(i: int, root: Node3D) -> void:
+	var v: Array = Terrain.VILLAGES[i]
+	var c := Vector2(v[0], v[1])
+	var r: float = v[2]
+	var sectors := Terrain.FIELD_SECTORS
+	var walls_first := i % 2 == 1  # część wiosek ma murki, część żywopłoty
+	var parts := {"Hedge": [], "StoneWall": [], "Fence": []}
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 901 + i
+	var seg := 4.0
+	# granice promieniste (między wycinkami)
+	for k in sectors:
+		var a := float(k) / sectors * TAU - PI
+		var dir := Vector2.from_angle(a)
+		var pasture_edge := Terrain.is_pasture(Vector3i(i, k, 0)) or Terrain.is_pasture(Vector3i(i, (k - 1 + sectors) % sectors, 0))
+		var d := r + 2.0
+		while d < r + Terrain.FIELDS - 2.0:
+			var p := c + dir * (d + seg * 0.5)
+			var kind: String = "Fence" if pasture_edge and d < r + Terrain.FIELDS * 0.5 else \
+				("StoneWall" if (walls_first != (k % 3 == 0)) else "Hedge")
+			if rng.randf() > 0.1:  # przerwy — przejścia
+				parts[kind].append(_seg_xf(p, a))
+			d += seg
+	# granice łukowe: środek pola i zewnętrzny brzeg
+	for ring_r: float in [r + 1.0, r + Terrain.FIELDS * 0.5, r + Terrain.FIELDS - 1.0]:
+		var n := int(TAU * ring_r / seg)
+		for k in n:
+			var a := (float(k) + 0.5) / n * TAU - PI
+			var sector := int(floor((a + PI) / TAU * sectors)) % sectors
+			var pasture := Terrain.is_pasture(Vector3i(i, sector, 0)) and ring_r < r + Terrain.FIELDS * 0.6
+			if ring_r == r + 1.0 and not pasture:
+				continue  # od strony wioski otwarte, poza pastwiskiem
+			var kind: String = "Fence" if pasture else ("StoneWall" if walls_first else "Hedge")
+			if rng.randf() > 0.08:
+				parts[kind].append(_seg_xf(c + Vector2.from_angle(a) * ring_r, a + PI / 2.0))
+	for kind: String in parts:
+		if parts[kind].is_empty():
+			continue
+		var mesh: Mesh = _meshes.get(kind) if kind == "Fence" else _nature_mesh(kind)
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = mesh
+		mm.instance_count = parts[kind].size()
+		for k in parts[kind].size():
+			mm.set_instance_transform(k, parts[kind][k])
+		var inst := MultiMeshInstance3D.new()
+		inst.multimesh = mm
+		inst.visibility_range_end = 900.0
+		root.add_child(inst)
+
+
+## Odcinek granicy (4 m wzdłuż osi X modelu) wzdłuż kierunku `angle` (płaszczyzna XZ).
+func _seg_xf(p: Vector2, angle: float) -> Transform3D:
+	var basis := Basis(Vector3.UP, -angle)
+	return Transform3D(basis, Vector3(p.x, Terrain.height(p.x, p.y) - 0.05, p.y))
+
+
+var _nature_meshes: Dictionary = {}
+
+
+func _nature_mesh(name: String) -> Mesh:
+	if _nature_meshes.is_empty():
+		var scene: Node = (load("res://assets/models/nature.glb") as PackedScene).instantiate()
+		for mi: MeshInstance3D in scene.find_children("*", "MeshInstance3D", true, false):
+			_nature_meshes[String(mi.name)] = mi.mesh
+		scene.free()
+	return _nature_meshes.get(name)
+
+
+## Środek pastwiska wioski (globalnie).
+func pasture_center(i: int) -> Vector3:
+	var v: Array = Terrain.VILLAGES[i]
+	var sector := (i * 3 + 2) % Terrain.FIELD_SECTORS
+	var a := (float(sector) + 0.5) / Terrain.FIELD_SECTORS * TAU - PI
+	var d: float = float(v[2]) + Terrain.FIELDS * 0.25
+	var p := Vector2(v[0], v[1]) + Vector2.from_angle(a) * d
+	return Vector3(p.x, Terrain.height(p.x, p.y), p.y)
 
 
 func _place(root: Node3D, item: String, pos: Vector3, yaw: float, collide: bool = false) -> void:
@@ -198,6 +280,9 @@ func repopulate() -> void:
 		if sheep_model:
 			for k in sheep_per_pen:
 				_spawn_sheep(pc + Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-4, 4)), pc)
+			var pastc := pasture_center(i)  # owce na ogrodzonym pastwisku
+			for k in 4:
+				_spawn_sheep(pastc + Vector3(rng.randf_range(-6, 6), 0, rng.randf_range(-6, 6)), pastc, 12.0)
 	_hunters.clear()
 	set_hunters(hunters_per_village)
 
@@ -259,7 +344,7 @@ func _spawn_person(role: String, label: String, pos: Vector3, home: Vector3, rad
 	return v
 
 
-func _spawn_sheep(pos: Vector3, pen: Vector3) -> void:
+func _spawn_sheep(pos: Vector3, pen: Vector3, leash: float = 7.0) -> void:
 	var p := Prey.new()
 	var body := sheep_model.instantiate() as Node3D
 	body.name = "Body"
@@ -276,7 +361,7 @@ func _spawn_sheep(pos: Vector3, pen: Vector3) -> void:
 	p.zigzag = 0.25
 	p.alert_range = 9.0
 	p.home = pen
-	p.home_radius = 7.0
+	p.home_radius = leash
 	p.dragon = dragon
 	add_child(p)
 	p.global_position = Vector3(pos.x, Terrain.height(pos.x, pos.z), pos.z)

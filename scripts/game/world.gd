@@ -288,11 +288,9 @@ func add_renown(amount: float) -> void:
 
 # --- Złoto -------------------------------------------------------------------------
 
-## Skrytki ze złotem: szczyty skalnych słupów + skrzynie przy ciekawych miejscach.
+## Skrytki ze złotem: skrzynie przy ciekawych miejscach (na drzewie i łuku — tylko lotem).
 func _cache_spots() -> Array[Vector3]:
-	var spots: Array[Vector3] = ($Props as Node).pillar_tops.duplicate()
-	spots.append_array(_landmarks.cache_spots())
-	return spots
+	return _landmarks.cache_spots()
 
 func _build_gold_label() -> void:
 	_gold_label = Label.new()
