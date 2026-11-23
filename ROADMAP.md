@@ -119,6 +119,10 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   2,2 s, pierścień na przycisku), od Dorosłego strumień ognia (trzymanie do 3,5 s); pysk otwiera się
   (kość Jaw w `dragon_proportions.gd`); ogień piecze zwierzęta i ludzi (pieczeń do zjedzenia), podpala
   chaty, stodoły i stogi (płoną 12 s → zgliszcza z dymem, rozgłos +5); odbudowa po nocy
+- ✅ Celowanie (0.12.0, uwagi właściciela): pysk otwiera się w dół; głowa i szyja obracają się za kamerą,
+  ogień leci w punkt celownika (kierunek kamery podniesiony o jej nachylenie), pomoc w celowaniu łapie cel
+  w stożku ~10° (pomarańczowa obwódka); celowanie żyroskopem — opcja w menu pauzy (domyślnie wył.);
+  „wstecz” na Androidzie = pauza (base_api 6 → pełne APK)
 - ⬜ Łapanie w locie (Ugryzienie w powietrzu): niesienie, upuszczanie z wysokości
 
 ## Faza 8 — Wielcy przeciwnicy i zamki ⬜

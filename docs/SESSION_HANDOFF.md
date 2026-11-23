@@ -5,6 +5,14 @@
 
 ---
 
+## 2026-11-23 — po wersji v0.12.0 (celowanie)
+
+Jak wpis v0.11.0 poniżej, plus (uwagi właściciela): pysk otwiera się w dół (DragonProportions.jaw_angle
+ujemny); celowanie: głowa/szyja za kamerą (DragonProportions.head_yaw/head_pitch, DragonController
+._update_aim: promień z kamery podniesiony o AIM_RAISE_DEG, pomoc w celowaniu w stożku), celownik
+(scripts/ui/crosshair.gd), żyroskop — opcja w menu pauzy (FollowCamera.gyro_enabled; mapowanie osi
+do sprawdzenia na telefonie!), „wstecz” na Androidzie = pauza. base_api 6 (pełne APK).
+
 ## 2026-11-23 — po wersji v0.11.0 (faza 7: ogień)
 
 ```text
