@@ -26,6 +26,8 @@ var _landmarks: Landmarks
 var _villages: Villages
 var _castle: Castle
 var _gryphons: Gryphons
+var _knights: Knights
+var _knight_msg: int = -100000
 var _gryphon_msg: int = -100000
 var _castle_seen: bool = false
 ## Rozgłos smoka 0..100: rośnie od zjadania ludzi i owiec z farm i straszenia wieśniaków,
@@ -97,6 +99,29 @@ func _ready() -> void:
 		var left := _castle.working_ballistas()
 		_toast("Balista zniszczona! Zostało: %d" % left if left > 0 else "Wszystkie balisty zniszczone — skarbiec czeka!"))
 	_castle.guard_eaten.connect(func(_g: Prey) -> void: add_renown(5.0))
+	_knights = Knights.new()
+	_knights.name = "Knights"
+	_knights.dragon = _player
+	_knights.villages = _villages
+	add_child(_knights)
+	_knights.repopulate()
+	_knights.attacked.connect(func(by: Knight, _d: float) -> void:
+		_flash = 0.6
+		if Time.get_ticks_msec() - _knight_msg > 3500:
+			_knight_msg = Time.get_ticks_msec()
+			_toast("Kusznik trafia cię bełtem!" if by and by.crossbow else
+				("Rycerz rani cię włócznią!" if _player.stats.stage == 0 else "Rycerz ciska oszczepem!")))
+	_knights.knight_killed.connect(func(k: Knight) -> void:
+		add_renown(6.0)
+		_loot_n += 1
+		_finds.add_special("loot_%d" % _loot_n, "coins", k.global_position + Vector3(randf_range(-2, 2), 0, 2.5),
+			randi_range(20, 45), "Sakiewka rycerza")
+		_toast("%s pokonany! Upuścił sakiewkę" % k.display_name))
+	_knights.scared.connect(func(_k: Knight) -> void:
+		add_renown(0.6)
+		if Time.get_ticks_msec() - _knight_msg > 3500:
+			_knight_msg = Time.get_ticks_msec()
+			_toast("Rycerz w panice zawraca konia!"))
 	_gryphons = Gryphons.new()
 	_gryphons.name = "Gryphons"
 	_gryphons.dragon = _player
@@ -220,6 +245,7 @@ func _ready() -> void:
 	pause.on_stats_changed = _update_buttons
 	pause.on_teleport_castle = teleport_to_castle
 	pause.on_teleport_nest = teleport_to_nest
+	pause.on_teleport_knights = teleport_to_knights
 	if use_save:
 		pause.on_new_game = new_game
 	pause.on_gyro_changed = func(on: bool) -> void: _camera.gyro_enabled = on
@@ -279,6 +305,8 @@ func _load_game(data: Dictionary) -> void:
 		village_angry_until[i] = int(angry[i])
 	_renown_level = renown_level()
 	_villages.set_hunters(_hunters_for(_renown_level))
+	for h in _hunts_for(_renown_level):
+		_knights.send_hunt()
 	_player.stats.restore(data.get("stats", {}))
 	_lair.show_shells()
 	var p: Array = data.get("pos", [])
@@ -371,6 +399,28 @@ func teleport_to_nest() -> void:
 	_camera.snap_behind()
 
 
+## Przy drodze 70 m przed pierwszym patrolem rycerzy, przodem do niego (narzędzie dewelopera, testy).
+func teleport_to_knights() -> void:
+	var pts := _knights.knights().filter(func(k: Knight) -> bool: return k.mode == Knight.Mode.PATROL)
+	if pts.is_empty():
+		return
+	var lead := pts[0] as Knight
+	var kp: Vector3 = lead.patrol.slot_position(-10)  # 10 miejsc w szyku przed prowadzącym
+	var off := Vector3.ZERO
+	for a in 12:  # miejsce, gdzie da się stanąć
+		var o := Vector3(0, 0, 6.0).rotated(Vector3.UP, a * TAU / 12.0)
+		if Terrain.is_walkable(kp.x + o.x, kp.z + o.z):
+			off = o
+			break
+	var p := kp + off
+	_player.global_position = Vector3(p.x, Terrain.height(p.x, p.z) + 1.0, p.z)
+	var look := lead.global_position - p
+	_player.rotation.y = atan2(look.x, look.z)
+	_player.velocity = Vector3.ZERO
+	_player.reset_physics_interpolation()
+	_camera.snap_behind()
+
+
 ## Skarbiec zamku: skrzynie przed donżonem (co dzień nowe, jeśli zabrane).
 func _place_castle_treasury() -> void:
 	var spots := _castle.treasury_spots()
@@ -424,14 +474,24 @@ func _hunters_for(level: int) -> int:
 	return [0, 1, 2, 3][level]
 
 
+## Oddziały pościgowe rycerzy z zamku: od „Postrachu” jeden, przy „Legendzie” dwa.
+func _hunts_for(level: int) -> int:
+	return maxi(0, level - 1)
+
+
 func add_renown(amount: float) -> void:
 	renown = clampf(renown + amount, 0.0, 100.0)
 	var lvl := renown_level()
 	if lvl > _renown_level:
+		for h in range(_hunts_for(_renown_level), _hunts_for(lvl)):
+			_knights.send_hunt()
 		_banner("ROZGŁOS: " + RENOWN_NAMES[lvl].to_upper(),
 			"Wioski wysyłają myśliwych z łukami!" if lvl == 1 else
 			("Wioski zaczną składać ci daninę na kamieniach ofiarnych" if lvl == TRIBUTE_LEVEL
-				else "Ludzie drżą na twój widok — myśliwych jest więcej"))
+				else "Z zamku wyrusza drugi oddział rycerzy — prosto na ciebie!"))
+		if lvl == TRIBUTE_LEVEL:
+			get_tree().create_timer(4.0).timeout.connect(func() -> void:
+				_toast("Z zamku wyrusza oddział rycerzy, by cię dopaść!"))
 		if lvl >= TRIBUTE_LEVEL:
 			_place_tributes()
 		_villages.set_hunters(_hunters_for(lvl))
@@ -552,6 +612,7 @@ func _wake() -> void:
 		_place_tributes()
 		renown = maxf(0.0, renown - 5.0)  # przez noc plotki cichną
 		_renown_level = renown_level()
+		_knights.repopulate(_hunts_for(_renown_level))  # patrole w komplecie, pościg przy dużym rozgłosie
 		_villages.hunters_per_village = _hunters_for(_renown_level)
 		_villages.repopulate()  # zjedzeni mieszkańcy i owce wracają
 		_villages.rebuild()  # spalone chaty odbudowane

@@ -163,7 +163,12 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ 0.17.0: dzikie gryfy (`gryphon.gd`, `gryphons.gd`, model w `gen_animals.py`): 3 gniazda na szczytach,
   po parze gryfów; bronią terytorium (szarża szponami, odskok, ranny ucieka), zabity spada — truchło do
   zjedzenia, dorosły smok może złapać i zrzucić; skarby w gniazdach; dev: teleport do gniazda
-- ⬜ Rycerze (patrole na drogach)
+- ✅ 0.18.0: rycerze królestwa (`knight.gd`, `knights.gd`, modele w `gen_people.py`: rycerz, kusznik, koń
+  bojowy w kropierzu): 3 konne patrole jeżdżą drogami w szyku (ostatni to kusznik); na pisklę szarżują
+  z włócznią (7 obrażeń + odrzut), na młodzika / smoka w locie rzucają oszczepami (8), kusznik strzela
+  bełtami (7); przed dorosłym tchórze uciekają, przed pradawnym wszyscy poza kusznikami; zabity zostawia
+  sakiewkę (+rozgłos); od rozgłosu „Postrach” z zamku wyrusza oddział pościgowy (4 rycerzy), przy
+  „Legendzie” drugi; dev: teleport do patrolu
 - ⬜ Zamek: wieże z gryfami, boss: dowódca jeźdźców gryfów
 
 ## Faza 9 — Nowe pokolenie ⬜

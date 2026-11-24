@@ -410,16 +410,22 @@ func make_person(role: String, label: String) -> Villager:
 	v.flee_speed = 4.6
 	v.stamina = 8.0
 	v.dragon = dragon
+	v.add_child(build_role(role, "Body"))
+	return v
+
+
+## Części postaci z people.glb (Villager, Shepherd, Hunter, Knight, Crossbow, Warhorse) pod
+## wspólnym węzłem: tułów `Body` + kończyny (LegL/R, ArmL/R; koń: LegFL/FR/BL/BR).
+func build_role(role: String, node_name: String) -> Node3D:
 	var body := Node3D.new()
-	body.name = "Body"
+	body.name = node_name
 	for p: Array in _people.get(role, []):
 		var mi := MeshInstance3D.new()
 		mi.name = p[0]
 		mi.mesh = p[1]
 		mi.transform = p[2]
 		body.add_child(mi)
-	v.add_child(body)
-	return v
+	return body
 
 
 func _spawn_person(role: String, label: String, pos: Vector3, home: Vector3, radius: float) -> Villager:

@@ -5,6 +5,47 @@
 
 ---
 
+## 2026-11-24 — po wersji v0.18.0 (rycerze na drogach)
+
+```text
+Kontynuujemy pracę nad grą „3D Dragon Game” (Godot 4.7, Android, repo slota145/3d-dragon-game,
+gałąź main). Przeczytaj najpierw CLAUDE.md, docs/GAME_DESIGN.md i ROADMAP.md.
+
+Stan (v0.18.0, wydana, APK: releases/latest/download/DragonGame.apk; base_api 6).
+- Rdzeń jak w poprzednich wpisach (stadia, polowanie, legowisko, sen na skarbie, świat 4×4 km, wioski,
+  ogień, celowanie, łapanie w locie, danina, drogi A*, wozy, zwierzyna 0.15, zamek 0.16, gryfy 0.17), plus:
+  * 0.18.0 rycerze królestwa (knight.gd extends Prey, knights.gd): modele w gen_people.py (Knight, Crossbow,
+    Warhorse — części; Villages.build_role(role, name) składa je z people.glb). Knights.PATROLS: 3 konne
+    patrole (droga, liczba, start), szyk co 7 m (klasa Knights.Patrol: punkt na drodze tam i z powrotem,
+    slot_pose/slot_position), ostatni w szyku to kusznik. Tryby Knight.Mode: PATROL / ENGAGE / RETURN / HUNT.
+    Taktyka wg stadium: pisklę na ziemi — szarża z włócznią (7 + odrzut); młodzik / smok w powietrzu —
+    oszczepy (8, Arrow.create z długością 2 m), kusznik — bełty (7); dorosły — tchórze (coward) uciekają;
+    pradawny — uciekają wszyscy poza kusznikami. Zabity: sakiewka (20–45 zł) + 6 rozgłosu. Od rozgłosu
+    „Postrach” Knights.send_hunt(): oddział 4 rycerzy zjeżdża drogą z zamku i jedzie prosto na smoka
+    (przy „Legendzie” drugi; nowy dzień: repopulate(_hunts_for(level))). Arrow.on_hit — własny komunikat
+    trafienia. Dev: teleport do patrolu rycerzy (pause_menu).
+- Testy: tools/check.sh + tools/test_{walk,flight,hunt,pause,lair,world,village,fire,catch,wildlife,
+  castle,gryphon,knights}.gd — pełny zestaw ~60 min, uruchamiaj w tle przez nohup (skrypt pętli po
+  testach z logiem; Monitor po 30 min zabija swoje procesy). Testy: world.use_save = false.
+
+Uwagi otwarte / do sprawdzenia przez właściciela:
+- Balans rycerzy (szarża 7, oszczep 8, bełt 7, zdrowie 8 / 6, zasięg wykrycia 50 m + 4 m na metr smoka),
+  balist (2,2 s ostrzeżenia, 18 obrażeń) i gryfów (zdrowie 18, szarża 8).
+- Pościg z zamku jedzie po prostej (omija wodę / strome zbocza odchyleniem) — może utknąć za jeziorem.
+- Wydajność na telefonie: zwierzęta i rycerze to po kilka MeshInstance (koń + jeździec ~11).
+- base_api zostaje 6 mimo nowych class_name (jak w 0.14–0.17 — łatki działały); jeśli łatka 0.18 zepsuje
+  grę u gracza, podbij base_api.
+- Vulkan w kontenerze bywa niedostępny — Godot przechodzi na OpenGL (zrzuty nadal działają).
+
+Następny krok wg ROADMAP (faza 8): zamek — wieże z gryfami (oswojone gryfy królestwa) i boss: dowódca
+jeźdźców gryfów. Zapytaj właściciela ankietą (np. jak walczy boss, czy jeźdźcy gryfów też patrolują).
+
+Komunikacja z właścicielem po polsku. Po każdym zadaniu: testy, commit, push na main,
+a dla zmian w grze — wydanie (podbicie wersji) i link do APK.
+```
+
+---
+
 ## 2026-11-24 — po wersji v0.17.0 (zwierzyna, zamek, gryfy)
 
 ```text
