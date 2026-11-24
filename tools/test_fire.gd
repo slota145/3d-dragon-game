@@ -89,7 +89,7 @@ func _init() -> void:
 	player.stats.set_size_instant(12.0)
 	world.call("_update_buttons")
 	_check(fire_btn.label == "STRUMIEŃ", "przycisk: %s" % fire_btn.label)
-	var flock := vil.residents().filter(func(r: Node3D) -> bool: return not (r is Villager))
+	var flock := vil.residents().filter(func(r: Node3D) -> bool: return r is Prey and (r as Prey).species == "sheep")
 	print("   owiec: %d, żywych: %d" % [flock.size(), flock.filter(func(r: Node3D) -> bool: return (r as Prey).is_alive()).size()])
 	var sheep: Prey = flock.filter(func(r: Node3D) -> bool: return (r as Prey).is_alive())[0]
 	sheep.max_health = 3.0
@@ -123,7 +123,7 @@ func _init() -> void:
 	# cel prawie na środku ekranu -> pomoc w celowaniu go łapie
 	var target_sheep: Prey = null
 	for r in vil.residents():
-		if r is Prey and not (r is Villager) and (r as Prey).is_alive():
+		if r is Prey and (r as Prey).species == "sheep" and (r as Prey).is_alive():
 			target_sheep = r
 			break
 	var aim_fwd := player.fire_direction()
@@ -132,7 +132,7 @@ func _init() -> void:
 	target_sheep.home_radius = 0.0
 	target_sheep.set_physics_process(false)
 	await _seconds(0.5)
-	_check(player.aim_target == target_sheep, "pomoc w celowaniu złapała owcę")
+	_check(player.aim_target == target_sheep, "pomoc w celowaniu złapała owcę (cel: %s)" % (player.aim_target.get("display_name") if player.aim_target else "brak"))
 	await _shot("aim_lock.png")
 
 	print("5) Odbudowa")
