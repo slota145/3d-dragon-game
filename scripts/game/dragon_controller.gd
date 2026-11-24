@@ -351,7 +351,11 @@ func _physics_process(delta: float) -> void:
 		else:
 			_eat_carried()
 	elif state == State.AIR and not _hopping and Input.is_action_just_pressed("bite") and _bite_cd <= 0.0:
-		_try_grab()
+		var target := catch_target()
+		if target and target.center().distance_to(talon_position()) > 1.6 + stats.size * 0.45:
+			_start_swoop(target)  # daleko — pikuj po nią
+		else:
+			_try_grab()
 	elif state == State.GROUND and Input.is_action_just_pressed("bite") and _bite_cd <= 0.0:
 		_start_bite()
 	if state == State.AIR and not _hopping and stats.stamina <= 0.0:
@@ -487,6 +491,9 @@ func _process_air(delta: float, stick: Vector2, pressed: bool, held: bool) -> vo
 		else:
 			_process_hop(delta)
 			return
+	if _swoop_target or _swoop_climb > 0.0:
+		_process_swoop(delta)
+		return
 	var fwd := -stick.y  # > 0 gałka do przodu, < 0 do tyłu
 	rotation.y -= stick.x * air_turn_rate * delta
 
@@ -655,6 +662,84 @@ func carry_load() -> float:
 	return clampf(carried.body_size / stats.size * 1.2, 0.05, 0.6)
 
 
+## Pikowanie po ofiarę: Ugryzienie w locie z namierzonym celem — smok sam nurkuje do niego,
+## łapie go w szpony i lekko wzbija się w górę.
+var _swoop_target: Prey
+var _swoop_time: float = 0.0
+var _swoop_climb: float = 0.0
+## Zasięg namierzania ofiary w locie (m, rośnie z rozmiarem smoka) i stożek przed smokiem.
+const SWOOP_RANGE := 45.0
+const SWOOP_CONE_DEG := 70.0
+
+
+## Ofiara do złapania w locie: jadalna, do udźwignięcia, poniżej smoka, w stożku przed nim.
+func catch_target() -> Prey:
+	if state != State.AIR or _hopping or (carried and is_instance_valid(carried)):
+		return null
+	var best: Prey = null
+	var best_score := INF
+	var reach := SWOOP_RANGE + stats.size * 3.0
+	var facing := _facing_flat()
+	for node in get_tree().get_nodes_in_group("prey"):
+		var prey := node as Prey
+		if not prey or not prey.is_edible() or prey.carried or prey.body_size > stats.size * MAX_LIFT:
+			continue
+		var to := prey.center() - global_position
+		if to.y > 2.0 or to.length() > reach:
+			continue
+		var flat := Vector3(to.x, 0.0, to.z)
+		var ang := rad_to_deg(facing.angle_to(flat.normalized())) if flat.length() > 0.5 else 0.0
+		if ang > SWOOP_CONE_DEG:
+			continue
+		var score := to.length() * (1.0 + ang / 45.0)
+		if score < best_score:
+			best_score = score
+			best = prey
+	return best
+
+
+func _start_swoop(target: Prey) -> void:
+	_swoop_target = target
+	_swoop_time = 0.0
+	_bite_cd = bite_cooldown
+	if _anim:
+		_anim.play("Dive", 0.15)
+
+
+func _process_swoop(delta: float) -> void:
+	if _swoop_climb > 0.0:  # po złapaniu: lekki wzlot do przodu
+		_swoop_climb -= delta
+		velocity = velocity.lerp(_facing_flat() * glide_speed * _fly_k() + Vector3.UP * 7.0 * _fly_k(), clampf(3.0 * delta, 0.0, 1.0))
+		pitch = move_toward(pitch, deg_to_rad(18.0), pitch_rate * delta)
+		move_and_slide()
+		return
+	_swoop_time += delta
+	var t := _swoop_target
+	if not is_instance_valid(t) or not t.is_edible() or t.carried or _swoop_time > 4.0:
+		_swoop_target = null  # cel zniknął — zwykły lot
+		return
+	# punkt nad ofiarą tak, żeby szpony trafiły w nią; lekkie wyprzedzenie ruchu ofiary
+	var aim := t.center() + Vector3.UP * (0.15 * stats.size + t.radius)
+	var to := aim - global_position
+	var speed := maxf(velocity.length(), (glide_speed + 10.0) * _fly_k())
+	speed = minf(speed, 45.0 * _fly_k())
+	var want := to.normalized() * speed
+	velocity = velocity.lerp(want, clampf(5.0 * delta, 0.0, 1.0))
+	var flat := Vector3(to.x, 0.0, to.z)
+	if flat.length() > 0.3:
+		rotation.y = rotate_toward(rotation.y, atan2(flat.x, flat.z), 4.0 * delta)
+	pitch = move_toward(pitch, clampf(asin(clampf(to.normalized().y, -1.0, 1.0)), deg_to_rad(-60.0), deg_to_rad(20.0)), pitch_rate * 2.0 * delta)
+	move_and_slide()
+	if t.center().distance_to(talon_position()) < 1.6 + stats.size * 0.45:
+		_swoop_target = null
+		_try_grab()
+		if carried:
+			_swoop_climb = 1.1
+			_start_flap_anim()
+	elif is_on_floor() and _swoop_time > 0.3:
+		_swoop_target = null  # wbił się w ziemię obok — zwykły lot / lądowanie
+
+
 func _try_grab() -> void:
 	_bite_cd = bite_cooldown
 	var talon := talon_position()
@@ -691,6 +776,10 @@ func _carry_update() -> void:
 
 
 ## Puść niesioną ofiarę (np. przy śmierci smoka).
+func is_swooping() -> bool:
+	return _swoop_target != null
+
+
 func release_carried() -> void:
 	if carried and is_instance_valid(carried):
 		_drop_carried()

@@ -118,6 +118,7 @@ static func _load_roads() -> void:
 		for q in pts:
 			r = r.expand(q)
 		_road_rects.append(r)
+	_build_road_grid()
 
 
 static var _road_rects: Array[Rect2] = []
@@ -127,30 +128,55 @@ static var _road_cache: Array = []
 
 
 ## Odległość (m) do najbliższej drogi.
-static func road_distance(x: float, z: float) -> float:
-	_load_roads()
-	var p := Vector2(x, z)
-	var best := INF
-	for ri in _road_cache.size():
-		var pts: PackedVector2Array = _road_cache[ri]
-		if not _road_rects[ri].grow(minf(best, 60.0)).has_point(p):
-			continue
+## Siatka przestrzenna odcinków dróg (komórki ROAD_CELL m) — szybkie zapytania o odległość.
+const ROAD_CELL := 32.0
+## Odległość do drogi liczona dokładnie tylko do tylu metrów; dalej zwraca ROAD_FAR.
+const ROAD_FAR := 40.0
+static var _road_grid: Dictionary = {}  # Vector2i -> PackedVector4Array (ax, az, bx, bz)
+
+
+static func _build_road_grid() -> void:
+	for pts: PackedVector2Array in _road_cache:
 		for k in pts.size() - 1:
 			var a := pts[k]
-			var ab := pts[k + 1] - a
-			var t := clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
-			best = minf(best, p.distance_to(a + ab * t))
+			var b := pts[k + 1]
+			var seg := Vector4(a.x, a.y, b.x, b.y)
+			var lo := Vector2i(floori((minf(a.x, b.x) - ROAD_FAR) / ROAD_CELL), floori((minf(a.y, b.y) - ROAD_FAR) / ROAD_CELL))
+			var hi := Vector2i(floori((maxf(a.x, b.x) + ROAD_FAR) / ROAD_CELL), floori((maxf(a.y, b.y) + ROAD_FAR) / ROAD_CELL))
+			for cx in range(lo.x, hi.x + 1):
+				for cz in range(lo.y, hi.y + 1):
+					var key := Vector2i(cx, cz)
+					if not _road_grid.has(key):
+						_road_grid[key] = PackedVector4Array()
+					var arr: PackedVector4Array = _road_grid[key]
+					arr.append(seg)
+					_road_grid[key] = arr
+
+
+## Odległość (m) do najbliższej drogi (dokładna do ROAD_FAR, dalej = ROAD_FAR).
+static func road_distance(x: float, z: float) -> float:
+	_load_roads()
+	var cell: Variant = _road_grid.get(Vector2i(floori(x / ROAD_CELL), floori(z / ROAD_CELL)))
+	if cell == null:
+		return ROAD_FAR
+	var p := Vector2(x, z)
+	var best := ROAD_FAR
+	for seg: Vector4 in cell:
+		var a := Vector2(seg.x, seg.y)
+		var ab := Vector2(seg.z, seg.w) - a
+		var t := clampf((p - a).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
+		best = minf(best, p.distance_to(a + ab * t))
 	return best
 
 
 ## 0..1 — gdzie leżą pola wioski (pierścień wokół placu); -1 gdy daleko od wiosek.
 static func farmland(x: float, z: float) -> float:
-	if road_distance(x, z) < ROAD_HALF_WIDTH + 5.0:
-		return -1.0  # pas drogi — pola obok, nie na drodze
 	for v: Array in VILLAGES:
 		var d := Vector2(x - v[0], z - v[1]).length()
 		var r: float = v[2]
 		if d < r + FIELDS:
+			if road_distance(x, z) < ROAD_HALF_WIDTH + 5.0:
+				return -1.0  # pas drogi — pola obok, nie na drodze
 			return clampf((d - r * 0.85) / FIELDS, 0.0, 1.0) if d > r * 0.85 else 0.0
 	return -1.0
 
@@ -231,6 +257,9 @@ func _ready() -> void:
 	_material = StandardMaterial3D.new()
 	_material.vertex_color_use_as_albedo = true
 	_material.roughness = 1.0
+	# rozgrzej statyczne dane (szum, drogi, wioski) w głównym wątku — potem czytają je wątki w tle
+	road_distance(0.0, 0.0)
+	forest(0.0, 0.0)
 	_add_water()
 	_add_bounds()
 
@@ -284,21 +313,54 @@ func _process(_delta: float) -> void:
 					_queue.append(n)
 		_queue.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
 			return (a - c).length_squared() < (b - c).length_squared())
-	# kilka kawałków na klatkę — bez przycięć
-	for i in 3:
-		if _queue.is_empty():
-			break
+	# kawałki liczone w wątkach w tle; w głównym wątku tylko wstawienie gotowych danych
+	while not _queue.is_empty() and _pending.size() < MAX_TASKS:
 		var n: Vector2i = _queue.pop_front()
-		_build_chunk(n, _lod_for(n))
+		if _pending.has(n):
+			continue
+		var lod := _lod_for(n)
+		var need_mesh := lod_of(n) != lod
+		var need_body := lod == 0 and not has_collision(n)
+		_pending[n] = WorkerThreadPool.add_task(_chunk_task.bind(n, lod, need_mesh, need_body))
+	for n: Vector2i in _pending.keys():
+		if not WorkerThreadPool.is_task_completed(_pending[n]):
+			continue
+		WorkerThreadPool.wait_for_task_completion(_pending[n])
+		_pending.erase(n)
+		_mutex.lock()
+		var r: Dictionary = _results.get(n, {})
+		_results.erase(n)
+		_mutex.unlock()
+		if not r.is_empty():
+			var arrays: Array = r["arrays"]
+			var lod: int = r["lod"]
+			if arrays.is_empty() and lod_of(n) != lod:
+				arrays = _chunk_arrays(n, LOD_RES[lod])  # (nie powinno się zdarzyć)
+			_build_chunk(n, lod, arrays, r["body"])
 
 
-func _build_chunk(c: Vector2i, lod: int) -> void:
+const MAX_TASKS := 4
+var _pending: Dictionary = {}  # Vector2i -> id zadania WorkerThreadPool
+var _results: Dictionary = {}
+var _mutex := Mutex.new()
+
+
+## Zadanie w tle: dane siatki (gdy zmienia się LOD) i wysokości do kolizji (gdy potrzebna).
+func _chunk_task(c: Vector2i, lod: int, need_mesh: bool, need_body: bool) -> void:
+	var r := {"lod": lod, "arrays": _chunk_arrays(c, LOD_RES[lod]) if need_mesh else [],
+		"body": _body_heights(c) if need_body else PackedFloat32Array()}
+	_mutex.lock()
+	_results[c] = r
+	_mutex.unlock()
+
+
+func _build_chunk(c: Vector2i, lod: int, arrays: Array = [], body_data := PackedFloat32Array()) -> void:
 	var entry: Dictionary = _chunks.get(c, {"mesh": null, "lod": -1, "body": null})
 	if entry["lod"] != lod:
 		if entry["mesh"]:
 			(entry["mesh"] as Node).queue_free()
 		var mi := MeshInstance3D.new()
-		mi.mesh = _chunk_mesh(c, LOD_RES[lod])
+		mi.mesh = _mesh_from_arrays(arrays) if not arrays.is_empty() else _chunk_mesh(c, LOD_RES[lod])
 		mi.position = chunk_origin(c)
 		mi.visibility_range_end = VIEW_DISTANCE
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if lod == 0 \
@@ -308,7 +370,7 @@ func _build_chunk(c: Vector2i, lod: int) -> void:
 		entry["lod"] = lod
 	var want_body := lod == 0
 	if want_body and entry["body"] == null:
-		entry["body"] = _chunk_body(c)
+		entry["body"] = _chunk_body(c, body_data)
 	elif not want_body and entry["body"] != null:
 		(entry["body"] as Node).queue_free()
 		entry["body"] = null
@@ -317,6 +379,18 @@ func _build_chunk(c: Vector2i, lod: int) -> void:
 
 
 func _chunk_mesh(c: Vector2i, res: int) -> ArrayMesh:
+	return _mesh_from_arrays(_chunk_arrays(c, res))
+
+
+func _mesh_from_arrays(arrays: Array) -> ArrayMesh:
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh.surface_set_material(0, _material)
+	return mesh
+
+
+## Dane siatki kawałka (bez zasobów silnika) — można liczyć w wątku w tle.
+func _chunk_arrays(c: Vector2i, res: int) -> Array:
 	var o := chunk_origin(c)
 	var step := CHUNK / res
 	var hs := PackedFloat32Array()
@@ -359,10 +433,7 @@ func _chunk_mesh(c: Vector2i, res: int) -> ArrayMesh:
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_NORMAL] = norms
 	arrays[Mesh.ARRAY_COLOR] = cols
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	mesh.surface_set_material(0, _material)
-	return mesh
+	return arrays
 
 
 func _tri(verts: PackedVector3Array, norms: PackedVector3Array, cols: PackedColorArray, o: Vector3,
@@ -484,18 +555,28 @@ static func tree_species(x: float, z: float, r: float) -> String:
 	return "Oak" if r < 0.7 else "Birch"
 
 
-func _chunk_body(c: Vector2i) -> StaticBody3D:
+## Wysokości do kolizji kawałka — można liczyć w wątku w tle.
+func _body_heights(c: Vector2i) -> PackedFloat32Array:
 	var res: int = LOD_RES[0]
 	var step := CHUNK / res
 	var o := chunk_origin(c)
-	var shape := HeightMapShape3D.new()
-	shape.map_width = res + 1
-	shape.map_depth = res + 1
 	var data := PackedFloat32Array()
 	data.resize((res + 1) * (res + 1))
 	for j in res + 1:
 		for i in res + 1:
 			data[j * (res + 1) + i] = height(o.x + i * step, o.z + j * step)
+	return data
+
+
+func _chunk_body(c: Vector2i, data: PackedFloat32Array = PackedFloat32Array()) -> StaticBody3D:
+	var res: int = LOD_RES[0]
+	var step := CHUNK / res
+	var o := chunk_origin(c)
+	if data.is_empty():
+		data = _body_heights(c)
+	var shape := HeightMapShape3D.new()
+	shape.map_width = res + 1
+	shape.map_depth = res + 1
 	shape.map_data = data
 	var body := StaticBody3D.new()
 	body.name = "TerrainBody_%d_%d" % [c.x, c.y]
@@ -569,6 +650,9 @@ func _check_depth_task() -> void:
 func _exit_tree() -> void:
 	if _depth_task >= 0:
 		WorkerThreadPool.wait_for_task_completion(_depth_task)
+	for n: Vector2i in _pending.keys():
+		WorkerThreadPool.wait_for_task_completion(_pending[n])
+	_pending.clear()
 
 
 ## Niewidzialne ściany na krawędzi świata.

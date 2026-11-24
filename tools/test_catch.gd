@@ -94,6 +94,40 @@ func _init() -> void:
 	await _seconds(1.8)
 	_check(_p.stats.hunger > hunger0 and _p.carried == null, "zjedzony (najedzenie %.0f -> %.0f)" % [hunger0, _p.stats.hunger])
 
+	print("5b) Pikowanie: smok sam nurkuje do namierzonej ofiary, łapie i wzbija się")
+	_p.stats.set_size_instant(6.0)
+	var prey2: Prey = null
+	for r in vil.residents():
+		if r is Prey and not (r is Villager) and (r as Prey).is_alive():
+			prey2 = r
+			break
+	prey2.home_radius = 0.0
+	prey2.set_physics_process(false)  # stoi w miejscu
+	await _take_off()
+	var start := prey2.global_position + Vector3(-24, 16, -24)
+	_p.global_position = start
+	_p.rotation.y = atan2(24, 24)  # pyskiem do ofiary
+	_p.velocity = Vector3(1, 0, 1).normalized() * 12.0
+	_p.reset_physics_interpolation()
+	await _frames(2)
+	var tgt := _p.catch_target()
+	_check(tgt != null, "ofiara namierzona z daleka (%s, %.0f m)" % [tgt.display_name if tgt else "brak", tgt.center().distance_to(_p.global_position) if tgt else 0.0])
+	_tap("bite")
+	await _frames(3)
+	_check(_p.is_swooping(), "smok pikuje")
+	var got := false
+	for i in 40:
+		await _seconds(0.1)
+		if _p.carried != null and _p.carried == tgt:
+			got = true
+			break
+	_check(got, "złapana w locie")
+	var y0 := _p.global_position.y
+	await _seconds(1.0)
+	_check(_p.global_position.y > y0 + 1.0, "po złapaniu wzbija się (%.1f -> %.1f m)" % [y0, _p.global_position.y])
+	_tap("bite")  # puść
+	await _seconds(2.0)
+
 	print("6) Za duża ofiara")
 	_p.stats.set_size_instant(4.2)
 	_p.stats.stamina = 100.0

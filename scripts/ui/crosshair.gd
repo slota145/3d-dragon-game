@@ -16,9 +16,21 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
-	if not dragon or not dragon.stats.can_fire():
+	if not dragon:
 		return
 	var cam := get_viewport().get_camera_3d()
+	# w locie: znacznik ofiary, po którą smok może zapikować (Ugryzienie = ŁAP)
+	var prey := dragon.catch_target()
+	if prey and cam and not cam.is_position_behind(prey.center()):
+		var q := cam.unproject_position(prey.center())
+		var pulse := 0.8 + 0.2 * sin(Time.get_ticks_msec() / 150.0)
+		var c := Color(0.45, 0.9, 1.0, 0.95)
+		draw_arc(q, 30.0 * pulse, 0.0, TAU, 32, c, 3.0, true)
+		draw_line(q + Vector2(0, -44), q + Vector2(0, -34), c, 3.0, true)
+		draw_line(q + Vector2(-6, -40), q + Vector2(0, -34), c, 3.0, true)
+		draw_line(q + Vector2(6, -40), q + Vector2(0, -34), c, 3.0, true)
+	if not dragon.stats.can_fire():
+		return
 	if not cam or cam.is_position_behind(dragon.aim_point):
 		return
 	var p := cam.unproject_position(dragon.aim_point)

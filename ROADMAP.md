@@ -117,6 +117,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   nad wodą, pola i żywopłoty obok drogi (nie na niej)
 - ✅ Mosty na poziomie drogi (0.14.2): przęsło od szczytu brzegu do szczytu brzegu, pomost prosto — przy różnej
   wysokości brzegów pochylona kładka; słupy do gruntu w głębokich dolinach (`Roads.bridge_spans`)
+- ✅ 0.14.3 (uwagi właściciela): mniej przycięć — kawałki terenu i roślinności liczone w wątkach w tle
+  (WorkerThreadPool), siatka przestrzenna dróg (zapytania 10× szybciej); paski brzozy na pniu; łapanie
+  z pikowaniem — Ugryzienie w locie z namierzoną ofiarą (niebieski znacznik): smok sam nurkuje, łapie, wzbija się
 
 - ⬜ Danina vs. palenie i łupienie wiosek; odbudowa
 

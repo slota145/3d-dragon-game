@@ -59,6 +59,16 @@ def trunk(b: MeshBuilder, h: float, r: float, mat: str, bend: float = 0.3, seed:
     return pts
 
 
+def trunk_at(pts: list[Vector], radii: list[float], z: float) -> tuple[Vector, float]:
+    """Punkt na osi pnia (łamana przez `pts`) na wysokości `z` i promień pnia w tym miejscu."""
+    for i in range(len(pts) - 1):
+        a, b = pts[i], pts[i + 1]
+        if a.z <= z <= b.z:
+            t = (z - a.z) / max(b.z - a.z, 1e-4)
+            return a.lerp(b, t), radii[i] + (radii[i + 1] - radii[i]) * t
+    return pts[-1], radii[-1]
+
+
 def pine(mats, tall: bool) -> bpy.types.Object:
     b = MeshBuilder(NAMES)
     h = 11.0 if tall else 7.5
@@ -78,11 +88,14 @@ def round_tree(mats, name: str, leaf: str, alt: str | None, bark: str, seed: int
                crowns: int = 4, scale: float = 1.0) -> bpy.types.Object:
     b = MeshBuilder(NAMES)
     rnd = random.Random(seed)
-    top = trunk(b, h * 0.6, 0.32, bark, seed=seed)[-1]
-    if bark == "Nature_BirchBark":  # czarne paski brzozy
+    pts = trunk(b, h * 0.6, 0.32, bark, bend=0.12 if bark == "Nature_BirchBark" else 0.3, seed=seed)
+    top = pts[-1]
+    if bark == "Nature_BirchBark":  # czarne paski brzozy — na osi wygiętego pnia, szerokość jak pień
         for k in range(6):
             z = 0.6 + k * h * 0.09
-            box(b, V(0, 0, z), (0.5, 0.5, 0.08), "Nature_BirchMark", rot=k * 1.1)
+            c, r = trunk_at(pts, [0.32, 0.24, 0.16], z)
+            # krótki pierścień o kształcie pnia (6 ścianek), odrobinę grubszy niż pień
+            b.tube([c - V(0, 0, 0.05), c + V(0, 0, 0.05)], [r * 1.08, r * 1.06], 6, "Nature_BirchMark", tip=False)
     for k in range(crowns):
         a = k / crowns * math.tau + rnd.uniform(-0.3, 0.3)
         d = 0.0 if k == 0 else rnd.uniform(1.0, 1.8) * scale

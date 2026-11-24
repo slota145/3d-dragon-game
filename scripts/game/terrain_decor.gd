@@ -74,10 +74,26 @@ func _process(_delta: float) -> void:
 		_center = c
 		_refresh_todo()
 		_drop_far()
-	for i in PER_FRAME:
-		if _todo.is_empty():
-			break
-		_build(_todo.pop_front())
+	# obliczenia w wątkach w tle, w głównym wątku tylko wstawienie (bez przycięć)
+	while not _todo.is_empty() and _pending.size() < MAX_TASKS:
+		var n: Vector2i = _todo.pop_front()
+		if _pending.has(n):
+			continue
+		var big := not _big.has(n)
+		var small := _ring(n) <= SMALL_RING and not _small.has(n)
+		if big or small:
+			_pending[n] = WorkerThreadPool.add_task(_task.bind(n, big, small))
+	for n: Vector2i in _pending.keys():
+		if not WorkerThreadPool.is_task_completed(_pending[n]):
+			continue
+		WorkerThreadPool.wait_for_task_completion(_pending[n])
+		_pending.erase(n)
+		_mutex.lock()
+		var r: Dictionary = _results.get(n, {})
+		_results.erase(n)
+		_mutex.unlock()
+		if not r.is_empty() and _ring(n) <= BIG_RING + 1:
+			_apply(n, r)
 
 
 func _ring(c: Vector2i) -> int:
@@ -97,10 +113,52 @@ func _refresh_todo() -> void:
 
 
 func _build(c: Vector2i) -> void:
-	if not _big.has(c):
-		_big[c] = _scatter_big(c)
-	if _ring(c) <= SMALL_RING and not _small.has(c):
-		_small[c] = _scatter_small(c)
+	var r := _compute(c, not _big.has(c), _ring(c) <= SMALL_RING and not _small.has(c))
+	_apply(c, r)
+
+
+## Obliczenia kawałka (wątek w tle lub od razu przy starcie).
+func _compute(c: Vector2i, big: bool, small: bool) -> Dictionary:
+	var r := {"big": [], "small": [], "has_big": big, "has_small": small}
+	if big:
+		_scatter_big(c, r["big"])
+	if small:
+		_scatter_small(c, r["small"])
+	return r
+
+
+## Wstawienie gotowych danych do sceny (główny wątek): grupa MultiMeshy na kawałek.
+func _apply(c: Vector2i, r: Dictionary) -> void:
+	for key: String in ["big", "small"]:
+		if not r["has_" + key]:
+			continue
+		var store: Dictionary = _big if key == "big" else _small
+		if store.has(c):
+			continue
+		var group := Node3D.new()
+		add_child(group)
+		for e: Array in r[key]:
+			_add_multimesh(group, e[0], e[1], e[2], e[3], e[4], e[5] if e.size() > 5 else 0.0)
+		store[c] = group
+
+
+const MAX_TASKS := 3
+var _pending: Dictionary = {}  # Vector2i -> id zadania
+var _results: Dictionary = {}
+var _mutex := Mutex.new()
+
+
+func _task(c: Vector2i, big: bool, small: bool) -> void:
+	var r := _compute(c, big, small)
+	_mutex.lock()
+	_results[c] = r
+	_mutex.unlock()
+
+
+func _exit_tree() -> void:
+	for c: Vector2i in _pending.keys():
+		WorkerThreadPool.wait_for_task_completion(_pending[c])
+	_pending.clear()
 
 
 func _drop_far() -> void:
@@ -126,9 +184,8 @@ func _rng_for(c: Vector2i, salt: int) -> RandomNumberGenerator:
 	return rng
 
 
-func _scatter_big(c: Vector2i) -> Node3D:
-	var group := Node3D.new()
-	add_child(group)
+## Drzewa i kamienie kawałka — tylko obliczenia (wpisy do `out`), więc można w wątku w tle.
+func _scatter_big(c: Vector2i, out: Array) -> void:
 	var o := terrain.chunk_origin(c)
 	var rng := _rng_for(c, 1)
 	var by_species: Dictionary = {}  # gatunek -> Array[Transform3D]
@@ -161,9 +218,9 @@ func _scatter_big(c: Vector2i) -> Node3D:
 			far_round.append(xf)
 			far_round_cols.append(far_col.darkened(rng.randf() * 0.15))
 	for sp: String in by_species:
-		_add_multimesh(group, _nature["Tree_" + sp], by_species[sp], [], TREE_NEAR, true)
-	_add_multimesh(group, _far_cone, far_cone, far_cone_cols, 700.0, false, TREE_NEAR - 15.0)
-	_add_multimesh(group, _far_round, far_round, far_round_cols, 700.0, false, TREE_NEAR - 15.0)
+		out.append([_nature["Tree_" + sp], by_species[sp], [], TREE_NEAR, true])
+	out.append([_far_cone, far_cone, far_cone_cols, 700.0, false, TREE_NEAR - 15.0])
+	out.append([_far_round, far_round, far_round_cols, 700.0, false, TREE_NEAR - 15.0])
 	# kamienie: kilka rodzajów, w górach więcej
 	var rock_kinds := ["Rock_A", "Rock_B", "Rock_Flat", "Rock_Mossy"]
 	var rocks: Dictionary = {}
@@ -182,13 +239,11 @@ func _scatter_big(c: Vector2i) -> Node3D:
 			rocks[kind] = [] as Array[Transform3D]
 		rocks[kind].append(Transform3D(basis, Vector3(x, h - 0.1 * s, z)))
 	for kind: String in rocks:
-		_add_multimesh(group, _nature[kind], rocks[kind], [], 700.0, true)
-	return group
+		out.append([_nature[kind], rocks[kind], [], 700.0, true])
 
 
-func _scatter_small(c: Vector2i) -> Node3D:
-	var group := Node3D.new()
-	add_child(group)
+## Trawa, kwiaty i krzewy kawałka — tylko obliczenia (wpisy do `out`).
+func _scatter_small(c: Vector2i, out: Array) -> void:
 	var o := terrain.chunk_origin(c)
 	var rng := _rng_for(c, 2)
 	for kind in 4:
@@ -222,8 +277,7 @@ func _scatter_small(c: Vector2i) -> Node3D:
 				var s := rng.randf_range(0.3, 0.5)
 				xs.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * s), Vector3(x, Terrain.height(x, z), z)))
 				cols.append(Terrain.FLOWER_COLORS[patch])
-		_add_multimesh(group, mesh, xs, cols, 160.0 if kind < 2 else 300.0, kind >= 2)
-	return group
+		out.append([mesh, xs, cols, 160.0 if kind < 2 else 300.0, kind >= 2])
 
 
 func _add_multimesh(parent: Node3D, mesh: Mesh, xs: Array[Transform3D], cols: Array, vis_range: float,
