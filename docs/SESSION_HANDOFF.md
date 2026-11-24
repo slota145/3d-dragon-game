@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-11-24 — po wersji v0.17.0 (zwierzyna, zamek, gryfy)
+
+```text
+Kontynuujemy pracę nad grą „3D Dragon Game” (Godot 4.7, Android, repo slota145/3d-dragon-game,
+gałąź main). Przeczytaj najpierw CLAUDE.md, docs/GAME_DESIGN.md i ROADMAP.md.
+
+Stan (v0.17.0, wydana, APK: releases/latest/download/DragonGame.apk; base_api 6).
+- Rdzeń jak w poprzednim wpisie (stadia, polowanie, legowisko, sen na skarbie, świat 4×4 km, wioski,
+  ogień, celowanie, łapanie w locie z automatycznym pikowaniem), plus:
+  * 0.14.x: danina i łupienie wiosek, drogi A* (tools/gen_roads.gd -> assets/data/roads.json; uruchom
+    ponownie po zmianie terenu / wiosek / zamku), mosty, wozy kupieckie; budowa terenu i dekoracji w wątkach.
+  * 0.15.0 zwierzyna (wildlife.gd: Wildlife.SPECIES, create(); prey_spawner.gd: siedliska): królik, owca,
+    sarna, dzik (szarżuje na pisklę), koza (góry), kaczka (jeziora, odlatuje), kura (wioski). Modele z
+    części w animals.glb (gen_animals.py), animacja w Prey._animate (stęp, galop, kicanie, skubanie, skrzydła).
+  * 0.16.0 zamek (castle.gd, gen_castle.py) na wzgórzu w Terrain.CASTLE (400, 1400): mury z kolizją, brama,
+    donżon, 4 balisty (ballista.gd: czerwona linia celowania, bolt.gd), 9 łuczników na murach (Prey.perch),
+    skarbiec (3 skrzynie, co dzień). Dev: teleport pod zamek.
+  * 0.17.0 dzikie gryfy (gryphon.gd extends Prey, gryphons.gd): 3 gniazda na szczytach (Gryphons.NESTS),
+    po 2 gryfy; tryby PERCH/PATROL/ATTACK/RETREAT/FLEE, szarża 8 obrażeń, zabity spada (truchło do
+    zjedzenia), dorosły może złapać i zrzucić; skarby w gniazdach. Dev: teleport do gniazda.
+- Testy: tools/check.sh + tools/test_{walk,flight,hunt,pause,lair,world,village,fire,catch,wildlife,
+  castle,gryphon}.gd — pełny zestaw ~55 min, uruchamiaj w tle przez nohup (Monitor po 30 min zabija
+  swoje procesy). Testy: world.use_save = false.
+
+Uwagi otwarte / do sprawdzenia przez właściciela:
+- Balans balist (2,2 s ostrzeżenia, 18 obrażeń) i gryfów (zdrowie 18, szarża 8).
+- Wydajność na telefonie: zwierzęta to 6–8 MeshInstance każde (LOD: animacja do 160 m).
+- Vulkan w kontenerze bywa niedostępny — Godot przechodzi na OpenGL (zrzuty nadal działają).
+
+Następny krok wg ROADMAP (faza 8): rycerze na drogach (patrole, rozgłos), potem wieże z gryfami
+i boss (dowódca jeźdźców gryfów) w zamku. Zapytaj właściciela ankietą.
+
+Komunikacja z właścicielem po polsku. Po każdym zadaniu: testy, commit, push na main,
+a dla zmian w grze — wydanie (podbicie wersji) i link do APK.
+```
+
+---
+
 ## 2026-11-24 — po wersji v0.13.2 (wygląd świata)
 
 ```text

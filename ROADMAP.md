@@ -160,7 +160,10 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   w lecącego smoka / młodzika+, czerwona linia ostrzega przed strzałem, bełt 18 obrażeń + odrzut, przeładowanie
   5 s; ogień je niszczy), 9 łuczników na murach, skarbiec (3 skrzynie przed donżonem, co dzień nowe);
   dev: teleport pod zamek
-- ⬜ Gryfy (dzikie, w górach), rycerze (patrole na drogach)
+- ✅ 0.17.0: dzikie gryfy (`gryphon.gd`, `gryphons.gd`, model w `gen_animals.py`): 3 gniazda na szczytach,
+  po parze gryfów; bronią terytorium (szarża szponami, odskok, ranny ucieka), zabity spada — truchło do
+  zjedzenia, dorosły smok może złapać i zrzucić; skarby w gniazdach; dev: teleport do gniazda
+- ⬜ Rycerze (patrole na drogach)
 - ⬜ Zamek: wieże z gryfami, boss: dowódca jeźdźców gryfów
 
 ## Faza 9 — Nowe pokolenie ⬜
