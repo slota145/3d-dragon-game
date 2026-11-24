@@ -33,6 +33,9 @@ PALETTE = {
     "Village_RedWood": (0.42, 0.08, 0.05),
     "Village_Hay": (0.85, 0.66, 0.2),
     "Village_Window": (0.05, 0.07, 0.12),
+    "Village_Canvas": (0.85, 0.8, 0.65),
+    "Village_Horse": (0.3, 0.16, 0.07),
+    "Village_Mane": (0.06, 0.04, 0.03),
 }
 NAMES = list(PALETTE)
 
@@ -124,10 +127,46 @@ def hay(mats) -> bpy.types.Object:
     return b.to_object("Village_Hay", mats)
 
 
+def wagon(mats) -> bpy.types.Object:
+    """Wóz kupiecki z plandeką i skrzyniami (przód = -Y, dyszel do konia)."""
+    b = MeshBuilder(NAMES)
+    box(b, V(0, 0, 0.75), (1.8, 3.4, 0.6), "Village_Wood")
+    for x in (-1.0, 1.0):  # koła
+        for y in (-1.1, 1.1):
+            b.loft([[V(x, y + math.cos(a) * 0.55, 0.55 + math.sin(a) * 0.55) for a in
+                     [k / 10 * math.tau for k in range(10)]],
+                    [V(x + 0.12 * (1 if x > 0 else -1), y + math.cos(a) * 0.55, 0.55 + math.sin(a) * 0.55) for a in
+                     [k / 10 * math.tau for k in range(10)]]], "Village_Beam", cap_start=True, cap_end=True)
+    for k in range(6):  # plandeka (łuk)
+        a0, a1 = k / 6 * math.pi, (k + 1) / 6 * math.pi
+        p = [V(math.cos(a0) * 0.95, -1.2, 1.35 + math.sin(a0) * 1.0), V(math.cos(a1) * 0.95, -1.2, 1.35 + math.sin(a1) * 1.0),
+             V(math.cos(a1) * 0.95, 1.4, 1.35 + math.sin(a1) * 1.0), V(math.cos(a0) * 0.95, 1.4, 1.35 + math.sin(a0) * 1.0)]
+        b.add_face([b.add_vert(q) for q in p], "Village_Canvas")
+        b.add_face([b.add_vert(q) for q in reversed(p)], "Village_Canvas")
+    for k in range(3):  # skrzynie z tyłu
+        box(b, V(-0.5 + k * 0.5, 1.5, 1.05), (0.45, 0.45, 0.45), "Village_RedWood" if k % 2 else "Village_Wood")
+    b.tube([V(0, -1.7, 0.8), V(0, -3.2, 0.9)], [0.06, 0.05], 5, "Village_Beam", tip=False)  # dyszel
+    return b.to_object("Village_Wagon", mats)
+
+
+def horse(mats) -> bpy.types.Object:
+    """Koń pociągowy (przód = -Y), stoi przed wozem."""
+    b = MeshBuilder(NAMES)
+    blob(b, (0, 0, 1.35), (0.42, 1.0, 0.45), "Village_Horse", seg=8, rings=5)
+    b.tube([V(0, -0.8, 1.55), V(0, -1.15, 2.0)], [0.26, 0.2], 6, "Village_Horse", tip=False)  # szyja
+    blob(b, (0, -1.4, 2.05), (0.17, 0.4, 0.2), "Village_Horse", seg=6, rings=4)  # głowa
+    b.tube([V(0, -0.85, 1.85), V(0, -1.15, 2.25)], [0.07, 0.05], 4, "Village_Mane", tip=False)
+    for x in (-0.25, 0.25):
+        for y in (-0.65, 0.65):
+            b.tube([V(x, y, 1.1), V(x, y, 0.0)], [0.09, 0.07], 5, "Village_Horse", tip=False)
+    b.tube([V(0, 0.95, 1.5), V(0, 1.3, 0.9)], [0.08, 0.03], 4, "Village_Mane", tip=False)  # ogon
+    return b.to_object("Village_Horse", mats)
+
+
 if __name__ == "__main__":
     common.reset_scene()
     MATS = make_materials(PALETTE)
-    objs = [cottage(MATS), barn(MATS), well(MATS), fence(MATS), hay(MATS)]
+    objs = [cottage(MATS), barn(MATS), well(MATS), fence(MATS), hay(MATS), wagon(MATS), horse(MATS)]
     for i, o in enumerate(objs):
         flat_shade(o)
         face_color_variation(o, 0.08, seed=i + 3)

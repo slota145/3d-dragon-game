@@ -88,6 +88,12 @@ func _ready() -> void:
 		if Time.get_ticks_msec() - _arrow_msg > 3000:
 			_arrow_msg = Time.get_ticks_msec()
 			_toast("Trafiony strzałą! Myśliwi polują na smoka"))
+	_villages.cart_destroyed.connect(func(c: MerchantCart) -> void:
+		add_renown(4.0)
+		_loot_n += 1
+		_finds.add_special("loot_%d" % _loot_n, "chest", c.global_position + c.global_basis.x * 3.5,
+			randi_range(60, 120), "Łup z wozu kupieckiego")
+		_toast("Wóz kupiecki spłonął! Zostawił skrzynię"))
 	_villages.building_burnt.connect(func(b: Node3D) -> void:
 		add_renown(5.0)
 		_anger_village(_villages.village_at(b.global_position))
@@ -293,6 +299,9 @@ func _on_fire_hit(at: Vector3, radius: float, damage: float) -> void:
 		if prey and prey.is_alive() and prey.center().distance_to(at) < radius + prey.radius:
 			prey.burn(damage)
 	_villages.ignite_near(at, radius)
+	for c in _villages.carts():
+		if c.is_alive() and c.global_position.distance_to(at) < radius + 3.0:
+			c.burn()
 
 
 # --- Danina i łupienie --------------------------------------------------------------

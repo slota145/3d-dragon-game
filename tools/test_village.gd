@@ -172,6 +172,30 @@ func _init() -> void:
 	await _frames(2)
 	_check(not finds.has_node(tid1), "rozgniewana wioska nie płaci")
 
+	print("9) Drogi i wozy kupieckie")
+	var carts := vil.carts()
+	_check(carts.size() == Terrain.ROAD_PAIRS.size(), "wozy na drogach: %d" % carts.size())
+	var cart: MerchantCart = carts[0]
+	_check(Terrain.road_distance(cart.global_position.x, cart.global_position.z) < 2.0, "wóz jedzie drogą")
+	var c0p := cart.global_position
+	await _seconds(2.0)
+	_check(cart.global_position.distance_to(c0p) > 3.0, "wóz się porusza (%.1f m)" % cart.global_position.distance_to(c0p))
+	player.stats.set_size_instant(6.0)
+	player.global_position = cart.global_position + Vector3(14, 6, 14)
+	player.rotation.y = atan2(-14, -14)
+	player.velocity = Vector3.ZERO
+	player.reset_physics_interpolation()
+	cam.snap_behind()
+	await _seconds(0.8)
+	await _shot("village_cart.png")
+	var r1: float = world.renown
+	world.call("_on_fire_hit", cart.global_position + Vector3.UP, 4.0, 5.0)
+	await _frames(3)
+	_check(not cart.is_alive(), "ogień niszczy wóz")
+	var cart_loot := finds.remaining().filter(func(f: Node3D) -> bool: return String(f.get_meta("label", "")).find("wozu") >= 0)
+	_check(cart_loot.size() == 1, "skrzynia z łupem z wozu")
+	_check(world.renown > r1 + 3.0, "rozgłos za wóz (%.1f -> %.1f)" % [r1, world.renown])
+
 	print("WYNIK: ", "OK" if _fails == 0 else "%d błędów" % _fails)
 	quit(1 if _fails else 0)
 

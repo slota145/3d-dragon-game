@@ -9,6 +9,9 @@ signal poked(by: Villager, damage: float)
 signal scared(by: Villager)
 signal eaten_from_village(prey: Prey)
 signal building_burnt(building: Node3D)
+signal cart_destroyed(cart: MerchantCart)
+
+var _carts: Array[MerchantCart] = []
 
 ## Nazwy wiosek (komunikaty: danina, gniew).
 const NAMES := ["Wierzbin", "Dębowo", "Złotopole", "Mokradło", "Brzezie", "Kamionka"]
@@ -339,6 +342,30 @@ func repopulate() -> void:
 				_spawn_sheep(pastc + Vector3(rng.randf_range(-6, 6), 0, rng.randf_range(-6, 6)), pastc, 12.0)
 	_hunters.clear()
 	set_hunters(hunters_per_village)
+	_spawn_carts()
+
+
+## Wozy kupieckie: po jednym na każdej drodze (nowy dzień — zniszczone wracają).
+func _spawn_carts() -> void:
+	for c in _carts:
+		if is_instance_valid(c):
+			c.queue_free()
+	_carts.clear()
+	for i in Terrain.ROAD_PAIRS.size():
+		var cart := MerchantCart.new()
+		cart.name = "Cart_%d" % i
+		add_child(cart)
+		cart.setup(Terrain.road_points(i), _meshes.get("Wagon"), _meshes.get("Horse"), 0.3 + 0.1 * i)
+		cart.destroyed.connect(func(c: MerchantCart) -> void: cart_destroyed.emit(c))
+		_carts.append(cart)
+
+
+func carts() -> Array[MerchantCart]:
+	var out: Array[MerchantCart] = []
+	for c in _carts:
+		if is_instance_valid(c):
+			out.append(c)
+	return out
 
 
 ## Myśliwi z łukami w każdej wiosce (więcej przy większym rozgłosie).

@@ -23,6 +23,9 @@ const LAKES := [[430.0, 270.0, 170.0], [-760.0, 1180.0, 250.0], [1350.0, -260.0,
 ## Wioski: [środek x, środek z, promień placu]. Plac jest wyrównany, wokół pola uprawne.
 const VILLAGES := [[160.0, 640.0, 70.0], [-640.0, 480.0, 65.0], [1150.0, 860.0, 70.0], [880.0, 120.0, 60.0],
 	[-260.0, 1450.0, 70.0], [-1300.0, -120.0, 60.0]]
+## Drogi między wioskami (pary indeksów VILLAGES) — ubita ziemia, jeżdżą nimi wozy kupieckie.
+const ROAD_PAIRS := [[0, 1], [0, 3], [3, 2], [0, 4], [1, 5]]
+const ROAD_HALF_WIDTH := 3.2
 ## Szerokość pierścienia pól wokół wioski (m).
 const FIELDS := 80.0
 ## Rzeki: łamane od gór do jezior.
@@ -95,6 +98,40 @@ static func height(x: float, z: float) -> float:
 	return h
 
 
+## Punkty drogi nr `i` (łagodny łuk: środek odsunięty w bok), od wioski do wioski.
+static func road_points(i: int) -> PackedVector2Array:
+	var pair: Array = ROAD_PAIRS[i]
+	var a: Array = VILLAGES[pair[0]]
+	var b: Array = VILLAGES[pair[1]]
+	var pa := Vector2(a[0], a[1])
+	var pb := Vector2(b[0], b[1])
+	var mid := (pa + pb) * 0.5 + (pb - pa).orthogonal().normalized() * (pb - pa).length() * 0.12 * (1.0 if i % 2 else -1.0)
+	var pts := PackedVector2Array()
+	for k in 17:
+		var t := k / 16.0
+		pts.append(pa.lerp(mid, t).lerp(mid.lerp(pb, t), t))  # krzywa Béziera 2. stopnia
+	return pts
+
+
+static var _road_cache: Array = []
+
+
+## Odległość (m) do najbliższej drogi.
+static func road_distance(x: float, z: float) -> float:
+	if _road_cache.is_empty():
+		for i in ROAD_PAIRS.size():
+			_road_cache.append(road_points(i))
+	var p := Vector2(x, z)
+	var best := INF
+	for pts: PackedVector2Array in _road_cache:
+		for k in pts.size() - 1:
+			var a := pts[k]
+			var ab := pts[k + 1] - a
+			var t := clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+			best = minf(best, p.distance_to(a + ab * t))
+	return best
+
+
 ## 0..1 — gdzie leżą pola wioski (pierścień wokół placu); -1 gdy daleko od wiosek.
 static func farmland(x: float, z: float) -> float:
 	for v: Array in VILLAGES:
@@ -157,6 +194,7 @@ static func forest(x: float, z: float) -> float:
 	_init_noise()
 	var f := _forest.get_noise_2d(x, z) * 0.8 + 0.6 * smoothstep(-80.0, -380.0, x) - 0.08
 	f *= smoothstep(130.0, 220.0, Vector2(x, z).length())  # łąka w środku bez lasu
+	f *= smoothstep(ROAD_HALF_WIDTH + 2.0, ROAD_HALF_WIDTH + 10.0, road_distance(x, z))  # drogi bez drzew
 	for v: Array in VILLAGES:  # wioski i pola bez lasu
 		f *= smoothstep(v[2] + FIELDS * 0.8, v[2] + FIELDS + 60.0, Vector2(x - v[0], z - v[1]).length())
 	return clampf(f * 2.0, 0.0, 1.0)
@@ -348,6 +386,8 @@ static func _face_color(x: float, z: float, h: float, ny: float) -> Color:
 		col = Color(0.97, 0.98, 1.0)  # śnieg
 	elif h > 60.0:
 		col = Color(0.36, 0.54, 0.24).lerp(Color(0.55, 0.52, 0.5), clampf((h - 60.0) / 80.0, 0.0, 1.0))
+	elif road_distance(x, z) < ROAD_HALF_WIDTH:
+		col = Color(0.66, 0.52, 0.34)  # ubita ziemia drogi
 	elif farmland(x, z) > 0.05 and farmland(x, z) < 0.95:
 		col = field_color(x, z)
 	else:
