@@ -33,6 +33,13 @@ const KEYS := [
 ]
 
 
+## 0..1 — jak bardzo jest noc (gwiazdy, świetliki, światła w oknach); płynnie o zmierzchu i świcie.
+func night_factor() -> float:
+	if hour >= 12.0:
+		return smoothstep(19.5, 21.0, hour)
+	return 1.0 - smoothstep(4.5, 6.0, hour)
+
+
 func is_night() -> bool:
 	return hour >= DAY_END or hour < DAY_START
 
@@ -65,12 +72,12 @@ func _process(delta: float) -> void:
 func _apply() -> void:
 	var k := _sample()
 	if environment:
-		var sky := environment.sky.sky_material as ProceduralSkyMaterial if environment.sky else null
+		var sky := environment.sky.sky_material as ShaderMaterial if environment.sky else null
 		if sky:
-			sky.sky_top_color = k[0]
-			sky.sky_horizon_color = k[1]
-			sky.ground_horizon_color = k[1]
-			sky.ground_bottom_color = (k[1] as Color).darkened(0.5)
+			sky.set_shader_parameter("top_color", k[0])
+			sky.set_shader_parameter("horizon_color", k[1])
+			sky.set_shader_parameter("ground_color", (k[1] as Color).darkened(0.5))
+			sky.set_shader_parameter("night", night_factor())
 		environment.ambient_light_color = k[2]
 		environment.ambient_light_energy = k[3]
 		environment.fog_light_color = k[1]

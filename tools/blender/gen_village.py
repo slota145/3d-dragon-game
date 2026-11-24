@@ -32,6 +32,7 @@ PALETTE = {
     "Village_Wood": (0.3, 0.17, 0.07),
     "Village_RedWood": (0.42, 0.08, 0.05),
     "Village_Hay": (0.85, 0.66, 0.2),
+    "Village_Window": (0.05, 0.07, 0.12),
 }
 NAMES = list(PALETTE)
 
@@ -69,7 +70,9 @@ def cottage(mats) -> bpy.types.Object:
             box(b, V(x, y, 0), (0.25, 0.25, h), "Village_Beam")
     box(b, V(0, -d / 2 - 0.05, 0), (1.1, 0.12, 1.9), "Village_Wood")  # drzwi
     for x in (-1.6, 1.6):
-        box(b, V(x, -d / 2 - 0.05, 1.2), (0.8, 0.1, 0.7), "Village_Beam")  # okna
+        box(b, V(x, -d / 2 - 0.05, 1.2), (0.8, 0.1, 0.7), "Village_Window")  # okna (nocą świecą)
+    for y in (-1.6, 1.6):
+        box(b, V(w / 2 + 0.05, y, 1.2), (0.1, 0.8, 0.7), "Village_Window")  # okna boczne
     gable_roof(b, w, d, h, 2.6, 0.6, "Village_Thatch")
     box(b, V(1.2, 1.5, h), (0.7, 0.7, 2.6), "Village_Stone")  # komin
     return b.to_object("Village_Cottage", mats)

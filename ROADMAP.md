@@ -135,7 +135,8 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ 0.13.1: wiatr (`wind.gdshader` — trawa, kwiaty, korony drzew), chmury low-poly dryfujące nad światem
   (`clouds.gd`), woda (`water.gdshader`: zmarszczki, błyski, turkus→błękit, piana przy brzegu z mapy głębokości
   liczonej w tle z terenu — bez bufora głębi, działa na każdym telefonie)
-- ⬜ 0.13.2: noc z gwiazdami i księżycem, świetliki, światła w oknach; ptaki i motyle
+- ✅ 0.13.2: niebo z shadera (`sky.gdshader`: gradient, słońce, księżyc, migoczące gwiazdy; mgła nie zakrywa już
+  nieba), świetliki nocą, świecące okna chat i lampy w wioskach, stada ptaków i motyle nad kwiatami (`fauna.gd`)
 
 ## Faza 8 — Wielcy przeciwnicy i zamki ⬜
 

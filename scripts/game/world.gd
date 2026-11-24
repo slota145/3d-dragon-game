@@ -88,6 +88,10 @@ func _ready() -> void:
 		_toast("Porwany: %s · Ugryzienie = puść" % prey.display_name)
 		if prey is Villager:
 			add_renown(2.0))
+	var fauna := Fauna.new()
+	fauna.name = "Fauna"
+	fauna.dragon = _player
+	add_child(fauna)
 	var clouds := Clouds.new()
 	clouds.name = "Clouds"
 	add_child(clouds)
@@ -96,12 +100,18 @@ func _ready() -> void:
 	_lair.position = Lair.POSITION
 	add_child(_lair)
 	_build_sleep_ui()
+	# niebo z gwiazdami i księżycem (assets/shaders/sky.gdshader) zamiast proceduralnego
+	var env := ($WorldEnvironment as WorldEnvironment).environment
+	var sky_mat := ShaderMaterial.new()
+	sky_mat.shader = load("res://assets/shaders/sky.gdshader")
+	env.sky.sky_material = sky_mat
 	_day_night = DayNight.new()
 	_day_night.name = "DayNight"
 	_day_night.sun = $Sun
 	_day_night.environment = ($WorldEnvironment as WorldEnvironment).environment
 	_day_night.paused = not use_save  # testy: stałe południe/poranek
 	add_child(_day_night)
+	($Fauna as Fauna).day_night = _day_night
 	_day_night.set_hour(8.0)
 	_day_night.midnight.connect(func() -> void:
 		day += 1
@@ -499,6 +509,7 @@ func _process(delta: float) -> void:
 	status.text = "Dzień %d, %s · %s · wys. %d m · %d km/h" % [day, _day_night.clock_text(), mode, int(_player.global_position.y),
 		int(v.length() * 3.6)]
 	_sleep_button.visible = can_sleep()
+	_villages.set_night(_day_night.night_factor())
 	(_hud.get_node("FireButton") as TouchActionButton).charge = _player.fire.readiness
 	var bite_btn := _hud.get_node("BiteButton") as TouchActionButton
 	var carrying := _player.carried != null and is_instance_valid(_player.carried)

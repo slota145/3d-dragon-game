@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-11-24 — po wersji v0.13.2 (wygląd świata)
+
+```text
+Kontynuujemy pracę nad grą „3D Dragon Game” (Godot 4.7, Android, repo slota145/3d-dragon-game,
+gałąź main). Przeczytaj najpierw CLAUDE.md, docs/GAME_DESIGN.md i ROADMAP.md.
+
+Stan (v0.13.2, wydana, APK: releases/latest/download/DragonGame.apk; base_api 6).
+- Rdzeń: pisklę → Młodzik (4 m: lot + kula ognia) → Dorosły (9 m: strumień ognia) → Pradawny (16 m);
+  polowanie, głód, jaskinia-legowisko (sen = zapis + dzień + ulepszenia „sen na skarbie”), dzień/noc,
+  złoto i stos skarbu, świat 4×4 km (terrain.gd), 40 ciekawych miejsc, 6 wiosek z ludźmi (reakcja wg
+  wielkości smoka, ludzi można jeść), rozgłos + myśliwi, ogień (palenie wiosek), celowanie głową za
+  kamerą + pomoc w celowaniu + żyroskop (opcja), łapanie w locie (ŁAP / PUŚĆ / ZJEDZ).
+- Wygląd (ostatnie wydania, uwagi właściciela, „baśniowy pastel”):
+  * 0.13.0 gen_nature.py: drzewa (sosny, dąb, brzoza, jesienne, kwitnące) z LOD (sylwetki z daleka),
+    kamienie, krzewy; usunięte kamienne słupy; łąki kwiatów; pola w działkach z żywopłotami / murkami,
+    ogrodzone pastwiska (Terrain.field_parcel / is_pasture, villages._build_fields).
+  * 0.13.1 wiatr (wind.gdshader), chmury (clouds.gd), woda (water.gdshader + mapa głębokości z terenu w tle).
+  * 0.13.2 niebo z shadera (sky.gdshader: słońce, księżyc, gwiazdy; fog_sky_affect 0.25), fauna.gd
+    (ptaki, motyle, świetliki), świecące okna chat + lampy w wioskach (Villages.set_night).
+- Testy: tools/check.sh + tools/test_walk/flight/hunt/pause/lair/world/village/fire/catch.gd (pełny zestaw
+  ~40 min — uruchamiaj w tle; testy: world.use_save = false).
+
+Uwagi otwarte:
+- Do sprawdzenia na telefonie: płynność (świat, drzewa z LOD, cząsteczki ognia, woda), osie żyroskopu.
+- Drzewa nie płoną; rzeki bez widocznego nurtu.
+
+Następny krok wg ROADMAP: reszta fazy 6 (danina vs. łupienie wiosek, wozy kupieckie) albo faza 8
+(gryfy, rycerze, zamek). Zapytaj właściciela ankietą.
+
+Komunikacja z właścicielem po polsku. Po każdym zadaniu: testy, commit, push na main,
+a dla zmian w grze — wydanie (podbicie wersji) i link do APK.
+```
+
+---
+
 ## 2026-11-23 — po wersji v0.12.1 (łapanie w locie)
 
 Jak wpisy niżej, plus łapanie w locie: DragonController.carried / _try_grab / _drop_carried /

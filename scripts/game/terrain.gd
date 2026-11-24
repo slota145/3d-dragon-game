@@ -352,7 +352,7 @@ static func _face_color(x: float, z: float, h: float, ny: float) -> Color:
 		col = field_color(x, z)
 	else:
 		var f := forest(x, z)
-		var meadow := Color(0.3, 0.54, 0.2).lerp(Color(0.42, 0.6, 0.22), 0.5 + 0.5 * _detail.get_noise_2d(x * 0.3, z * 0.3))
+		var meadow := Color(0.27, 0.49, 0.18).lerp(Color(0.38, 0.55, 0.2), 0.5 + 0.5 * _detail.get_noise_2d(x * 0.3, z * 0.3))
 		col = meadow.lerp(Color(0.2, 0.44, 0.17), f)
 		var patch := flower_patch(x, z)
 		if patch >= 0:  # łąka kwiatów widoczna z daleka

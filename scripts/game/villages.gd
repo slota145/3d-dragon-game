@@ -205,6 +205,32 @@ func _place(root: Node3D, item: String, pos: Vector3, yaw: float, collide: bool 
 		mi.add_child(body)
 
 
+var _night_lights: Array[OmniLight3D] = []
+
+
+## Noc (0..1): okna chat świecą ciepło, nad placem wioski lampa.
+func set_night(n: float) -> void:
+	var cottage: Mesh = _meshes.get("Cottage")
+	if cottage:
+		for i in cottage.get_surface_count():
+			var mat := cottage.surface_get_material(i) as StandardMaterial3D
+			if mat and mat.resource_name.ends_with("Window"):
+				mat.emission_enabled = n > 0.01
+				mat.emission = Color(1.0, 0.72, 0.35)
+				mat.emission_energy_multiplier = 3.0 * n
+	if _night_lights.is_empty() and n > 0.01:
+		for i in Terrain.VILLAGES.size():
+			var l := OmniLight3D.new()
+			l.light_color = Color(1.0, 0.7, 0.4)
+			l.omni_range = 38.0
+			l.position = center(i) + Vector3.UP * 6.0
+			add_child(l)
+			_night_lights.append(l)
+	for l in _night_lights:
+		l.light_energy = 1.6 * n
+		l.visible = n > 0.01
+
+
 ## Ogień smoka w punkcie: podpala budynki w zasięgu.
 func ignite_near(at: Vector3, radius: float) -> void:
 	for mi in _burnable:

@@ -31,6 +31,7 @@ fog_enabled = true
 fog_light_color = Color(0.72, 0.8, 0.88, 1)
 fog_density = 0.0009
 fog_sun_scatter = 0.0
+fog_sky_affect = 0.25
 fog_light_energy = 0.85
 
 [node name="World" type="Node3D"]
