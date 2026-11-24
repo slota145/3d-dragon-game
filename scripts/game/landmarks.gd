@@ -101,6 +101,8 @@ func _good_spot(kind: String, p: Vector2, radius: float) -> bool:
 		return false
 	if p.distance_to(Vector2(Lair.POSITION.x, Lair.POSITION.z)) < Lair.RADIUS + 60.0:
 		return false
+	if p.distance_to(Vector2(Terrain.CASTLE[0], Terrain.CASTLE[1])) < Terrain.CASTLE[2] + 200.0:
+		return false  # wzgórze zamkowe
 	for v: Array in Terrain.VILLAGES:  # z dala od wiosek i pól
 		if p.distance_to(Vector2(v[0], v[1])) < v[2] + Terrain.FIELDS + 40.0:
 			return false

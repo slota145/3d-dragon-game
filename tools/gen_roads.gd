@@ -28,20 +28,21 @@ func _init() -> void:
 				w += 18.0  # woda: przejście możliwe (most), ale krótkie
 			if h > 45.0:
 				w += (h - 45.0) * 0.5  # góry omijamy
-			if Vector2(p.x - Lair.POSITION.x, p.y - Lair.POSITION.z).length() < Lair.RADIUS + 40.0:
+			if Vector2(p.x - Lair.POSITION.x, p.y - Lair.POSITION.z).length() < Lair.RADIUS + 40.0 \
+					or Vector2(p.x - Terrain.CASTLE[0], p.y - Terrain.CASTLE[1]).length() < Terrain.CASTLE[2] + 12.0:
 				grid.set_point_solid(Vector2i(i, j))
 				continue
 			grid.set_point_weight_scale(Vector2i(i, j), w)
 	var roads := []
 	for pair: Array in Terrain.ROAD_PAIRS:
-		var a: Array = Terrain.VILLAGES[pair[0]]
-		var b: Array = Terrain.VILLAGES[pair[1]]
-		var path := grid.get_id_path(_cell(Vector2(a[0], a[1])), _cell(Vector2(b[0], b[1])))
+		var a := Terrain.road_end(pair[0])
+		var b := Terrain.road_end(pair[1])
+		var path := grid.get_id_path(_cell(a), _cell(b))
 		var pts := PackedVector2Array()
 		for c in path:
 			pts.append(_world(c.x, c.y))
-		pts[0] = Vector2(a[0], a[1])
-		pts[pts.size() - 1] = Vector2(b[0], b[1])
+		pts[0] = a
+		pts[pts.size() - 1] = b
 		var smooth := _resample(_catmull(_simplify(pts, 10.0)), 4.0)
 		var out := []
 		for p in smooth:

@@ -175,6 +175,8 @@ func _drop_far() -> void:
 static func _blocked(x: float, z: float) -> bool:
 	if Vector2(x - Lair.POSITION.x, z - Lair.POSITION.z).length() < Lair.RADIUS + 4.0:
 		return true
+	if Vector2(x - Terrain.CASTLE[0], z - Terrain.CASTLE[1]).length() < Terrain.CASTLE[2] + 25.0:
+		return true  # zamek: dziedziniec i mury bez drzew i głazów
 	return Terrain.height(x, z) < Terrain.WATER_LEVEL + 0.6
 
 

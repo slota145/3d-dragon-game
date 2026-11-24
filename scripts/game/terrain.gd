@@ -23,8 +23,12 @@ const LAKES := [[430.0, 270.0, 170.0], [-760.0, 1180.0, 250.0], [1350.0, -260.0,
 ## Wioski: [środek x, środek z, promień placu]. Plac jest wyrównany, wokół pola uprawne.
 const VILLAGES := [[160.0, 640.0, 70.0], [-640.0, 480.0, 65.0], [1150.0, 860.0, 70.0], [880.0, 120.0, 60.0],
 	[-260.0, 1450.0, 70.0], [-1300.0, -120.0, 60.0]]
-## Drogi między wioskami (pary indeksów VILLAGES) — ubita ziemia, jeżdżą nimi wozy kupieckie.
-const ROAD_PAIRS := [[0, 1], [0, 3], [3, 2], [0, 4], [1, 5]]
+## Zamek: [środek x, środek z, promień murów]. Stoi na usypanym wzgórzu (płaski szczyt).
+const CASTLE := [400.0, 1400.0, 46.0]
+## O ile wzgórze zamkowe wznosi się nad okolicę (m).
+const CASTLE_RISE := 16.0
+## Drogi (pary indeksów VILLAGES; indeks VILLAGES.size() = brama zamku) — ubita ziemia, jeżdżą nimi wozy.
+const ROAD_PAIRS := [[0, 1], [0, 3], [3, 2], [0, 4], [1, 5], [0, 6]]
 const ROAD_HALF_WIDTH := 3.2
 ## Szerokość pierścienia pól wokół wioski (m).
 const FIELDS := 80.0
@@ -86,6 +90,9 @@ static func _smooth(a: float, b: float, x: float) -> float:
 ## Wysokość terenu (m) w punkcie (x, z) — z wyrównanymi placami wiosek.
 static func height(x: float, z: float) -> float:
 	var h := _raw_height(x, z)
+	var cd := Vector2(x - CASTLE[0], z - CASTLE[1]).length()
+	if cd < CASTLE[2] + 130.0:  # wzgórze zamkowe: płaski szczyt, łagodne zbocza
+		h = lerpf(h, castle_height(), 1.0 - smoothstep(CASTLE[2] + 14.0, CASTLE[2] + 130.0, cd))
 	for i in VILLAGES.size():
 		var v: Array = VILLAGES[i]
 		var d := Vector2(x - v[0], z - v[1]).length()
@@ -96,6 +103,34 @@ static func height(x: float, z: float) -> float:
 			# plac zupełnie płasko, pola łagodnie przechodzą w okoliczne wzgórza
 			h = lerpf(h, _village_h[i], 1.0 - smoothstep(r, r + FIELDS, d))
 	return h
+
+
+static var _castle_h: float = NAN
+
+
+## Wysokość dziedzińca zamku.
+static func castle_height() -> float:
+	if is_nan(_castle_h):
+		_castle_h = _raw_height(CASTLE[0], CASTLE[1]) + CASTLE_RISE
+	return _castle_h
+
+
+## Środek zamku (na wysokości dziedzińca).
+static func castle_center() -> Vector3:
+	return Vector3(CASTLE[0], castle_height(), CASTLE[1])
+
+
+## Kierunek (XZ) od środka zamku do bramy — w stronę pierwszej wioski.
+static func castle_gate_dir() -> Vector2:
+	var v: Array = VILLAGES[0]
+	return Vector2(v[0] - CASTLE[0], v[1] - CASTLE[1]).normalized()
+
+
+## Koniec drogi nr `i` w ROAD_PAIRS: środek wioski albo plac przed bramą zamku.
+static func road_end(i: int) -> Vector2:
+	if i < VILLAGES.size():
+		return Vector2(VILLAGES[i][0], VILLAGES[i][1])
+	return Vector2(CASTLE[0], CASTLE[1]) + castle_gate_dir() * (CASTLE[2] + 22.0)
 
 
 ## Punkty drogi nr `i` (co 4 m, od wioski do wioski) — z assets/data/roads.json, liczonego
@@ -236,6 +271,7 @@ static func forest(x: float, z: float) -> float:
 	f *= smoothstep(ROAD_HALF_WIDTH + 2.0, ROAD_HALF_WIDTH + 10.0, road_distance(x, z))  # drogi bez drzew
 	for v: Array in VILLAGES:  # wioski i pola bez lasu
 		f *= smoothstep(v[2] + FIELDS * 0.8, v[2] + FIELDS + 60.0, Vector2(x - v[0], z - v[1]).length())
+	f *= smoothstep(CASTLE[2] + 40.0, CASTLE[2] + 150.0, Vector2(x - CASTLE[0], z - CASTLE[1]).length())  # zamek na polanie
 	return clampf(f * 2.0, 0.0, 1.0)
 
 

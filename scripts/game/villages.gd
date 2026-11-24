@@ -398,7 +398,8 @@ func hunters() -> Array[Villager]:
 	return out
 
 
-func _spawn_person(role: String, label: String, pos: Vector3, home: Vector3, radius: float) -> Villager:
+## Nowy człowiek (jeszcze poza drzewem sceny): rola z people.glb (Villager, Shepherd, Hunter).
+func make_person(role: String, label: String) -> Villager:
 	var v := Villager.new()
 	v.display_name = label
 	v.max_health = 2.5
@@ -408,8 +409,6 @@ func _spawn_person(role: String, label: String, pos: Vector3, home: Vector3, rad
 	v.walk_speed = 0.9
 	v.flee_speed = 4.6
 	v.stamina = 8.0
-	v.home = home
-	v.home_radius = radius
 	v.dragon = dragon
 	var body := Node3D.new()
 	body.name = "Body"
@@ -420,6 +419,13 @@ func _spawn_person(role: String, label: String, pos: Vector3, home: Vector3, rad
 		mi.transform = p[2]
 		body.add_child(mi)
 	v.add_child(body)
+	return v
+
+
+func _spawn_person(role: String, label: String, pos: Vector3, home: Vector3, radius: float) -> Villager:
+	var v := make_person(role, label)
+	v.home = home
+	v.home_radius = radius
 	add_child(v)
 	v.global_position = Vector3(pos.x, Terrain.height(pos.x, pos.z), pos.z)
 	v.poked_dragon.connect(func(by: Villager, dmg: float) -> void: poked.emit(by, dmg))

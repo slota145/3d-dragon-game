@@ -15,6 +15,8 @@ var stats: DragonStats
 var on_stats_changed: Callable
 ## Nowa gra (kasuje zapis) — ustawia świat; pusty = opcja ukryta.
 var on_new_game: Callable
+## Tryb deweloperski: przenieś smoka pod zamek.
+var on_teleport_castle: Callable
 ## Zmiana opcji „Celowanie żyroskopem” (świat przekazuje ją kamerze).
 var on_gyro_changed: Callable
 
@@ -215,6 +217,11 @@ func _build_dev_panel() -> void:
 	var reset := _button("Reset wzrostu", _reset_growth, 26)
 	reset.custom_minimum_size = Vector2(0, 72)
 	_dev_body.add_child(reset)
+	var castle := _button("Teleport: pod zamek", func() -> void:
+		if on_teleport_castle.is_valid():
+			on_teleport_castle.call(), 26)
+	castle.custom_minimum_size = Vector2(0, 72)
+	_dev_body.add_child(castle)
 
 
 ## Nowa gra wymaga drugiego naciśnięcia (potwierdzenie) — kasuje zapis.

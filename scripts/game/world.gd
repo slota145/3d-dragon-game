@@ -24,6 +24,8 @@ var _terrain: Terrain
 var _decor: TerrainDecor
 var _landmarks: Landmarks
 var _villages: Villages
+var _castle: Castle
+var _castle_seen: bool = false
 ## Rozgłos smoka 0..100: rośnie od zjadania ludzi i owiec z farm i straszenia wieśniaków,
 ## powoli opada (i przy śnie). Od poziomu „Plotka” wioski wystawiają myśliwych z łukami.
 var renown: float = 0.0
@@ -77,6 +79,22 @@ func _ready() -> void:
 	_villages.name = "Villages"
 	_villages.dragon = _player
 	add_child(_villages)
+	_castle = Castle.new()
+	_castle.name = "Castle"
+	_castle.dragon = _player
+	_castle.villages = _villages
+	add_child(_castle)
+	_castle.repopulate()
+	_castle.bolt_hit.connect(func(_d: float) -> void:
+		_flash = 0.9
+		if Time.get_ticks_msec() - _arrow_msg > 2500:
+			_arrow_msg = Time.get_ticks_msec()
+			_toast("Trafiony bełtem z balisty! Uważaj na czerwone linie celowania"))
+	_castle.ballista_destroyed.connect(func(_b: Ballista) -> void:
+		add_renown(6.0)
+		var left := _castle.working_ballistas()
+		_toast("Balista zniszczona! Zostało: %d" % left if left > 0 else "Wszystkie balisty zniszczone — skarbiec czeka!"))
+	_castle.guard_eaten.connect(func(_g: Prey) -> void: add_renown(5.0))
 	_villages.poked.connect(func(by: Villager, _dmg: float) -> void:
 		if Time.get_ticks_msec() - _poke_msg > 3000:
 			_poke_msg = Time.get_ticks_msec()
@@ -143,6 +161,7 @@ func _ready() -> void:
 	_day_night.midnight.connect(func() -> void:
 		day += 1
 		_finds.setup(day, _cache_spots())
+		_place_castle_treasury()
 		_place_tributes())
 	_finds = GoldFinds.new()
 	_finds.name = "GoldFinds"
@@ -184,6 +203,7 @@ func _ready() -> void:
 	pause.name = "PauseMenu"
 	pause.stats = _player.stats
 	pause.on_stats_changed = _update_buttons
+	pause.on_teleport_castle = teleport_to_castle
 	if use_save:
 		pause.on_new_game = new_game
 	pause.on_gyro_changed = func(on: bool) -> void: _camera.gyro_enabled = on
@@ -206,6 +226,7 @@ func _ready() -> void:
 	_terrain.build_all(_player.global_position)
 	_decor.build_around(_player.global_position)
 	_finds.setup(day, _cache_spots())
+	_place_castle_treasury()
 	_place_tributes()
 	_lair.pile.set_gold(treasure)
 	if _intro:
@@ -306,9 +327,28 @@ func _on_fire_hit(at: Vector3, radius: float, damage: float) -> void:
 		if prey and prey.is_alive() and prey.center().distance_to(at) < radius + prey.radius:
 			prey.burn(damage)
 	_villages.ignite_near(at, radius)
+	_castle.burn_near(at, radius, damage)
 	for c in _villages.carts():
 		if c.is_alive() and c.global_position.distance_to(at) < radius + 3.0:
 			c.burn()
+
+
+## Przed bramą zamku, przodem do niej (narzędzie dewelopera, testy).
+func teleport_to_castle() -> void:
+	var g := Terrain.castle_gate_dir()
+	var p := Vector2(Terrain.CASTLE[0], Terrain.CASTLE[1]) + g * (Terrain.CASTLE[2] + 70.0)
+	_player.global_position = Vector3(p.x, Terrain.height(p.x, p.y) + 1.0, p.y)
+	_player.rotation.y = atan2(-g.x, -g.y)
+	_player.velocity = Vector3.ZERO
+	_player.reset_physics_interpolation()
+	_camera.snap_behind()
+
+
+## Skarbiec zamku: skrzynie przed donżonem (co dzień nowe, jeśli zabrane).
+func _place_castle_treasury() -> void:
+	var spots := _castle.treasury_spots()
+	for i in spots.size():
+		_finds.add_special("castle_%d_d%d" % [i, day], "chest", spots[i], 220 + 40 * i, "Skarbiec zamku")
 
 
 # --- Danina i łupienie --------------------------------------------------------------
@@ -475,6 +515,8 @@ func _wake() -> void:
 			day += 1  # po północy dzień już się zmienił — śpisz tylko do rana
 		_day_night.set_hour(7.0)
 		_finds.setup(day, _cache_spots())  # nowy dzień — nowe znaleziska
+		_place_castle_treasury()
+		_castle.repopulate()  # balisty naprawione, łucznicy na murach
 		_place_tributes()
 		renown = maxf(0.0, renown - 5.0)  # przez noc plotki cichną
 		_renown_level = renown_level()
@@ -579,6 +621,9 @@ func _process(delta: float) -> void:
 		int(v.length() * 3.6)]
 	_sleep_button.visible = can_sleep()
 	_villages.set_night(_day_night.night_factor())
+	if not _castle_seen and _player.global_position.distance_to(_castle.position) < 320.0:
+		_castle_seen = true
+		_banner("ZAMEK KRÓLEWSKI", "Balisty na wieżach i łucznicy na murach · w skarbcu złoto królestwa")
 	(_hud.get_node("FireButton") as TouchActionButton).charge = _player.fire.readiness
 	var bite_btn := _hud.get_node("BiteButton") as TouchActionButton
 	var carrying := _player.carried != null and is_instance_valid(_player.carried)

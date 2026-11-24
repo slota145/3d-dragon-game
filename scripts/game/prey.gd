@@ -41,6 +41,8 @@ enum Habitat { LAND, MOUNTAIN, WATER }
 @export var charge_below: float = 0.0
 @export var charge_damage: float = 0.0
 
+## Stoi w miejscu na podwyższeniu (łucznik na murze): bez chodzenia, wysokość bez zmian.
+var perch: bool = false
 ## Zwierzę z zagrody: nie oddala się od `home` dalej niż `home_radius` (0 = bez uwiązania).
 var home: Vector3
 var home_radius: float = 0.0
@@ -178,6 +180,12 @@ func _physics_process(delta: float) -> void:
 
 ## Ruch po terenie: granice świata, zagroda, omijanie wody i stromizn.
 func _move(delta: float) -> void:
+	if perch:
+		if _speed > 0.05 or state != State.GRAZE:
+			rotation.y = lerp_angle(rotation.y, atan2(_dir.x, _dir.z), clampf(8.0 * delta, 0.0, 1.0))
+		_speed = 0.0
+		_animate(delta)
+		return
 	if home_radius > 0.0:
 		var off := global_position + _dir * 1.5 - home
 		off.y = 0.0
@@ -310,6 +318,7 @@ var _fall_velocity: Vector3
 
 ## Złapana przez smoka w locie.
 func pick_up() -> void:
+	perch = false
 	carried = true
 	_falling = false
 	_speed = 0.0
