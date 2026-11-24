@@ -30,7 +30,12 @@ var renown: float = 0.0
 const RENOWN_LEVELS := [0.0, 20.0, 50.0, 80.0]
 const RENOWN_NAMES := ["Nieznany", "Plotka", "Postrach", "Legenda"]
 var _renown_level: int = 0
+## Do którego dnia (włącznie) wioska nie płaci daniny — po napaści smoka.
+var village_angry_until: Array = [0, 0, 0, 0, 0, 0]
+## Od tego poziomu rozgłosu („Postrach”) wioski składają daninę.
+const TRIBUTE_LEVEL := 2
 var _arrow_msg: int = -100000
+var _loot_n: int = 0
 var _poke_msg: int = -100000
 var _day_night: DayNight
 var _sleeping: bool = false
@@ -75,6 +80,7 @@ func _ready() -> void:
 			_poke_msg = Time.get_ticks_msec()
 			_toast("%s dźga cię widłami! Uciekaj albo walcz" % by.display_name))
 	_villages.eaten_from_village.connect(func(p: Prey) -> void:
+		_anger_village(_villages.village_at(p.home if p.home_radius > 0.0 else p.global_position))
 		add_renown(8.0 if p is Villager else 3.0))
 	_villages.scared.connect(func(_by: Villager) -> void: add_renown(0.4))
 	_player.hit_by_arrow.connect(func(_dmg: float) -> void:
@@ -82,7 +88,15 @@ func _ready() -> void:
 		if Time.get_ticks_msec() - _arrow_msg > 3000:
 			_arrow_msg = Time.get_ticks_msec()
 			_toast("Trafiony strzałą! Myśliwi polują na smoka"))
-	_villages.building_burnt.connect(func(_b: Node3D) -> void: add_renown(5.0))
+	_villages.building_burnt.connect(func(b: Node3D) -> void:
+		add_renown(5.0)
+		_anger_village(_villages.village_at(b.global_position))
+		# łup: ze spalonej chaty / stodoły wysypuje się złoto
+		var is_barn := String((b as MeshInstance3D).mesh.resource_name).find("Barn") >= 0
+		_loot_n += 1
+		_finds.add_special("loot_%d" % _loot_n, "chest" if is_barn else "coins",
+			b.global_position + Vector3(randf_range(-3, 3), 0, 4.0), randi_range(40, 70) if is_barn else randi_range(12, 30),
+			"Łup ze stodoły" if is_barn else "Łup z chaty"))
 	_player.fire.fire_hit.connect(_on_fire_hit)
 	_player.grabbed.connect(func(prey: Prey) -> void:
 		_toast("Porwany: %s · Ugryzienie = puść" % prey.display_name)
@@ -115,7 +129,8 @@ func _ready() -> void:
 	_day_night.set_hour(8.0)
 	_day_night.midnight.connect(func() -> void:
 		day += 1
-		_finds.setup(day, _cache_spots()))
+		_finds.setup(day, _cache_spots())
+		_place_tributes())
 	_finds = GoldFinds.new()
 	_finds.name = "GoldFinds"
 	_finds.dragon = _player
@@ -178,6 +193,7 @@ func _ready() -> void:
 	_terrain.build_all(_player.global_position)
 	_decor.build_around(_player.global_position)
 	_finds.setup(day, _cache_spots())
+	_place_tributes()
 	_lair.pile.set_gold(treasure)
 	if _intro:
 		_play_intro()
@@ -208,6 +224,9 @@ func _load_game(data: Dictionary) -> void:
 	_finds.caches_taken = data.get("caches_taken", [])
 	_landmarks.found = data.get("landmarks_found", [])
 	renown = float(data.get("renown", 0.0))
+	var angry: Array = data.get("village_angry_until", [])
+	for i in mini(angry.size(), village_angry_until.size()):
+		village_angry_until[i] = int(angry[i])
 	_renown_level = renown_level()
 	_villages.set_hunters(_hunters_for(_renown_level))
 	_player.stats.restore(data.get("stats", {}))
@@ -228,7 +247,8 @@ func save_game() -> void:
 	var pos := _player.global_position
 	SaveGame.write({"day": day, "hour": _day_night.hour, "treasure": treasure,
 		"finds_taken": _finds.taken_today, "caches_taken": _finds.caches_taken,
-		"landmarks_found": _landmarks.found, "renown": renown, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
+		"landmarks_found": _landmarks.found, "renown": renown,
+		"village_angry_until": village_angry_until, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
 		"yaw": _player.rotation.y, "version": GameVersion.current()})
 
 
@@ -275,6 +295,34 @@ func _on_fire_hit(at: Vector3, radius: float, damage: float) -> void:
 	_villages.ignite_near(at, radius)
 
 
+# --- Danina i łupienie --------------------------------------------------------------
+
+## Każdego dnia wioski, które boją się smoka (rozgłos „Postrach”+) i nie zostały ostatnio
+## napadnięte, zostawiają daninę na kamieniu ofiarnym.
+func _place_tributes() -> void:
+	if renown_level() < TRIBUTE_LEVEL:
+		return
+	for i in Terrain.VILLAGES.size():
+		if day <= int(village_angry_until[i]):
+			continue
+		var value := int(20.0 + renown * 0.8)
+		_finds.add_special("tribute_%d_d%d" % [i, day], "chest", _villages.tribute_stone(i) + Vector3.UP * 0.7,
+			value, "Danina od wioski " + Villages.NAMES[i])
+
+
+## Napaść na wioskę: przez 3 dni nie płaci daniny (zabiera też dzisiejszą, jeśli leży).
+func _anger_village(i: int) -> void:
+	if i < 0:
+		return
+	var was_paying := day > int(village_angry_until[i])
+	village_angry_until[i] = day + 3
+	var id := "tribute_%d_d%d" % [i, day]
+	if _finds.has_node(id):
+		_finds.get_node(id).queue_free()
+	if was_paying and renown_level() >= TRIBUTE_LEVEL:
+		_toast("%s wypowiada daninę na 3 dni!" % Villages.NAMES[i])
+
+
 # --- Rozgłos -----------------------------------------------------------------------
 
 func renown_level() -> int:
@@ -294,7 +342,11 @@ func add_renown(amount: float) -> void:
 	var lvl := renown_level()
 	if lvl > _renown_level:
 		_banner("ROZGŁOS: " + RENOWN_NAMES[lvl].to_upper(),
-			"Wioski wysyłają myśliwych z łukami!" if lvl == 1 else "Ludzie drżą na twój widok — myśliwych jest więcej")
+			"Wioski wysyłają myśliwych z łukami!" if lvl == 1 else
+			("Wioski zaczną składać ci daninę na kamieniach ofiarnych" if lvl == TRIBUTE_LEVEL
+				else "Ludzie drżą na twój widok — myśliwych jest więcej"))
+		if lvl >= TRIBUTE_LEVEL:
+			_place_tributes()
 		_villages.set_hunters(_hunters_for(lvl))
 	_renown_level = lvl
 
@@ -407,6 +459,7 @@ func _wake() -> void:
 			day += 1  # po północy dzień już się zmienił — śpisz tylko do rana
 		_day_night.set_hour(7.0)
 		_finds.setup(day, _cache_spots())  # nowy dzień — nowe znaleziska
+		_place_tributes()
 		renown = maxf(0.0, renown - 5.0)  # przez noc plotki cichną
 		_renown_level = renown_level()
 		_villages.hunters_per_village = _hunters_for(_renown_level)

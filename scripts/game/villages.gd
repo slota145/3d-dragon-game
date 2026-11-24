@@ -10,6 +10,9 @@ signal scared(by: Villager)
 signal eaten_from_village(prey: Prey)
 signal building_burnt(building: Node3D)
 
+## Nazwy wiosek (komunikaty: danina, gniew).
+const NAMES := ["Wierzbin", "Dębowo", "Złotopole", "Mokradło", "Brzezie", "Kamionka"]
+
 @export var villagers_per_village: int = 5
 @export var sheep_per_pen: int = 5
 
@@ -53,6 +56,24 @@ func _role_offset(scene: Node, role: String) -> float:
 	return body.transform.origin.x if body else 0.0
 
 
+## Wioska, do której należy punkt (najbliższy środek w zasięgu placu i pól), albo -1.
+func village_at(p: Vector3) -> int:
+	for i in Terrain.VILLAGES.size():
+		var v: Array = Terrain.VILLAGES[i]
+		if Vector2(p.x - v[0], p.z - v[1]).length() < float(v[2]) + Terrain.FIELDS + 10.0:
+			return i
+	return -1
+
+
+## Kamień ofiarny na skraju placu, od strony legowiska — tam wioska zostawia daninę.
+func tribute_stone(i: int) -> Vector3:
+	var v: Array = Terrain.VILLAGES[i]
+	var c := Vector2(v[0], v[1])
+	var to_lair := (Vector2(Lair.POSITION.x, Lair.POSITION.z) - c).normalized()
+	var p := c + to_lair * float(v[2]) * 0.8
+	return Vector3(p.x, Terrain.height(p.x, p.y), p.y)
+
+
 func center(i: int) -> Vector3:
 	var v: Array = Terrain.VILLAGES[i]
 	return Vector3(v[0], Terrain.height(v[0], v[1]), v[1])
@@ -90,6 +111,13 @@ func _build_village(i: int) -> void:
 			var hp := p + Vector3(cos(a + 0.5), 0, sin(a + 0.5)) * 9.0
 			_place(root, "Hay", hp, rng.randf() * TAU)
 	_build_fields(i, root)
+	# kamień ofiarny (płaski głaz) — miejsce daniny
+	var stone := MeshInstance3D.new()
+	stone.mesh = _nature_mesh("Rock_Flat")
+	var sp := tribute_stone(i)
+	stone.position = sp
+	stone.scale = Vector3(1.6, 1.4, 1.6)
+	root.add_child(stone)
 	# zagroda: płot na okręgu
 	var pc := pen_center(i)
 	var pen_r := 9.0

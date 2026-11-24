@@ -53,6 +53,16 @@ func setup(day: int, cache_spots: Array[Vector3]) -> void:
 			_spawn(id, "chest", cache_spots[i], 90 + (i * 37) % 71, float(i))
 
 
+## Dodatkowe złoto: danina wioski, łup ze spalonej chaty (rodzaj: coins / goblet / crown / chest).
+## Pomija już zebrane dziś (ten sam id). Znika przy następnym `setup` (nowy dzień).
+func add_special(id: String, kind: String, pos: Vector3, value: int, label: String) -> void:
+	if id in taken_today or has_node(id):
+		return
+	_spawn(id, kind, pos, value, randf() * TAU)
+	var f := get_node(id)
+	f.set_meta("label", label)
+
+
 func _spawn(id: String, kind: String, pos: Vector3, value: int, yaw: float) -> void:
 	var item: Array = ITEMS[kind]
 	var root := Node3D.new()

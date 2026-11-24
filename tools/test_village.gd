@@ -132,6 +132,39 @@ func _init() -> void:
 	await _seconds(1.0)
 	_check(hunter.mood == Villager.Mood.WARY or hunter.mood == Villager.Mood.PANIC, "z bliska myśliwy odskakuje")
 
+	print("8) Danina i łupienie")
+	world.add_renown(60.0)
+	await _frames(3)
+	var finds: GoldFinds = world.get_node("GoldFinds")
+	var day: int = world.day
+	var tid := "tribute_0_d%d" % day
+	_check(world.renown_level() >= 2 and finds.has_node(tid), "„Postrach”: danina na kamieniu ofiarnym")
+	var chest: Node3D = finds.get_node(tid)
+	var val: int = chest.get_meta("value")
+	player.stats.set_size_instant(6.0)
+	player.stats.gold = 0
+	player.velocity = Vector3.ZERO
+	player.global_position = chest.global_position + Vector3(0, 0.3, 0)
+	player.reset_physics_interpolation()
+	await _seconds(0.6)
+	_check(player.stats.gold >= val, "danina zebrana (+%d złota)" % player.stats.gold)
+	# napaść na wioskę 1: spalenie chaty -> gniew (brak daniny) + łup
+	var tid1 := "tribute_1_d%d" % day
+	_check(finds.has_node(tid1), "wioska 1 też płaci")
+	var house: MeshInstance3D = null
+	for n in world.get_tree().get_nodes_in_group("flammable"):
+		if vil.village_at((n as Node3D).global_position) == 1:
+			house = n
+			break
+	vil.call("_ignite", house)
+	await _seconds(Villages.BURN_TIME + 0.5)
+	_check(int(world.village_angry_until[1]) >= day + 3, "wioska 1 wypowiada daninę (do dnia %d)" % world.village_angry_until[1])
+	_check(not finds.has_node(tid1) or finds.get_node(tid1).is_queued_for_deletion(), "dzisiejsza danina wioski 1 zabrana")
+	var loot := finds.remaining().filter(func(f: Node3D) -> bool: return String(f.name).begins_with("loot_"))
+	_check(loot.size() >= 1, "łup ze spalonego budynku: %s" % (loot[0].get_meta("label") if loot.size() else "brak"))
+	world.call("_place_tributes")
+	_check(not finds.has_node("tribute_1_d%d" % day), "rozgniewana wioska nie płaci")
+
 	print("WYNIK: ", "OK" if _fails == 0 else "%d błędów" % _fails)
 	quit(1 if _fails else 0)
 
