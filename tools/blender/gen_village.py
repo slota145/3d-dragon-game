@@ -149,6 +149,21 @@ def wagon(mats) -> bpy.types.Object:
     return b.to_object("Village_Wagon", mats)
 
 
+def bridge(mats) -> bpy.types.Object:
+    """Przęsło drewnianego mostu: 4 m wzdłuż X, 7 m szerokości (Y), pomost na Z = 0, słupy w dół,
+    barierki po bokach. Gra układa przęsła wzdłuż drogi nad wodą."""
+    b = MeshBuilder(NAMES)
+    for k in range(8):  # deski poprzeczne
+        box(b, V(-1.75 + k * 0.5, 0, -0.18), (0.46, 7.0, 0.18), "Village_Wood" if k % 3 else "Village_Beam")
+    for y in (-3.3, 3.3):
+        box(b, V(0, y, -0.3), (4.1, 0.25, 0.3), "Village_Beam")  # belki nośne
+        for x in (-1.9, 1.9):
+            box(b, V(x, y, -3.0), (0.3, 0.3, 4.1), "Village_Beam")  # słupy w wodzie
+            box(b, V(x, y, 0.0), (0.18, 0.18, 1.1), "Village_Beam")  # słupki barierki
+        box(b, V(0, y, 0.95), (4.1, 0.14, 0.14), "Village_Wood")  # poręcz
+    return b.to_object("Village_Bridge", mats)
+
+
 def horse(mats) -> bpy.types.Object:
     """Koń pociągowy (przód = -Y), stoi przed wozem."""
     b = MeshBuilder(NAMES)
@@ -166,7 +181,7 @@ def horse(mats) -> bpy.types.Object:
 if __name__ == "__main__":
     common.reset_scene()
     MATS = make_materials(PALETTE)
-    objs = [cottage(MATS), barn(MATS), well(MATS), fence(MATS), hay(MATS), wagon(MATS), horse(MATS)]
+    objs = [cottage(MATS), barn(MATS), well(MATS), fence(MATS), hay(MATS), wagon(MATS), horse(MATS), bridge(MATS)]
     for i, o in enumerate(objs):
         flat_shade(o)
         face_color_variation(o, 0.08, seed=i + 3)

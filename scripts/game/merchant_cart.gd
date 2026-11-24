@@ -8,6 +8,8 @@ signal destroyed(cart: MerchantCart)
 @export var speed: float = 2.6
 
 var road: PackedVector2Array
+## Wysokość drogi w punktach (most nad wodą) — z Roads.heights.
+var road_y: PackedFloat32Array
 var _t: float = 0.0  # odległość wzdłuż drogi (m)
 var _dir: float = 1.0
 var _length: float = 0.0
@@ -46,6 +48,17 @@ func _process(delta: float) -> void:
 	_update_pose(delta)
 
 
+## Wysokość drogi w odległości `dist` od początku.
+func _height_at(dist: float) -> float:
+	var d := clampf(dist, 0.0, _length)
+	for k in road.size() - 1:
+		var seg := road[k].distance_to(road[k + 1])
+		if d <= seg:
+			return lerpf(road_y[k], road_y[k + 1], d / maxf(seg, 0.01))
+		d -= seg
+	return road_y[road_y.size() - 1]
+
+
 func _point_at(dist: float) -> Vector2:
 	var d := clampf(dist, 0.0, _length)
 	for k in road.size() - 1:
@@ -59,7 +72,7 @@ func _point_at(dist: float) -> Vector2:
 func _update_pose(delta: float) -> void:
 	var p := _point_at(_t)
 	var ahead := _point_at(_t + 3.0 * _dir)
-	position = Vector3(p.x, Terrain.height(p.x, p.y), p.y)
+	position = Vector3(p.x, _height_at(_t) if road_y.size() == road.size() else Terrain.height(p.x, p.y), p.y)
 	var yaw := atan2(ahead.x - p.x, ahead.y - p.y)
 	rotation.y = lerp_angle(rotation.y, yaw, clampf(3.0 * delta, 0.0, 1.0)) if delta > 0.0 else yaw
 	var horse := get_node_or_null("Horse") as Node3D

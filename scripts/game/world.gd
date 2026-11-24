@@ -70,6 +70,9 @@ func _ready() -> void:
 	_landmarks.discovered.connect(func(label: String, count: int, all: int) -> void:
 		_banner("ODKRYTO: " + label.to_upper(), "Ciekawe miejsca: %d / %d · w pobliżu leży skarb" % [count, all])
 		save_game())
+	var roads := Roads.new()
+	roads.name = "Roads"
+	add_child(roads)
 	_villages = Villages.new()
 	_villages.name = "Villages"
 	_villages.dragon = _player

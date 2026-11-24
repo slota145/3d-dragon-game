@@ -98,19 +98,29 @@ static func height(x: float, z: float) -> float:
 	return h
 
 
-## Punkty drogi nr `i` (łagodny łuk: środek odsunięty w bok), od wioski do wioski.
+## Punkty drogi nr `i` (co 4 m, od wioski do wioski) — z assets/data/roads.json, liczonego
+## narzędziem tools/gen_roads.gd (A* po terenie: omija góry i jeziora, rzekę przecina mostem).
 static func road_points(i: int) -> PackedVector2Array:
-	var pair: Array = ROAD_PAIRS[i]
-	var a: Array = VILLAGES[pair[0]]
-	var b: Array = VILLAGES[pair[1]]
-	var pa := Vector2(a[0], a[1])
-	var pb := Vector2(b[0], b[1])
-	var mid := (pa + pb) * 0.5 + (pb - pa).orthogonal().normalized() * (pb - pa).length() * 0.12 * (1.0 if i % 2 else -1.0)
-	var pts := PackedVector2Array()
-	for k in 17:
-		var t := k / 16.0
-		pts.append(pa.lerp(mid, t).lerp(mid.lerp(pb, t), t))  # krzywa Béziera 2. stopnia
-	return pts
+	_load_roads()
+	return _road_cache[i]
+
+
+static func _load_roads() -> void:
+	if not _road_cache.is_empty():
+		return
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/roads.json"))
+	for road: Array in (data as Dictionary).get("roads", []):
+		var pts := PackedVector2Array()
+		for p: Array in road:
+			pts.append(Vector2(p[0], p[1]))
+		_road_cache.append(pts)
+		var r := Rect2(pts[0], Vector2.ZERO)
+		for q in pts:
+			r = r.expand(q)
+		_road_rects.append(r)
+
+
+static var _road_rects: Array[Rect2] = []
 
 
 static var _road_cache: Array = []
@@ -118,12 +128,13 @@ static var _road_cache: Array = []
 
 ## Odległość (m) do najbliższej drogi.
 static func road_distance(x: float, z: float) -> float:
-	if _road_cache.is_empty():
-		for i in ROAD_PAIRS.size():
-			_road_cache.append(road_points(i))
+	_load_roads()
 	var p := Vector2(x, z)
 	var best := INF
-	for pts: PackedVector2Array in _road_cache:
+	for ri in _road_cache.size():
+		var pts: PackedVector2Array = _road_cache[ri]
+		if not _road_rects[ri].grow(minf(best, 60.0)).has_point(p):
+			continue
 		for k in pts.size() - 1:
 			var a := pts[k]
 			var ab := pts[k + 1] - a
@@ -134,6 +145,8 @@ static func road_distance(x: float, z: float) -> float:
 
 ## 0..1 — gdzie leżą pola wioski (pierścień wokół placu); -1 gdy daleko od wiosek.
 static func farmland(x: float, z: float) -> float:
+	if road_distance(x, z) < ROAD_HALF_WIDTH + 5.0:
+		return -1.0  # pas drogi — pola obok, nie na drodze
 	for v: Array in VILLAGES:
 		var d := Vector2(x - v[0], z - v[1]).length()
 		var r: float = v[2]
@@ -386,8 +399,8 @@ static func _face_color(x: float, z: float, h: float, ny: float) -> Color:
 		col = Color(0.97, 0.98, 1.0)  # śnieg
 	elif h > 60.0:
 		col = Color(0.36, 0.54, 0.24).lerp(Color(0.55, 0.52, 0.5), clampf((h - 60.0) / 80.0, 0.0, 1.0))
-	elif road_distance(x, z) < ROAD_HALF_WIDTH:
-		col = Color(0.66, 0.52, 0.34)  # ubita ziemia drogi
+	elif road_distance(x, z) < ROAD_HALF_WIDTH * 0.7:
+		col = Color(0.55, 0.43, 0.28)  # podkład pod wstęgą drogi (Roads)
 	elif farmland(x, z) > 0.05 and farmland(x, z) < 0.95:
 		col = field_color(x, z)
 	else:

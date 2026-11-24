@@ -54,6 +54,18 @@ func _init() -> void:
 		_check(Terrain.is_water(lk[0], lk[1]), "jezioro w (%.0f, %.0f)" % [lk[0], lk[1]])
 	_check(Terrain.height(0, -1700) < Terrain.height(0, -700), "za górami wyżyna (%.0f m)" % Terrain.height(0, -1700))
 
+	print("2b2) Drogi i mosty")
+	var roads: Roads = world.get_node("Roads")
+	var bridges := roads.get_children().filter(func(n: Node) -> bool: return not String(n.name).begins_with("Road_"))
+	_check(roads.get_child_count() >= Terrain.ROAD_PAIRS.size(), "drogi: %d" % Terrain.ROAD_PAIRS.size())
+	_check(bridges.size() > 0, "mosty nad rzekami: %d przęseł" % bridges.size())
+	var through_fields := 0
+	for r in Terrain.ROAD_PAIRS.size():
+		for p in Terrain.road_points(r):
+			if Terrain.field_parcel(p.x, p.y).x >= 0 and Terrain.farmland(p.x, p.y) > 0.05:
+				through_fields += 1
+	_check(through_fields == 0, "drogi nie biegną przez pola (%d punktów)" % through_fields)
+
 	print("2c) Ciekawe miejsca")
 	var lm: Landmarks = world.get_node("Landmarks")
 	_check(lm.total() >= 25, "rozstawione: %d" % lm.total())

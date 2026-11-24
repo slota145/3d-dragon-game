@@ -112,6 +112,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Danina i łupienie (0.14.0): od rozgłosu „Postrach” wioski co dzień zostawiają złoto na kamieniu ofiarnym;
   napaść (spalenie, zjedzenie mieszkańca / owcy) = wioska nie płaci 3 dni; spalone chaty i stodoły dają łup;
   wioski mają nazwy; drogi między wioskami (ubita ziemia), wozy kupieckie z koniem — spalenie = skrzynia z łupem
+- ✅ Sensowne drogi (0.14.1, uwagi właściciela): trasy A* po terenie (`tools/gen_roads.gd` → `assets/data/roads.json`:
+  omijają góry i jeziora, rzekę przecinają), gładka wstęga drogi z poboczami (`roads.gd`), drewniane mosty z kolizją
+  nad wodą, pola i żywopłoty obok drogi (nie na niej)
 
 - ⬜ Danina vs. palenie i łupienie wiosek; odbudowa
 

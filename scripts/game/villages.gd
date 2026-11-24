@@ -155,7 +155,7 @@ func _build_fields(i: int, root: Node3D) -> void:
 			var p := c + dir * (d + seg * 0.5)
 			var kind: String = "Fence" if pasture_edge and d < r + Terrain.FIELDS * 0.5 else \
 				("StoneWall" if (walls_first != (k % 3 == 0)) else "Hedge")
-			if rng.randf() > 0.1:  # przerwy — przejścia
+			if rng.randf() > 0.1 and Terrain.road_distance(p.x, p.y) > Terrain.ROAD_HALF_WIDTH + 2.0:  # przerwy, droga
 				parts[kind].append(_seg_xf(p, a))
 			d += seg
 	# granice łukowe: środek pola i zewnętrzny brzeg
@@ -168,8 +168,9 @@ func _build_fields(i: int, root: Node3D) -> void:
 			if ring_r == r + 1.0 and not pasture:
 				continue  # od strony wioski otwarte, poza pastwiskiem
 			var kind: String = "Fence" if pasture else ("StoneWall" if walls_first else "Hedge")
-			if rng.randf() > 0.08:
-				parts[kind].append(_seg_xf(c + Vector2.from_angle(a) * ring_r, a + PI / 2.0))
+			var q := c + Vector2.from_angle(a) * ring_r
+			if rng.randf() > 0.08 and Terrain.road_distance(q.x, q.y) > Terrain.ROAD_HALF_WIDTH + 2.0:
+				parts[kind].append(_seg_xf(q, a + PI / 2.0))
 	for kind: String in parts:
 		if parts[kind].is_empty():
 			continue
@@ -355,6 +356,7 @@ func _spawn_carts() -> void:
 		var cart := MerchantCart.new()
 		cart.name = "Cart_%d" % i
 		add_child(cart)
+		cart.road_y = Roads.heights(i)
 		cart.setup(Terrain.road_points(i), _meshes.get("Wagon"), _meshes.get("Horse"), 0.3 + 0.1 * i)
 		cart.destroyed.connect(func(c: MerchantCart) -> void: cart_destroyed.emit(c))
 		_carts.append(cart)
