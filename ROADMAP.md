@@ -115,6 +115,8 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Sensowne drogi (0.14.1, uwagi właściciela): trasy A* po terenie (`tools/gen_roads.gd` → `assets/data/roads.json`:
   omijają góry i jeziora, rzekę przecinają), gładka wstęga drogi z poboczami (`roads.gd`), drewniane mosty z kolizją
   nad wodą, pola i żywopłoty obok drogi (nie na niej)
+- ✅ Mosty na poziomie drogi (0.14.2): przęsło od szczytu brzegu do szczytu brzegu, pomost prosto — przy różnej
+  wysokości brzegów pochylona kładka; słupy do gruntu w głębokich dolinach (`Roads.bridge_spans`)
 
 - ⬜ Danina vs. palenie i łupienie wiosek; odbudowa
 

@@ -18,12 +18,51 @@ static func heights(i: int) -> PackedFloat32Array:
 	return _heights[i]
 
 
+## Wysokości drogi: po terenie, a nad wodą — most od szczytu jednego brzegu do szczytu
+## drugiego, prosto (gdy brzegi są na różnej wysokości — pochylona kładka).
 static func _compute_heights(pts: PackedVector2Array) -> PackedFloat32Array:
 	var ys := PackedFloat32Array()
-	var deck := Terrain.WATER_LEVEL + BRIDGE_DECK
 	for p in pts:
-		ys.append(maxf(Terrain.height(p.x, p.y), deck) if _wet(p) else Terrain.height(p.x, p.y))
+		ys.append(Terrain.height(p.x, p.y))
+	for span in bridge_spans(pts):
+		var a: int = span.x
+		var b: int = span.y
+		for k in range(a, b + 1):
+			var t := float(k - a) / maxf(float(b - a), 1.0)
+			ys[k] = maxf(lerpf(ys[a], ys[b], t), Terrain.WATER_LEVEL + BRIDGE_DECK)
 	return ys
+
+
+## Przęsła mostów: pary indeksów [brzeg, brzeg] obejmujące wodę — rozszerzone w obie strony
+## do szczytu brzegu (dopóki teren dalej się wznosi, maks. ~40 m).
+static func bridge_spans(pts: PackedVector2Array) -> Array[Vector2i]:
+	var spans: Array[Vector2i] = []
+	var k := 0
+	while k < pts.size():
+		if not _wet(pts[k]):
+			k += 1
+			continue
+		var a := k
+		while k < pts.size() and _wet(pts[k]):
+			k += 1
+		var b := mini(k, pts.size() - 1)
+		a = maxi(a - 1, 0)
+		for i in 10:  # wspinaj się na brzeg
+			if a > 0 and _h(pts[a - 1]) > _h(pts[a]) + 0.05:
+				a -= 1
+			else:
+				break
+		for i in 10:
+			if b < pts.size() - 1 and _h(pts[b + 1]) > _h(pts[b]) + 0.05:
+				b += 1
+			else:
+				break
+		spans.append(Vector2i(a, b))
+	return spans
+
+
+static func _h(p: Vector2) -> float:
+	return Terrain.height(p.x, p.y)
 
 
 static func _wet(p: Vector2) -> bool:
@@ -43,26 +82,53 @@ func _ready() -> void:
 		mi.mesh = _ribbon(pts, ys, mat)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
-		# mosty: przęsła nad wodą
-		for k in pts.size() - 1:
-			var mid := (pts[k] + pts[k + 1]) * 0.5
-			if not (_wet(pts[k]) or _wet(pts[k + 1]) or _wet(mid)):
-				continue
-			var dir := (pts[k + 1] - pts[k]).normalized()
-			var y := maxf(ys[k], ys[k + 1])
-			var seg := MeshInstance3D.new()
-			seg.mesh = bridge_mesh
-			seg.position = Vector3(mid.x, y, mid.y)
-			seg.rotation.y = -dir.angle()  # oś X modelu wzdłuż drogi
-			add_child(seg)
-			var body := StaticBody3D.new()
-			var cs := CollisionShape3D.new()
-			var box := BoxShape3D.new()
-			box.size = Vector3(4.2, 0.3, 7.0)
-			cs.shape = box
-			cs.position = Vector3(0, -0.15, 0)
-			body.add_child(cs)
-			seg.add_child(body)
+		# mosty: przęsła od brzegu do brzegu, pomost na wysokości drogi (pochylony jak kładka)
+		for span in bridge_spans(pts):
+			for k in range(span.x, span.y):
+				var mid := (pts[k] + pts[k + 1]) * 0.5
+				var y := (ys[k] + ys[k + 1]) * 0.5
+				if y - Terrain.height(mid.x, mid.y) < 0.35:
+					continue  # tu pomost leży na ziemi — wystarczy droga
+				var dir := (pts[k + 1] - pts[k]).normalized()
+				var seg := MeshInstance3D.new()
+				seg.mesh = bridge_mesh
+				seg.position = Vector3(mid.x, y, mid.y)
+				# oś X modelu wzdłuż drogi, pochylenie jak kładka między brzegami
+				seg.basis = Basis(Vector3.UP, -dir.angle()) * Basis(Vector3.BACK, atan2(ys[k + 1] - ys[k], pts[k].distance_to(pts[k + 1])))
+				add_child(seg)
+				var body := StaticBody3D.new()
+				var cs := CollisionShape3D.new()
+				var box := BoxShape3D.new()
+				box.size = Vector3(4.3, 0.3, 7.0)
+				cs.shape = box
+				cs.position = Vector3(0, -0.15, 0)
+				body.add_child(cs)
+				seg.add_child(body)
+				_add_pillars(mid, dir, y)
+
+
+## Słupy pod przęsłem sięgające gruntu (głębokie doliny), po obu stronach pomostu.
+func _add_pillars(mid: Vector2, dir: Vector2, deck: float) -> void:
+	var side := Vector2(-dir.y, dir.x) * 3.3
+	for s: float in [-1.0, 1.0]:
+		var p := mid + side * s
+		var ground := minf(Terrain.height(p.x, p.y), Terrain.WATER_LEVEL - 1.0)
+		var h := deck - 0.3 - ground
+		if h < 3.0:
+			continue  # krótkie słupy ma już model przęsła
+		var mi := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.2
+		cyl.bottom_radius = 0.26
+		cyl.height = h
+		cyl.radial_segments = 6
+		cyl.rings = 1
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.32, 0.2, 0.1)
+		cyl.material = mat
+		mi.mesh = cyl
+		mi.position = Vector3(p.x, ground + h * 0.5, p.y)
+		add_child(mi)
 
 
 ## Wstęga: pobocze | środek | pobocze, wierzchołki na wysokości terenu (lub mostu).
@@ -79,7 +145,7 @@ func _ribbon(pts: PackedVector2Array, ys: PackedFloat32Array, mat: Material) -> 
 		var b := pts[mini(k + 1, pts.size() - 1)]
 		var dir := (b - a).normalized()
 		var n := Vector2(-dir.y, dir.x)
-		var on_bridge := _wet(pts[k])
+		var on_bridge := ys[k] - Terrain.height(pts[k].x, pts[k].y) > 0.3
 		for o in 4:
 			var q: Vector2 = pts[k] + n * float(offsets[o])
 			var y := ys[k] if on_bridge else Terrain.height(q.x, q.y)
