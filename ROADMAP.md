@@ -155,8 +155,13 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 
 ## Faza 8 — Wielcy przeciwnicy i zamki ⬜
 
-- ⬜ Gryfy (dzikie, w górach), rycerze, balisty
-- ⬜ Zamek: mury, łucznicy, wieże z gryfami, boss: dowódca jeźdźców gryfów, skarbiec
+- ✅ 0.16.0: zamek królewski na usypanym wzgórzu (`castle.gd`, `gen_castle.py`, droga od wioski do bramy):
+  ośmiokątne mury z wieżami (kolizja — pieszo tylko przez bramę), donżon, 4 balisty na wieżach (celują
+  w lecącego smoka / młodzika+, czerwona linia ostrzega przed strzałem, bełt 18 obrażeń + odrzut, przeładowanie
+  5 s; ogień je niszczy), 9 łuczników na murach, skarbiec (3 skrzynie przed donżonem, co dzień nowe);
+  dev: teleport pod zamek
+- ⬜ Gryfy (dzikie, w górach), rycerze (patrole na drogach)
+- ⬜ Zamek: wieże z gryfami, boss: dowódca jeźdźców gryfów
 
 ## Faza 9 — Nowe pokolenie ⬜
 
