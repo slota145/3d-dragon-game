@@ -103,6 +103,11 @@ func _init() -> void:
 			break
 	prey2.home_radius = 0.0
 	prey2.set_physics_process(false)  # stoi w miejscu
+	var hidden: Array[Node] = []  # tylko ta ofiara do namierzenia (w wiosce kręcą się ludzie i kury)
+	for n in get_nodes_in_group("prey"):
+		if n != prey2:
+			n.remove_from_group("prey")
+			hidden.append(n)
 	await _take_off()
 	var start := prey2.global_position + Vector3(-24, 16, -24)
 	_p.global_position = start
@@ -121,12 +126,15 @@ func _init() -> void:
 		if _p.carried != null and _p.carried == tgt:
 			got = true
 			break
-	_check(got, "złapana w locie")
+	_check(got, "złapana w locie (w szponach: %s)" % (_p.carried.display_name if _p.carried else "nic"))
 	var y0 := _p.global_position.y
 	await _seconds(1.0)
 	_check(_p.global_position.y > y0 + 1.0, "po złapaniu wzbija się (%.1f -> %.1f m)" % [y0, _p.global_position.y])
 	_tap("bite")  # puść
 	await _seconds(2.0)
+	for n in hidden:
+		if is_instance_valid(n):
+			n.add_to_group("prey")
 
 	print("6) Za duża ofiara")
 	_p.stats.set_size_instant(4.2)
