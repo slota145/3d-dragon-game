@@ -109,7 +109,9 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
 - ✅ Rozgłos + myśliwi (0.10.1, `arrow.gd`): rozgłos rośnie od zjadania ludzi (+8), owiec z farm (+3)
   i straszenia (+0,4), opada powoli i przez noc; poziomy Nieznany / Plotka / Postrach / Legenda →
   0/1/2/3 myśliwych z łukami na wioskę (strzelają z dystansu z wyprzedzeniem, z bliska odskakują)
-- ⬜ Danina vs. palenie i łupienie wiosek; odbudowa (po ogniu — faza 7); wozy kupieckie
+- ✅ Danina i łupienie (0.14.0): od rozgłosu „Postrach” wioski co dzień zostawiają złoto na kamieniu ofiarnym;
+  napaść (spalenie, zjedzenie mieszkańca / owcy) = wioska nie płaci 3 dni; spalone chaty i stodoły dają łup;
+  wioski mają nazwy; drogi między wioskami (ubita ziemia), wozy kupieckie z koniem — spalenie = skrzynia z łupem
 
 - ⬜ Danina vs. palenie i łupienie wiosek; odbudowa
 

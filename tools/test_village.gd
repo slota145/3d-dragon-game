@@ -188,6 +188,7 @@ func _init() -> void:
 	cam.snap_behind()
 	await _seconds(0.8)
 	await _shot("village_cart.png")
+	world.renown = 50.0  # poniżej maksimum, żeby było widać przyrost
 	var r1: float = world.renown
 	world.call("_on_fire_hit", cart.global_position + Vector3.UP, 4.0, 5.0)
 	await _frames(3)
