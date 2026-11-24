@@ -25,6 +25,8 @@ var _decor: TerrainDecor
 var _landmarks: Landmarks
 var _villages: Villages
 var _castle: Castle
+var _gryphons: Gryphons
+var _gryphon_msg: int = -100000
 var _castle_seen: bool = false
 ## Rozgłos smoka 0..100: rośnie od zjadania ludzi i owiec z farm i straszenia wieśniaków,
 ## powoli opada (i przy śnie). Od poziomu „Plotka” wioski wystawiają myśliwych z łukami.
@@ -95,6 +97,19 @@ func _ready() -> void:
 		var left := _castle.working_ballistas()
 		_toast("Balista zniszczona! Zostało: %d" % left if left > 0 else "Wszystkie balisty zniszczone — skarbiec czeka!"))
 	_castle.guard_eaten.connect(func(_g: Prey) -> void: add_renown(5.0))
+	_gryphons = Gryphons.new()
+	_gryphons.name = "Gryphons"
+	_gryphons.dragon = _player
+	add_child(_gryphons)
+	_gryphons.repopulate()
+	_gryphons.attacked.connect(func(_g: Prey, _d: float) -> void:
+		_flash = 0.7
+		if Time.get_ticks_msec() - _gryphon_msg > 4000:
+			_gryphon_msg = Time.get_ticks_msec()
+			_toast("Gryf broni gniazda! Ogień albo uciekaj — nad gniazdem są dwa"))
+	_gryphons.gryphon_killed.connect(func(_g: Prey) -> void:
+		add_renown(8.0)
+		_toast("Gryf pokonany! Spada — możesz go zjeść"))
 	_villages.poked.connect(func(by: Villager, _dmg: float) -> void:
 		if Time.get_ticks_msec() - _poke_msg > 3000:
 			_poke_msg = Time.get_ticks_msec()
@@ -204,6 +219,7 @@ func _ready() -> void:
 	pause.stats = _player.stats
 	pause.on_stats_changed = _update_buttons
 	pause.on_teleport_castle = teleport_to_castle
+	pause.on_teleport_nest = teleport_to_nest
 	if use_save:
 		pause.on_new_game = new_game
 	pause.on_gyro_changed = func(on: bool) -> void: _camera.gyro_enabled = on
@@ -344,11 +360,26 @@ func teleport_to_castle() -> void:
 	_camera.snap_behind()
 
 
+## W powietrzu 260 m od pierwszego gniazda gryfów, przodem do niego (narzędzie dewelopera).
+func teleport_to_nest() -> void:
+	var np := Gryphons.nest_position(0)
+	var p := np + Vector3(0, 40.0, 260.0)
+	_player.global_position = p
+	_player.rotation.y = PI
+	_player.velocity = Vector3.ZERO
+	_player.reset_physics_interpolation()
+	_camera.snap_behind()
+
+
 ## Skarbiec zamku: skrzynie przed donżonem (co dzień nowe, jeśli zabrane).
 func _place_castle_treasury() -> void:
 	var spots := _castle.treasury_spots()
 	for i in spots.size():
 		_finds.add_special("castle_%d_d%d" % [i, day], "chest", spots[i], 220 + 40 * i, "Skarbiec zamku")
+	for i in Gryphons.NESTS.size():  # gryfy znoszą do gniazd błyskotki
+		var np := Gryphons.nest_position(i)
+		_finds.add_special("nest_%d_d%d" % [i, day], "crown", np + Vector3(1.2, 0.4, 0.6), 90 + 20 * i, "Korona z gniazda gryfa")
+		_finds.add_special("nest_%d_g_d%d" % [i, day], "goblet", np + Vector3(-1.0, 0.4, -0.8), 50, "Kielich z gniazda gryfa")
 
 
 # --- Danina i łupienie --------------------------------------------------------------
@@ -517,6 +548,7 @@ func _wake() -> void:
 		_finds.setup(day, _cache_spots())  # nowy dzień — nowe znaleziska
 		_place_castle_treasury()
 		_castle.repopulate()  # balisty naprawione, łucznicy na murach
+		_gryphons.repopulate()  # gryfy wracają do gniazd
 		_place_tributes()
 		renown = maxf(0.0, renown - 5.0)  # przez noc plotki cichną
 		_renown_level = renown_level()

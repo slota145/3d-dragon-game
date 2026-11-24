@@ -17,6 +17,8 @@ var on_stats_changed: Callable
 var on_new_game: Callable
 ## Tryb deweloperski: przenieś smoka pod zamek.
 var on_teleport_castle: Callable
+## Tryb deweloperski: przenieś smoka nad gniazdo gryfów.
+var on_teleport_nest: Callable
 ## Zmiana opcji „Celowanie żyroskopem” (świat przekazuje ją kamerze).
 var on_gyro_changed: Callable
 
@@ -222,6 +224,11 @@ func _build_dev_panel() -> void:
 			on_teleport_castle.call(), 26)
 	castle.custom_minimum_size = Vector2(0, 72)
 	_dev_body.add_child(castle)
+	var nest := _button("Teleport: gniazdo gryfów", func() -> void:
+		if on_teleport_nest.is_valid():
+			on_teleport_nest.call(), 26)
+	nest.custom_minimum_size = Vector2(0, 72)
+	_dev_body.add_child(nest)
 
 
 ## Nowa gra wymaga drugiego naciśnięcia (potwierdzenie) — kasuje zapis.

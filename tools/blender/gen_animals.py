@@ -297,6 +297,82 @@ def chicken():
                 "Chicken_White", 1.0, extra=tail, head_extra=comb)
 
 
+def gryphon():
+    """Gryf ~3,4 m długości (z ogonem), rozpiętość skrzydeł ~8 m. Przód orli, tył lwi."""
+    pal = {"Gryphon_Fur": (0.62, 0.42, 0.16), "Gryphon_Feather": (0.32, 0.2, 0.1),
+           "Gryphon_White": (0.92, 0.9, 0.84), "Gryphon_Beak": (1.0, 0.68, 0.1), "Gryphon_Talon": (0.08, 0.07, 0.06),
+           "Gryphon_Eye": (0.9, 0.55, 0.05), "Gryphon_Tip": (0.12, 0.08, 0.05)}
+    mats, names = make_materials(pal), list(pal)
+    rnd = random.Random(11)
+    objs = []
+    b = MeshBuilder(names)
+    blob(b, (0, 0.25, 1.15), (0.42, 0.75, 0.42), "Gryphon_Fur", seg=9, rings=6, jitter=0.04, rnd=rnd)  # lwi zad
+    blob(b, (0, -0.45, 1.3), (0.48, 0.55, 0.5), "Gryphon_Feather", seg=9, rings=6, jitter=0.05, rnd=rnd)  # pierś
+    blob(b, (0, -0.62, 1.25), (0.36, 0.3, 0.4), "Gryphon_White", seg=7, rings=5)
+    b.tube([V(0, 0.95, 1.25), V(0, 1.5, 1.05), V(0, 2.0, 1.25), V(0, 2.3, 1.55)], [0.12, 0.09, 0.07, 0.05], 6,
+           "Gryphon_Fur", tip=False)  # ogon
+    blob(b, (0, 2.35, 1.6), (0.13, 0.2, 0.16), "Gryphon_Tip", seg=6, rings=4)  # pędzelek
+    objs.append(part("Gryphon_Body", b, mats, (0, 0, 0)))
+    b = MeshBuilder(names)
+    b.tube([V(0, -0.75, 1.5), V(0, -0.95, 1.85), V(0, -1.05, 2.05)], [0.3, 0.25, 0.22], 7, "Gryphon_White", tip=False)
+    blob(b, (0, -1.12, 2.15), (0.24, 0.3, 0.24), "Gryphon_White", seg=8, rings=5)
+    b.tube([V(0, -1.35, 2.15), V(0, -1.6, 2.05), V(0, -1.66, 1.9)], [0.11, 0.07, 0.0], 6, "Gryphon_Beak",
+           tip=True)  # zakrzywiony dziób
+    for s_ in (1, -1):
+        blob(b, (0.16 * s_, -1.28, 2.25), (0.05, 0.05, 0.05), "Gryphon_Eye", seg=5, rings=3)
+        b.tube([V(0.12 * s_, -1.0, 2.32), V(0.2 * s_, -0.8, 2.55)], [0.07, 0.0], 4, "Gryphon_White", flatten=0.4,
+               tip=True)  # pióra-uszy
+    objs.append(part("Gryphon_Head", b, mats, (0, -0.7, 1.5)))
+    for tag, s_ in (("L", 1), ("R", -1)):
+        b = MeshBuilder(names)
+        # skrzydło: kilka piór-płatów od barku ku końcówce (rozpostarte poziomo wzdłuż X)
+        for k in range(7):
+            t = k / 6
+            x0 = 0.35 * s_ + s_ * 3.6 * t
+            ln = 1.6 - 0.25 * t + (0.3 if k in (5, 6) else 0.0)
+            mat = "Gryphon_Feather" if k < 5 else "Gryphon_Tip"
+            b.tube([V(x0, -0.55 + 0.25 * t, 1.55 + 0.15 * t), V(x0 + s_ * 0.25, -0.55 + 0.25 * t + ln, 1.5 + 0.1 * t)],
+                   [0.32 - 0.1 * t, 0.0], 4, mat, flatten=0.18, tip=True, up_hint=(0, 0, 1))
+        b.tube([V(0.3 * s_, -0.55, 1.58), V(2.0 * s_, -0.4, 1.7), V(3.9 * s_, -0.25, 1.72)], [0.16, 0.12, 0.05], 5,
+               "Gryphon_Feather", flatten=0.5, tip=True)  # ramię skrzydła
+        objs.append(part(f"Gryphon_Wing{tag}", b, mats, (0.3 * s_, -0.5, 1.6)))
+    for tag, s_ in (("FL", 1), ("FR", -1)):  # orle łapy
+        b = MeshBuilder(names)
+        b.tube([V(0.25 * s_, -0.55, 1.0), V(0.27 * s_, -0.6, 0.5), V(0.25 * s_, -0.62, 0.1)], [0.14, 0.08, 0.06], 5,
+               "Gryphon_Beak", tip=False)
+        for a in (-0.5, 0.0, 0.5):
+            b.tube([V(0.25 * s_, -0.62, 0.08), V(0.25 * s_ + math.sin(a) * 0.25, -0.62 - math.cos(a) * 0.25, 0.02)],
+                   [0.04, 0.0], 4, "Gryphon_Talon", tip=True)
+        objs.append(part(f"Gryphon_Leg{tag}", b, mats, (0.25 * s_, -0.55, 1.05)))
+    for tag, s_ in (("BL", 1), ("BR", -1)):  # lwie łapy
+        b = MeshBuilder(names)
+        blob(b, (0.28 * s_, 0.6, 0.85), (0.15, 0.28, 0.32), "Gryphon_Fur", seg=6, rings=4)
+        b.tube([V(0.28 * s_, 0.65, 0.6), V(0.28 * s_, 0.6, 0.1)], [0.1, 0.08], 5, "Gryphon_Fur", tip=False)
+        blob(b, (0.28 * s_, 0.55, 0.07), (0.11, 0.15, 0.07), "Gryphon_Fur", seg=5, rings=3)
+        objs.append(part(f"Gryphon_Leg{tag}", b, mats, (0.28 * s_, 0.6, 1.05)))
+    return objs
+
+
+def nest():
+    """Gniazdo gryfa (Nest_Gryphon): wieniec gałęzi ~5 m średnicy, dwa jaja."""
+    pal = {"Nest_Twig": (0.3, 0.2, 0.1), "Nest_TwigDark": (0.16, 0.1, 0.05), "Nest_Egg": (0.85, 0.82, 0.7),
+           "Nest_EggSpot": (0.35, 0.25, 0.15)}
+    mats, names = make_materials(pal), list(pal)
+    rnd = random.Random(4)
+    b = MeshBuilder(names)
+    for k in range(34):
+        a = rnd.uniform(0, math.tau)
+        r = rnd.uniform(1.6, 2.5)
+        c = V(math.cos(a) * r, math.sin(a) * r, rnd.uniform(0.0, 0.6))
+        d = V(-math.sin(a), math.cos(a), rnd.uniform(-0.2, 0.2)) * rnd.uniform(1.2, 2.2)
+        b.tube([c - d, c + d], [0.08, 0.06], 4, "Nest_Twig" if k % 3 else "Nest_TwigDark", tip=False, samples=1)
+    blob(b, (0, 0, 0.0), (1.9, 1.9, 0.35), "Nest_TwigDark", seg=8, rings=3)
+    for x, y in ((-0.4, 0.1), (0.35, -0.2)):
+        blob(b, (x, y, 0.45), (0.28, 0.28, 0.38), "Nest_Egg", seg=7, rings=5)
+        blob(b, (x + 0.12, y - 0.2, 0.55), (0.06, 0.04, 0.06), "Nest_EggSpot", seg=4, rings=2)
+    return [b.to_object("Nest_Gryphon", mats)]
+
+
 def finish_all(objs, seed: int):
     for i, o in enumerate(objs):
         flat_shade(o)
@@ -315,7 +391,7 @@ def export(obj: bpy.types.Object, path: pathlib.Path) -> None:
 if __name__ == "__main__":
     common.reset_scene()
     all_objs = []
-    for i, build in enumerate((rabbit, sheep, deer, boar, goat, duck, chicken)):
+    for i, build in enumerate((rabbit, sheep, deer, boar, goat, duck, chicken, gryphon, nest)):
         objs = build()
         finish_all(objs, i * 20)
         print(f"{objs[0].name.split('_')[0]}: {sum(tri_count(o) for o in objs)} trójkątów, {len(objs)} części")
