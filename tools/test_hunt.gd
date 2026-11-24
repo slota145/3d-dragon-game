@@ -137,12 +137,8 @@ func _init() -> void:
 
 func _spawn_in_front(spawner: PreySpawner, kind: String, dist_extra: float) -> Prey:
 	var pos := _p.global_position
-	if kind == "rabbit":
-		spawner._spawn_rabbit(pos)
-	else:
-		spawner._spawn_herd(pos)
-	var p: Prey = spawner.get_child(spawner.get_child_count() - 1)
-	# owce: zostaw jedną, resztę stada odsuń
+	var p := Wildlife.create(kind)
+	spawner.spawn(p, pos)
 	_place_in_front(p, dist_extra)
 	return p
 

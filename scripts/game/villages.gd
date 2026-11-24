@@ -18,9 +18,9 @@ const NAMES := ["Wierzbin", "Dębowo", "Złotopole", "Mokradło", "Brzezie", "Ka
 
 @export var villagers_per_village: int = 5
 @export var sheep_per_pen: int = 5
+@export var chickens_per_village: int = 5
 
 var dragon: DragonController
-var sheep_model: PackedScene
 
 var _meshes: Dictionary = {}
 var _people: Dictionary = {}  # rola -> Array[[name, mesh, pivot Transform3D]]
@@ -335,12 +335,14 @@ func repopulate() -> void:
 			_spawn_person("Villager", "Wieśniak", p, c, float(v[2]) * 0.55)
 		var pc := pen_center(i)
 		_spawn_person("Shepherd", "Pasterz", pc + Vector3(11, 0, 0), pc, 16.0)
-		if sheep_model:
-			for k in sheep_per_pen:
-				_spawn_sheep(pc + Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-4, 4)), pc)
-			var pastc := pasture_center(i)  # owce na ogrodzonym pastwisku
-			for k in 4:
-				_spawn_sheep(pastc + Vector3(rng.randf_range(-6, 6), 0, rng.randf_range(-6, 6)), pastc, 12.0)
+		for k in sheep_per_pen:
+			_spawn_sheep(pc + Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-4, 4)), pc)
+		var pastc := pasture_center(i)  # owce na ogrodzonym pastwisku
+		for k in 4:
+			_spawn_sheep(pastc + Vector3(rng.randf_range(-6, 6), 0, rng.randf_range(-6, 6)), pastc, 12.0)
+		for k in chickens_per_village:  # kury biegają po placu
+			var cp: Vector3 = c + Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)) * float(v[2]) * 0.35
+			_spawn_animal("chicken", cp, c, float(v[2]) * 0.45)
 	_hunters.clear()
 	set_hunters(hunters_per_village)
 	_spawn_carts()
@@ -428,28 +430,24 @@ func _spawn_person(role: String, label: String, pos: Vector3, home: Vector3, rad
 
 
 func _spawn_sheep(pos: Vector3, pen: Vector3, leash: float = 7.0) -> void:
-	var p := Prey.new()
-	var body := sheep_model.instantiate() as Node3D
-	body.name = "Body"
-	p.add_child(body)
+	var p := _spawn_animal("sheep", pos, pen, leash)
 	p.display_name = "Owca z farmy"
-	p.max_health = 3.0
-	p.food = 4.0
-	p.body_size = 1.3
-	p.radius = 0.7
-	p.walk_speed = 0.5
 	p.flee_speed = 2.6
 	p.stamina = 4.0
-	p.hops = false
-	p.zigzag = 0.25
-	p.alert_range = 9.0
-	p.home = pen
+
+
+## Zwierzę gospodarskie uwiązane do `home` (zagroda, plac wioski).
+func _spawn_animal(species: String, pos: Vector3, home: Vector3, leash: float) -> Prey:
+	var p := Wildlife.create(species)
+	p.home = home
 	p.home_radius = leash
 	p.dragon = dragon
+	p.rotation.y = randf() * TAU
 	add_child(p)
 	p.global_position = Vector3(pos.x, Terrain.height(pos.x, pos.z), pos.z)
 	p.killed.connect(func(pr: Prey) -> void: eaten_from_village.emit(pr))
 	_residents.append(p)
+	return p
 
 
 func residents() -> Array[Node3D]:

@@ -147,6 +147,11 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   liczonej w tle z terenu — bez bufora głębi, działa na każdym telefonie)
 - ✅ 0.13.2: niebo z shadera (`sky.gdshader`: gradient, słońce, księżyc, migoczące gwiazdy; mgła nie zakrywa już
   nieba), świetliki nocą, świecące okna chat i lampy w wioskach, stada ptaków i motyle nad kwiatami (`fauna.gd`)
+- ✅ 0.15.0: więcej dzikiej zwierzyny wg siedlisk (`wildlife.gd`, `prey_spawner.gd`): sarny (las, płochliwe
+  i szybkie), dziki (las; szarżują na pisklę, przed większym smokiem uciekają; locha z warchlakami), kozy
+  (górskie zbocza), kaczki (pływają po jeziorach, spłoszone odlatują i wracają), kury w wioskach. Wszystkie
+  zwierzęta (też królik i owca) z ruchomych części: stęp, galop, kicanie, skubanie trawy i rozglądanie się,
+  trzepot skrzydeł, wierzganie w szponach
 
 ## Faza 8 — Wielcy przeciwnicy i zamki ⬜
 

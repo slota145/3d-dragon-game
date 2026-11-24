@@ -76,7 +76,6 @@ func _ready() -> void:
 	_villages = Villages.new()
 	_villages.name = "Villages"
 	_villages.dragon = _player
-	_villages.sheep_model = _spawner.sheep_model
 	add_child(_villages)
 	_villages.poked.connect(func(by: Villager, _dmg: float) -> void:
 		if Time.get_ticks_msec() - _poke_msg > 3000:
@@ -86,6 +85,11 @@ func _ready() -> void:
 		_anger_village(_villages.village_at(p.home if p.home_radius > 0.0 else p.global_position))
 		add_renown(8.0 if p is Villager else 3.0))
 	_villages.scared.connect(func(_by: Villager) -> void: add_renown(0.4))
+	_spawner.attacked.connect(func(by: Prey, _dmg: float) -> void:
+		_flash = 0.4
+		if Time.get_ticks_msec() - _poke_msg > 3000:
+			_poke_msg = Time.get_ticks_msec()
+			_toast("%s szarżuje! Pisklę to dla niego nie smok — podleć albo urośnij" % by.display_name))
 	_player.hit_by_arrow.connect(func(_dmg: float) -> void:
 		_flash = 0.6
 		if Time.get_ticks_msec() - _arrow_msg > 3000:

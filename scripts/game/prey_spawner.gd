@@ -1,12 +1,18 @@
 class_name PreySpawner
 extends Node3D
-## Utrzymuje populację zwierzyny wokół smoka: nowe zwierzęta pojawiają się poza zasięgiem
-## wzroku, dalekie znikają. Owce chodzą stadami.
+## Utrzymuje populację dzikiej zwierzyny wokół smoka: nowe zwierzęta pojawiają się poza
+## zasięgiem wzroku w swoim siedlisku, dalekie znikają. Króliki i owce na łąkach, sarny i dziki
+## w lasach, kozy w górach, kaczki na jeziorach (gatunki: Wildlife.SPECIES).
 
-@export var rabbit_model: PackedScene
-@export var sheep_model: PackedScene
-@export var rabbit_count: int = 22
-@export var sheep_herds: int = 4
+## Dzik zaatakował smoka.
+signal attacked(prey: Prey, damage: float)
+
+## Gatunek -> [docelowa liczba, wielkość stada min, max].
+const POPULATION := {
+	"rabbit": [20, 1, 1], "sheep": [12, 3, 5], "deer": [8, 1, 3], "boar": [6, 1, 4], "goat": [8, 2, 4],
+	"duck": [10, 2, 4],
+}
+
 @export var spawn_min: float = 18.0
 @export var spawn_max: float = 90.0
 @export var despawn_distance: float = 220.0
@@ -22,10 +28,13 @@ func _ready() -> void:
 
 ## Pierwsze zasiedlenie (część zwierząt blisko, żeby od razu było na co polować).
 func populate() -> void:
-	for i in rabbit_count:
-		_spawn_rabbit(_random_point(8.0 if i < 5 else spawn_min, spawn_max))
-	for i in sheep_herds:
-		_spawn_herd(_random_point(25.0 if i == 0 else spawn_min * 1.5, spawn_max))
+	for i in 20:
+		_spawn_group("rabbit", _random_point(8.0 if i < 5 else spawn_min, spawn_max, "rabbit"))
+	for i in 3:
+		_spawn_group("sheep", _random_point(25.0 if i == 0 else spawn_min * 1.5, spawn_max, "sheep"))
+	for sp: String in ["deer", "boar", "goat", "duck"]:
+		for i in 3:
+			_try_spawn(sp, spawn_min, spawn_max * 1.3)
 
 
 func _process(delta: float) -> void:
@@ -33,30 +42,59 @@ func _process(delta: float) -> void:
 	if _timer > 0.0 or not dragon:
 		return
 	_timer = 1.0
-	var rabbits := 0
-	var sheep := 0
+	var counts := {}
 	for p in get_children():
 		if not p is Prey:
 			continue
-		if p.global_position.distance_to(dragon.global_position) > despawn_distance and p.is_alive():
+		if p.global_position.distance_to(dragon.global_position) > _despawn() and p.is_alive():
 			p.queue_free()
 			continue
-		if p.display_name == "Owca":
-			sheep += 1
-		else:
-			rabbits += 1
-	if rabbits < rabbit_count:
-		_spawn_rabbit(_random_point(spawn_max * 0.6, spawn_max))
-	if sheep < sheep_herds * 3:
-		_spawn_herd(_random_point(spawn_max * 0.7, spawn_max * 1.2))
+		counts[p.species] = int(counts.get(p.species, 0)) + 1
+	for sp: String in POPULATION:
+		if int(counts.get(sp, 0)) < int(POPULATION[sp][0]):
+			_try_spawn(sp, _range_max() * 0.6, _range_max() * 1.2)
 
 
-func _random_point(r_min: float, r_max: float) -> Vector3:
-	# szukaj suchego, niezbyt stromego miejsca na łące (nie w wodzie, nie w górach)
+## Większy smok widzi dalej — zwierzęta pojawiają się i znikają dalej.
+func _range_max() -> float:
+	var s: float = dragon.get("stats").size if dragon and dragon.get("stats") else 2.4
+	return spawn_max + s * 4.0
+
+
+func _despawn() -> float:
+	return despawn_distance + _range_max() - spawn_max
+
+
+## Czy punkt pasuje do siedliska gatunku.
+static func suits(species: String, x: float, z: float) -> bool:
+	match species:
+		"deer":
+			return Terrain.forest(x, z) > 0.25 and Terrain.is_walkable(x, z)
+		"boar":
+			return Terrain.forest(x, z) > 0.4 and Terrain.is_walkable(x, z)
+		"goat":
+			var h := Terrain.height(x, z)
+			return h > 35.0 and absf(Terrain.height(x + 3.0, z) - h) < 4.0 and absf(Terrain.height(x, z + 3.0) - h) < 4.0
+		"duck":
+			return Terrain.height(x, z) < Terrain.WATER_LEVEL - 1.0
+	# łąki: nie w lesie, nie na polach
+	return Terrain.is_walkable(x, z) and Terrain.forest(x, z) < 0.35 and Terrain.farmland(x, z) <= 0.05
+
+
+## Kilka losowych prób znalezienia miejsca w siedlisku (w lesie / w górach / na wodzie).
+func _try_spawn(species: String, r_min: float, r_max: float) -> void:
+	for i in 10:
+		var p := _random_point_raw(r_min, r_max)
+		if suits(species, p.x, p.z):
+			_spawn_group(species, p)
+			return
+
+
+func _random_point(r_min: float, r_max: float, species: String) -> Vector3:
 	var p := Vector3.ZERO
 	for i in 12:
 		p = _random_point_raw(r_min, r_max)
-		if Terrain.is_walkable(p.x, p.z):
+		if suits(species, p.x, p.z):
 			break
 	p.y = Terrain.height(p.x, p.z)
 	return p
@@ -75,36 +113,26 @@ func _random_point_raw(r_min: float, r_max: float) -> Vector3:
 	return p
 
 
-func _make(model: PackedScene, pos: Vector3) -> Prey:
-	var p := Prey.new()
-	var body := model.instantiate() as Node3D
-	body.name = "Body"
-	p.add_child(body)
+## Stado / rodzina wokół punktu (dziki: locha z warchlakami).
+func _spawn_group(species: String, center: Vector3) -> void:
+	var pop: Array = POPULATION[species]
+	var n := _rng.randi_range(pop[1], pop[2])
+	for i in n:
+		var off := Vector3(_rng.randf_range(-4, 4), 0, _rng.randf_range(-4, 4)) if i > 0 else Vector3.ZERO
+		var pos := center + off
+		var p := Wildlife.create(species, species == "boar" and i > 0)
+		if not p._can_go(pos.x, pos.z):
+			pos = center
+		spawn(p, pos)
+		if species == "duck":  # kaczki trzymają się swojego jeziora
+			p.home = center
+			p.home_radius = 30.0
+
+
+## Dodaje gotową ofiarę do świata.
+func spawn(p: Prey, pos: Vector3) -> void:
 	p.dragon = dragon
 	p.rotation.y = _rng.randf() * TAU
 	add_child(p)
-	p.global_position = pos
-	return p
-
-
-func _spawn_rabbit(pos: Vector3) -> void:
-	var p := _make(rabbit_model, pos)
-	p.display_name = "Królik"
-
-
-func _spawn_herd(center: Vector3) -> void:
-	for i in _rng.randi_range(3, 5):
-		var off := Vector3(_rng.randf_range(-4, 4), 0, _rng.randf_range(-4, 4))
-		var p := _make(sheep_model, center + off)
-		p.display_name = "Owca"
-		p.max_health = 3.0
-		p.health = 3.0
-		p.food = 4.0
-		p.body_size = 1.3
-		p.radius = 0.7
-		p.walk_speed = 0.5
-		p.flee_speed = 3.0
-		p.stamina = 5.0
-		p.hops = false
-		p.zigzag = 0.25
-		p.alert_range = 9.0
+	p.global_position = Vector3(pos.x, p._ground_y(pos.x, pos.z), pos.z)
+	p.attacked.connect(func(by: Prey, dmg: float) -> void: attacked.emit(by, dmg))
