@@ -12,6 +12,8 @@ enum Mode { PERCH, PATROL, ATTACK, RETREAT, FLEE }
 @export var attack_damage: float = 8.0
 @export var attack_speed: float = 27.0
 @export var patrol_speed: float = 13.0
+## Ranny ucieka (dowódca jeźdźców walczy do końca).
+@export var can_flee: bool = true
 
 var nest: Vector3
 var mode: Mode = Mode.PERCH
@@ -52,7 +54,7 @@ func _physics_process(delta: float) -> void:
 	_mode_t += delta
 	var dc := dragon as DragonController
 	var near := dc != null and dc.stats.health > 0.0 and dc.global_position.distance_to(nest) < territory
-	if health < max_health * 0.35 and mode != Mode.FLEE:
+	if can_flee and health < max_health * 0.35 and mode != Mode.FLEE:
 		_set_mode(Mode.FLEE)
 	match mode:
 		Mode.PERCH:

@@ -169,7 +169,13 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   bełtami (7); przed dorosłym tchórze uciekają, przed pradawnym wszyscy poza kusznikami; zabity zostawia
   sakiewkę (+rozgłos); od rozgłosu „Postrach” z zamku wyrusza oddział pościgowy (4 rycerzy), przy
   „Legendzie” drugi; dev: teleport do patrolu
-- ⬜ Zamek: wieże z gryfami, boss: dowódca jeźdźców gryfów
+- ✅ 0.19.0: jeźdźcy gryfów i boss (`gryphon_rider.gd`, `gryphon_commander.gd`, `gryphon_riders.gd`; rycerz
+  w siodle, rząd gryfa i dowódca w `gen_people.py`, wieża-gniazdo `Castle_Eyrie` w `gen_castle.py`): dwóch
+  jeźdźców na wieżach z balistami broni zamku (szarża kopią 10); dowódca na wieży-gnieździe za donżonem —
+  walka w powietrzu, pasek zdrowia na ekranie, pancerz (smok mniejszy niż pradawny zadaje 15% obrażeń),
+  2. faza poniżej połowy zdrowia: szybszy, mocniejszy, z wież wylatują posiłki; pokonany spada, zostawia
+  skarb (900 zł), +25 rozgłosu, nie wraca (zapis `boss_defeated`); przy „Legendzie” para łowców na gryfach
+  ściga smoka po świecie
 
 ## Faza 9 — Nowe pokolenie ⬜
 

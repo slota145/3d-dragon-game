@@ -8,6 +8,7 @@ Obiekty (pivot na ziemi, Z w górę, „na zewnątrz” = −Y, czyli +Z w Godoc
   Castle_TowerRoof  wieża ze stożkowym dachem i chorągwią
   Castle_Gate       budynek bramny 14 m szeroki, przejazd 6 × 7 m
   Castle_Keep       donżon 18 × 18 m z wieżyczkami, drzwi od −Y
+  Castle_Eyrie      wieża-gniazdo jeźdźców gryfów: wys. 26 m, drewniany podest r = 6,5 m (z = 26.6)
   Castle_BallistaBase  podstawa balisty (statyw)
   Castle_BallistaBow   łoże z łukiem — obraca się (pivot w osi, z = 1.3), strzela w −Y
   Castle_Bolt          bełt 2.4 m, grot w −Y
@@ -147,6 +148,36 @@ def keep(mats) -> bpy.types.Object:
     return b.to_object("Castle_Keep", mats)
 
 
+def eyrie(mats) -> bpy.types.Object:
+    """Wysoka wieża z szerokim drewnianym podestem — tu siada dowódca jeźdźców gryfów."""
+    b = MeshBuilder(NAMES)
+    n = 12
+    b.loft([ring(5.6, -1.5, n), ring(4.9, 1.0, n), ring(4.2, 22.0, n), ring(5.0, 24.0, n), ring(5.0, 26.0, n)],
+           "Castle_Stone", cap_start=True, cap_end=False)
+    b.loft([ring(6.5, 26.0, n), ring(6.5, 26.6, n)], "Castle_Wood", cap_start=True, cap_end=True)  # podest
+    for k in range(n):  # wsporniki podestu
+        a = 2 * math.pi * k / n
+        b.tube([V(math.cos(a) * 4.3, math.sin(a) * 4.3, 23.0), V(math.cos(a) * 6.2, math.sin(a) * 6.2, 26.0)],
+               [0.15, 0.15], 4, "Castle_Wood", tip=False)
+    for k in range(16):  # niska palisada na krawędzi
+        a = 2 * math.pi * k / 16
+        if k in (3, 4, 11, 12):  # przerwy — wylot gryfa
+            continue
+        b.tube([V(math.cos(a) * 6.3, math.sin(a) * 6.3, 26.6), V(math.cos(a) * 6.3, math.sin(a) * 6.3, 27.5)],
+               [0.12, 0.08], 4, "Castle_Wood", tip=False)
+    for a in (0.8, 3.9):  # maszty z granatowo-złotymi proporcami
+        p = V(math.cos(a) * 5.8, math.sin(a) * 5.8, 26.6)
+        b.tube([p, p + V(0, 0, 6.0)], [0.1, 0.07], 4, "Castle_Wood", tip=False)
+        flag = [p + V(0, 0, 5.9), p + V(0, 0, 4.2), p + V(2.6, 0.3, 5.0)]
+        b.add_face([b.add_vert(q) for q in flag], "Castle_Roof")
+        b.add_face([b.add_vert(q) for q in reversed(flag)], "Castle_Roof")
+    for k, z in enumerate((6.0, 12.0, 18.0)):  # okienka
+        a = k * 2.3 + 0.4
+        box(b, V(math.cos(a) * 4.5, math.sin(a) * 4.5, z), (0.6, 0.5, 1.4), "Castle_Window", rot=a + math.pi / 2)
+    box(b, V(0, -4.8, 0.0), (1.8, 0.6, 2.8), "Castle_Wood")  # drzwi
+    return b.to_object("Castle_Eyrie", mats)
+
+
 def ballista(mats) -> list[bpy.types.Object]:
     b = MeshBuilder(NAMES)
     for k in range(3):  # statyw
@@ -181,7 +212,7 @@ def ballista(mats) -> list[bpy.types.Object]:
 if __name__ == "__main__":
     common.reset_scene()
     MATS = make_materials(PALETTE)
-    objs = [wall(MATS), tower(MATS, False), tower(MATS, True), gate(MATS), keep(MATS)] + ballista(MATS)
+    objs = [wall(MATS), tower(MATS, False), tower(MATS, True), gate(MATS), keep(MATS), eyrie(MATS)] + ballista(MATS)
     for i, o in enumerate(objs):
         flat_shade(o)
         face_color_variation(o, 0.08, seed=i + 40)

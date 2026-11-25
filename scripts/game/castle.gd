@@ -4,6 +4,8 @@ extends Node3D
 ## drogi, donżon ze skarbcem. Na czterech wieżach balisty (Ballista), na murach łucznicy.
 ## Moduły z assets/models/castle.glb (generator tools/blender/gen_castle.py).
 ## Skarbiec (skrzynie przed donżonem) wystawia świat przez GoldFinds — `treasury_spots()`.
+## Za donżonem wieża-gniazdo dowódcy jeźdźców gryfów (`eyrie_top()`), jeźdźcy siadają na
+## wieżach z balistami (`rider_perch()`) — patrz GryphonRiders.
 
 signal ballista_destroyed(b: Ballista)
 signal bolt_hit(damage: float)
@@ -89,6 +91,30 @@ func _build() -> void:
 	var keep_pos := _keep_pos()
 	_mesh("Keep", Transform3D(Basis.IDENTITY, keep_pos))
 	_box(body, Transform3D(Basis.IDENTITY, keep_pos + Vector3.UP * 11.0), Vector3(18.0, 23.0, 18.0))
+	_mesh("Eyrie", Transform3D(Basis.IDENTITY, EYRIE_POS))
+	var ecyl := CylinderShape3D.new()
+	ecyl.radius = 5.2
+	ecyl.height = 27.0
+	var ecs := CollisionShape3D.new()
+	ecs.shape = ecyl
+	ecs.position = EYRIE_POS + Vector3.UP * 12.5
+	body.add_child(ecs)
+
+
+## Wieża-gniazdo dowódcy (lokalnie) — za donżonem, przy tylnym murze.
+const EYRIE_POS := Vector3(0.0, 0.0, -32.0)
+
+
+## Miejsce dowódcy na podeście wieży-gniazda (globalnie).
+func eyrie_top() -> Vector3:
+	return to_global(EYRIE_POS + Vector3.UP * 26.6)
+
+
+## Miejsce jeźdźca gryfa `i` (0, 1) na platformie wieży z balistą, obok balisty (globalnie).
+func rider_perch(i: int) -> Vector3:
+	var k: int = [2, 6][i]
+	var v := _vertex(k)
+	return to_global(v - v.normalized() * 2.6 + Vector3.UP * TOWER_H)
 
 
 func _keep_pos() -> Vector3:

@@ -40,6 +40,7 @@ PALETTE = {
     "People_Steel": (0.55, 0.57, 0.62),
     "People_Horse": (0.3, 0.16, 0.07),
     "People_Mane": (0.06, 0.04, 0.03),
+    "People_Navy": (0.06, 0.13, 0.42),
 }
 NAMES = list(PALETTE)
 ROLES = {  # tunika, spodnie, nakrycie głowy
@@ -48,6 +49,7 @@ ROLES = {  # tunika, spodnie, nakrycie głowy
     "Hunter": ("People_Green", "People_Dark", "People_Green"),
     "Knight": ("People_Red", "People_Steel", "People_Steel"),
     "Crossbow": ("People_Red", "People_Dark", "People_Steel"),
+    "Commander": ("People_Navy", "People_Steel", "People_Gold"),
 }
 
 
@@ -88,6 +90,17 @@ def person(role: str, mats) -> list[bpy.types.Object]:
         b.tube([V(0, 0.02, 1.8), V(0, 0.12, 1.98), V(0, 0.32, 1.95)], [0.05, 0.06, 0.02], 5, "People_Red",
                tip=True)
         b.tube([V(0, 0, 0.9), V(0, 0, 0.96)], [0.215, 0.21], 7, "People_Gold", tip=False, flatten=0.72)
+    elif role == "Commander":  # hełm z koroną, długi czerwony płaszcz, złoty pas
+        b.tube([V(0, 0, 1.5), V(0, 0, 1.62), V(0, 0, 1.8)], [0.15, 0.155, 0.13], 8, "People_Steel", tip=False)
+        b.tube([V(0, -0.02, 1.64), V(0, -0.02, 1.67)], [0.158, 0.158], 8, "People_Dark", tip=False)
+        b.tube([V(0, 0, 1.78), V(0, 0, 1.86)], [0.145, 0.15], 8, hat, tip=False)  # obręcz korony
+        for k in range(6):
+            a = 2 * math.pi * k / 6
+            b.blade(V(math.cos(a) * 0.14, math.sin(a) * 0.14, 1.85), (0, 0, 1), 0.12, (-math.sin(a), math.cos(a), 0),
+                    0.04, (math.cos(a), math.sin(a), 0), 0.01, hat)
+        b.tube([V(0, 0.12, 1.45), V(0, 0.24, 1.0), V(0, 0.34, 0.5)], [0.24, 0.3, 0.36], 8, "People_Red", tip=False,
+               flatten=0.3)  # płaszcz
+        b.tube([V(0, 0, 0.9), V(0, 0, 0.96)], [0.215, 0.21], 7, hat, tip=False, flatten=0.72)
     elif role == "Crossbow":  # kapalin (hełm z rondem) i bełty u pasa
         blob(b, (0, 0.0, 1.71), (0.14, 0.14, 0.1), hat, seg=8, rings=3)
         b.tube([V(0, 0, 1.68), V(0, 0, 1.7)], [0.25, 0.24], 9, hat, tip=False)
@@ -110,13 +123,14 @@ def person(role: str, mats) -> list[bpy.types.Object]:
         b.tube([sh, sh + V(0.03 * sx, 0, -0.3), sh + V(0.02 * sx, -0.04, -0.58)], [0.06, 0.05, 0.045], 6, tunic,
                tip=False)
         blob(b, sh + V(0.02 * sx, -0.05, -0.64), (0.05, 0.05, 0.06), "People_Skin", seg=5, rings=3)
-        if role in ("Knight", "Crossbow"):  # naramiennik
+        if role in ("Knight", "Crossbow", "Commander"):  # naramiennik
             blob(b, sh + V(0.02 * sx, 0, 0.02), (0.11, 0.11, 0.08), "People_Steel", seg=6, rings=3)
-        if role == "Knight" and side == "L":  # tarcza: czerwona z złotym krzyżem, na zewnątrz ręki
+        if role in ("Knight", "Commander") and side == "L":  # tarcza ze złotym krzyżem, na zewnątrz ręki
             c = sh + V(0.1, -0.02, -0.4)
             ring = [c + V(0, -0.24, 0.26), c + V(0, 0.24, 0.26), c + V(0, 0.22, -0.1), c + V(0, 0, -0.36),
                     c + V(0, -0.22, -0.1)]
-            b.loft([[p + V(0.03, 0, 0) for p in ring], [p - V(0.0, 0, 0) for p in ring]], "People_Red")
+            b.loft([[p + V(0.03, 0, 0) for p in ring], [p - V(0.0, 0, 0) for p in ring]],
+                   "People_Navy" if role == "Commander" else "People_Red")
             b.tube([c + V(0.035, 0, 0.22), c + V(0.035, 0, -0.3)], [0.03, 0.03], 4, "People_Gold", tip=False,
                    flatten=0.3)
             b.tube([c + V(0.035, -0.2, 0.08), c + V(0.035, 0.2, 0.08)], [0.03, 0.03], 4, "People_Gold", tip=False,
@@ -140,6 +154,13 @@ def person(role: str, mats) -> list[bpy.types.Object]:
                             b.add_vert(hand + V(0, 0, 1.35))], "People_Red")  # proporczyk
                 b.add_face([b.add_vert(hand + V(0, 0, 1.35)), b.add_vert(hand + V(0, 0.4, 1.47)),
                             b.add_vert(hand + V(0, 0, 1.55))], "People_Red")
+            elif role == "Commander":  # kopia 3,4 m z proporcem, granatowo-złota
+                b.tube([hand + V(0, 0, -0.9), hand + V(0, 0, 2.5)], [0.045, 0.03], 6, "People_Navy", tip=False)
+                b.tube([hand + V(0, 0, -0.1), hand + V(0, 0, 0.25)], [0.09, 0.05], 6, "People_Gold", tip=False)
+                b.blade(hand + V(0, 0, 2.5), (0, 0, 1), 0.45, (1, 0, 0), 0.07, (0, 1, 0), 0.025, "People_Steel")
+                for f in ([hand + V(0, 0, 2.4), hand + V(0, 0.6, 2.25), hand + V(0, 0, 2.1)],):
+                    b.add_face([b.add_vert(p) for p in f], "People_Gold")
+                    b.add_face([b.add_vert(p) for p in reversed(f)], "People_Gold")
             elif role == "Crossbow":  # kusza: łoże wzdłuż ręki, łęczysko przy końcu (w celowaniu — przodem)
                 b.tube([hand + V(0, 0, 0.15), hand + V(0, 0, -0.55)], [0.035, 0.03], 5, "People_Wood", tip=False)
                 b.tube([hand + V(-0.33, 0.06, -0.42), hand + V(0, 0, -0.52), hand + V(0.33, 0.06, -0.42)],
@@ -153,6 +174,24 @@ def person(role: str, mats) -> list[bpy.types.Object]:
                 b.tube([pts[0], pts[-1]], [0.005, 0.005], 3, "People_Cream", tip=False)
         objs.append(part(f"{role}_Arm{side}", b, mats, sh))
     return objs
+
+
+def gryphon_tack(mats) -> list[bpy.types.Object]:
+    """Rząd gryfa (Tack_Body) w układzie modelu gryfa z animals.glb: siodło na grzbiecie (z ~ 1,85),
+    czerwona kapa ze złotym brzegiem, stalowy napierśnik i naczółek."""
+    b = MeshBuilder(NAMES)
+
+    def ring(z, rx, ry, cy, n=12):
+        return [V(rx * math.cos(2 * math.pi * k / n), cy + ry * math.sin(2 * math.pi * k / n), z) for k in range(n)]
+    b.loft([ring(1.83, 0.18, 0.45, 0.05), ring(1.7, 0.4, 0.62, 0.05), ring(1.3, 0.47, 0.7, 0.05)], "People_Red",
+           cap_start=False, cap_end=False)
+    b.loft([ring(1.31, 0.475, 0.705, 0.05), ring(1.2, 0.48, 0.71, 0.05)], "People_Gold", cap_start=False,
+           cap_end=False)
+    blob(b, (0, 0.0, 1.9), (0.26, 0.34, 0.1), "People_Brown", seg=7, rings=3)  # siodło
+    b.tube([V(0, -0.82, 1.55), V(0, -0.95, 1.2)], [0.42, 0.34], 8, "People_Steel", tip=False, flatten=0.8)  # napierśnik
+    for x in (-0.3, 0.3):  # strzemiona
+        b.tube([V(x, 0.0, 1.85), V(x * 1.4, 0.0, 1.25)], [0.012, 0.012], 3, "People_Dark", tip=False)
+    return [part("Tack_Body", b, mats, V(0, 0, 0))]
 
 
 def warhorse(mats) -> list[bpy.types.Object]:
@@ -202,7 +241,7 @@ if __name__ == "__main__":
             total += tri_count(o)
         print(f"{role}: {total} trójkątów")
         all_objs += objs
-    objs = warhorse(MATS)
+    objs = warhorse(MATS) + gryphon_tack(MATS)
     for o in objs:
         flat_shade(o)
         face_color_variation(o, 0.06, seed=91 + len(o.name))

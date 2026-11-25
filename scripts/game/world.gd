@@ -27,6 +27,12 @@ var _villages: Villages
 var _castle: Castle
 var _gryphons: Gryphons
 var _knights: Knights
+var _riders: GryphonRiders
+## Dowódca jeźdźców gryfów pokonany (zapis gry) — nie wraca.
+var boss_defeated: bool = false
+var _boss_seen: bool = false
+var _armor_msg: int = -100000
+var _boss_bar: Control
 var _knight_msg: int = -100000
 var _gryphon_msg: int = -100000
 var _castle_seen: bool = false
@@ -99,6 +105,36 @@ func _ready() -> void:
 		var left := _castle.working_ballistas()
 		_toast("Balista zniszczona! Zostało: %d" % left if left > 0 else "Wszystkie balisty zniszczone — skarbiec czeka!"))
 	_castle.guard_eaten.connect(func(_g: Prey) -> void: add_renown(5.0))
+	_riders = GryphonRiders.new()
+	_riders.name = "GryphonRiders"
+	_riders.dragon = _player
+	_riders.villages = _villages
+	_riders.castle = _castle
+	add_child(_riders)
+	_riders.repopulate(false, true)
+	_riders.attacked.connect(func(by: Prey, _d: float) -> void:
+		_flash = 0.8
+		if by is GryphonCommander:
+			return
+		if Time.get_ticks_msec() - _gryphon_msg > 4000:
+			_gryphon_msg = Time.get_ticks_msec()
+			_toast("Jeździec gryfa uderza kopią!"))
+	_riders.rider_killed.connect(func(r: GryphonRider) -> void:
+		add_renown(10.0)
+		_loot_n += 1
+		var at := r.global_position
+		get_tree().create_timer(3.0).timeout.connect(func() -> void:
+			var p := r.global_position if is_instance_valid(r) else at
+			_finds.add_special("loot_%d" % _loot_n, "coins", Vector3(p.x, Terrain.height(p.x, p.z), p.z) + Vector3(2, 0, 2),
+				randi_range(60, 110), "Sakiewka jeźdźca"))
+		_toast("Jeździec gryfa strącony!"))
+	_riders.boss_killed.connect(_on_boss_killed)
+	_riders.boss_phase_two.connect(func(_b: GryphonCommander) -> void:
+		_banner("DOWÓDCA WZYWA POSIŁKI", "Z wież zamku wylatują jeźdźcy gryfów!"))
+	_riders.armor_blocked.connect(func(_b: GryphonCommander) -> void:
+		if Time.get_ticks_msec() - _armor_msg > 5000:
+			_armor_msg = Time.get_ticks_msec()
+			_toast("Pancerz dowódcy odbija ciosy — przebije go tylko pradawny smok!"))
 	_knights = Knights.new()
 	_knights.name = "Knights"
 	_knights.dragon = _player
@@ -307,6 +343,8 @@ func _load_game(data: Dictionary) -> void:
 	_villages.set_hunters(_hunters_for(_renown_level))
 	for h in _hunts_for(_renown_level):
 		_knights.send_hunt()
+	boss_defeated = bool(data.get("boss_defeated", false))
+	_riders.repopulate(_renown_level >= RIDER_HUNT_LEVEL, not boss_defeated)
 	_player.stats.restore(data.get("stats", {}))
 	_lair.show_shells()
 	var p: Array = data.get("pos", [])
@@ -326,7 +364,7 @@ func save_game() -> void:
 	SaveGame.write({"day": day, "hour": _day_night.hour, "treasure": treasure,
 		"finds_taken": _finds.taken_today, "caches_taken": _finds.caches_taken,
 		"landmarks_found": _landmarks.found, "renown": renown,
-		"village_angry_until": village_angry_until, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
+		"village_angry_until": village_angry_until, "boss_defeated": boss_defeated, "stats": _player.stats.to_save(), "pos": [pos.x, pos.y, pos.z],
 		"yaw": _player.rotation.y, "version": GameVersion.current()})
 
 
@@ -474,6 +512,10 @@ func _hunters_for(level: int) -> int:
 	return [0, 1, 2, 3][level]
 
 
+## Od tego poziomu rozgłosu („Legenda”) jeźdźcy gryfów polują na smoka w całym świecie.
+const RIDER_HUNT_LEVEL := 3
+
+
 ## Oddziały pościgowe rycerzy z zamku: od „Postrachu” jeden, przy „Legendzie” dwa.
 func _hunts_for(level: int) -> int:
 	return maxi(0, level - 1)
@@ -485,6 +527,10 @@ func add_renown(amount: float) -> void:
 	if lvl > _renown_level:
 		for h in range(_hunts_for(_renown_level), _hunts_for(lvl)):
 			_knights.send_hunt()
+		if lvl >= RIDER_HUNT_LEVEL and _renown_level < RIDER_HUNT_LEVEL:
+			_riders.send_hunters()
+			get_tree().create_timer(8.0).timeout.connect(func() -> void:
+				_toast("Z zamku wylatują jeźdźcy gryfów — polują na ciebie!"))
 		_banner("ROZGŁOS: " + RENOWN_NAMES[lvl].to_upper(),
 			"Wioski wysyłają myśliwych z łukami!" if lvl == 1 else
 			("Wioski zaczną składać ci daninę na kamieniach ofiarnych" if lvl == TRIBUTE_LEVEL
@@ -612,7 +658,9 @@ func _wake() -> void:
 		_place_tributes()
 		renown = maxf(0.0, renown - 5.0)  # przez noc plotki cichną
 		_renown_level = renown_level()
-		_knights.repopulate(_hunts_for(_renown_level))  # patrole w komplecie, pościg przy dużym rozgłosie
+		_knights.repopulate(_hunts_for(_renown_level))
+		_riders.repopulate(_renown_level >= RIDER_HUNT_LEVEL, not boss_defeated)
+		_boss_seen = false  # patrole w komplecie, pościg przy dużym rozgłosie
 		_villages.hunters_per_village = _hunters_for(_renown_level)
 		_villages.repopulate()  # zjedzeni mieszkańcy i owce wracają
 		_villages.rebuild()  # spalone chaty odbudowane
@@ -727,8 +775,65 @@ func _process(delta: float) -> void:
 	renown = maxf(0.0, renown - delta * 0.01)  # ok. 0,6 pkt na minutę
 	_renown_level = mini(_renown_level, renown_level())
 	_update_gold()
+	_update_boss_bar()
 	if use_save and not _intro:
 		_autosave_t += delta
 		if _autosave_t >= autosave_interval:
 			_autosave_t = 0.0
 			save_game()
+
+
+# --- Dowódca jeźdźców gryfów (boss) ---------------------------------------------------
+
+func _on_boss_killed(b: GryphonCommander) -> void:
+	boss_defeated = true
+	add_renown(25.0)
+	_banner("DOWÓDCA JEŹDŹCÓW POKONANY", "Królestwo drży przed tobą · skarb dowódcy spadł razem z nim")
+	var at := b.global_position
+	get_tree().create_timer(4.0).timeout.connect(func() -> void:
+		var p := b.global_position if is_instance_valid(b) else at
+		_finds.add_special("boss_loot", "chest", Vector3(p.x, Terrain.height(p.x, p.z) + 0.7, p.z) + Vector3(3, 0, 0),
+			900, "Skarb dowódcy jeźdźców")
+		save_game())
+
+
+## Pasek zdrowia dowódcy u góry ekranu, gdy walczy (blisko smoka).
+func _update_boss_bar() -> void:
+	var b := _riders.boss
+	var show := _riders.boss_alive() and b.mode != Gryphon.Mode.PERCH \
+		and b.global_position.distance_to(_player.global_position) < 500.0
+	if show and not _boss_seen:
+		_boss_seen = true
+		_banner("DOWÓDCA JEŹDŹCÓW GRYFÓW", "Elita królestwa · pancerz przebije tylko pradawny smok")
+	if not _boss_bar:
+		if not show:
+			return
+		_boss_bar = VBoxContainer.new()
+		_boss_bar.name = "BossBar"
+		_boss_bar.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		_boss_bar.position = Vector2(-300, 70)
+		_boss_bar.custom_minimum_size = Vector2(600, 0)
+		var l := Label.new()
+		l.text = "Dowódca jeźdźców gryfów"
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.add_theme_font_size_override("font_size", 28)
+		l.add_theme_color_override("font_outline_color", Color.BLACK)
+		l.add_theme_constant_override("outline_size", 6)
+		_boss_bar.add_child(l)
+		var bar := ProgressBar.new()
+		bar.name = "Bar"
+		bar.show_percentage = false
+		bar.custom_minimum_size = Vector2(600, 22)
+		var fill := StyleBoxFlat.new()
+		fill.bg_color = Color(0.75, 0.1, 0.1)
+		bar.add_theme_stylebox_override("fill", fill)
+		var bg := StyleBoxFlat.new()
+		bg.bg_color = Color(0, 0, 0, 0.55)
+		bar.add_theme_stylebox_override("background", bg)
+		_boss_bar.add_child(bar)
+		_hud.add_child(_boss_bar)
+	_boss_bar.visible = show
+	if show:
+		var bar := _boss_bar.get_node("Bar") as ProgressBar
+		bar.max_value = b.max_health
+		bar.value = b.health
