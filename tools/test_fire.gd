@@ -131,6 +131,9 @@ func _init() -> void:
 	target_sheep.global_position.y = Terrain.height(target_sheep.global_position.x, target_sheep.global_position.z)
 	target_sheep.home_radius = 0.0
 	target_sheep.set_physics_process(false)
+	for n in root.get_tree().get_nodes_in_group("prey"):  # dzikie zwierzęta z dala od linii celu
+		if n != target_sheep and (n as Node3D).global_position.distance_to(player.global_position) < 60.0:
+			(n as Node3D).global_position += Vector3(0, 0, 200)
 	await _seconds(0.5)
 	_check(player.aim_target == target_sheep, "pomoc w celowaniu złapała owcę (cel: %s)" % (player.aim_target.get("display_name") if player.aim_target else "brak"))
 	await _shot("aim_lock.png")

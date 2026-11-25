@@ -253,7 +253,8 @@ static func _raw_height(x: float, z: float) -> float:
 	h += smoothstep(HALF - 230.0, HALF - 30.0, edge) * (90.0 + 80.0 * ridge)
 	# pogórza: strefy grzbietów (do ~75 m) z dala od łąki — potem tarasowane
 	var hill_zone := smoothstep(0.0, 0.35, _terrace_n.get_noise_2d(x * 0.7 + 400.0, z * 0.7 - 250.0)) \
-		* smoothstep(520.0, 850.0, r) * (1.0 - north)
+		* smoothstep(520.0, 850.0, r) * (1.0 - north) \
+		* smoothstep(CASTLE[2] + 160.0, CASTLE[2] + 380.0, Vector2(x - CASTLE[0], z - CASTLE[1]).length())  # zamek na łagodnym wzgórzu
 	if hill_zone > 0.0:
 		var hn := clampf(_hills.get_noise_2d(x * 2.2 + 77.0, z * 2.2) * 0.8 + 0.5, 0.0, 1.0)
 		h += hill_zone * (pow(hn, 1.6) * 60.0 + 4.0)
