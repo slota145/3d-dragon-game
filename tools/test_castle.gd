@@ -39,6 +39,9 @@ func _init() -> void:
 		b.set_physics_process(false)
 	for gd in castle.guards():
 		gd.set_physics_process(false)
+	var riders: GryphonRiders = world.get_node("GryphonRiders")
+	for r in riders.riders() + [riders.boss]:  # szarże jeźdźców (odrzut) — osobny test (test_riders)
+		r.set_physics_process(false)
 	await _seconds(0.6)
 	await _shot("castle_gate.png")
 	_p.stats.set_size_instant(3.0)
@@ -63,7 +66,7 @@ func _init() -> void:
 	await _seconds(10.0)
 	Input.action_release("dash")
 	Input.action_release("move_forward")
-	_check(castle.inside(_p.global_position), "mur zatrzymał smoka")
+	_check(castle.inside(_p.global_position), "mur zatrzymał smoka (%.0f m od środka)" % Vector2(_p.global_position.x - c.x, _p.global_position.z - c.z).length())
 	for gd in castle.guards():
 		gd.set_physics_process(true)
 
