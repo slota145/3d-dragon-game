@@ -40,6 +40,7 @@ func _init() -> void:
 	player.rotation.y = lair.exit_yaw()
 	player.velocity = Vector3.ZERO
 	player.reset_physics_interpolation()
+	(world.get_node("FollowCamera") as FollowCamera).snap_behind()
 	Input.action_press("move_forward")
 	Input.action_press("dash")
 	var out_d := 0.0
@@ -58,16 +59,20 @@ func _init() -> void:
 	player.rotation.y = PI * 0.5  # w stronę +X
 	player.velocity = Vector3.ZERO
 	player.reset_physics_interpolation()
+	var rcam: FollowCamera = world.get_node("FollowCamera")
+	rcam.snap_behind()  # sterowanie jest względem kamery
 	Input.action_press("move_forward")
 	Input.action_press("dash")
 	for i in 240:
 		await _seconds(0.25)
-		player.rotation.y = PI * 0.5
+		rcam.set("_yaw", PI * 0.5 + PI)  # kamera za smokiem, wzdłuż ścieżki
 		if player.global_position.x > Lair.POSITION.x + Lair.LEDGE_HALF + Lair.RAMP_LEN:
 			break
 	Input.action_release("move_forward")
 	Input.action_release("dash")
-	_check(player.global_position.y < Lair.POSITION.y - 12.0 and player.stats.health > 90.0,
+	_check(player.global_position.y < Lair.POSITION.y - 12.0 and player.stats.health > 90.0
+		and player.global_position.x - Lair.POSITION.x > Lair.LEDGE_HALF + Lair.RAMP_LEN * 0.8
+		and absf(player.global_position.z - Lair.POSITION.z - rz) < 12.0,
 		"zszedł ścieżką na łąkę (x %.0f, wys. %.1f, zdrowie %.0f)" % [player.global_position.x - Lair.POSITION.x,
 		player.global_position.y, player.stats.health])
 
