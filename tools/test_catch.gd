@@ -73,6 +73,10 @@ func _init() -> void:
 			man = r
 			break
 	man.home_radius = 0.0
+	man.set_physics_process(false)
+	for n in root.get_tree().get_nodes_in_group("prey"):  # inni (rycerze z drogi, kury) z dala od celu
+		if n != man and (n as Node3D).global_position.distance_to(man.global_position) < 40.0:
+			(n as Node3D).global_position += Vector3(0, 0, 150)
 	await _take_off()
 	_p.global_position = man.center() + Vector3.UP * (0.15 * _p.stats.size + 0.8)
 	_p.velocity = Vector3.ZERO
