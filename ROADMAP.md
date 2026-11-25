@@ -177,6 +177,22 @@ Legenda: ✅ zrobione · 🔄 w trakcie · ⬜ do zrobienia · ❓ decyzja do po
   skarb (900 zł), +25 rozgłosu, nie wraca (zapis `boss_defeated`); przy „Legendzie” para łowców na gryfach
   ściga smoka po świecie
 
+## Faza 8b — Rzeźba świata i początek gry 🔄
+
+Decyzje właściciela (2026-11-25): duże zmiany terenu; legowisko wtopione w górę; samouczek w dolinie
+rodzinnej za górami na północy; matkę w ucieczce zabijają jeźdźcy gryfów i dowódca (boss = zemsta).
+
+- ✅ 0.20.0: rzeźba terenu (`terrain.gd`, `landforms.gd`, `gen_cliffs.py`): pogórza z tarasami, 9 płaskowyżów
+  i ostańców (jeden schodkowy), wyżyna zachodnia z krętym kanionem rzeki (półki skalne, klify nad
+  jeziorem), piaskowcowe klify (warstwy) poza górami, 4 wodospady (wstęga wody po terenie, łuk z krawędzi,
+  mgiełka; wielki 300 m u źródła rzeki), Dolina Turni (18 kamiennych słupów z kolizją), drogi przeliczone;
+  narzędzia: `tools/map_preview.gd` (mapa z góry), `tools/view_world.gd` (widoki z wolnej kamery)
+- ⬜ 0.21: legowisko wtopione w górę: szczelina w zboczu, łuk skalny i nawis, półka startowa nad doliną
+- ⬜ 0.22: samouczek w dolinie rodzinnej za górami: matka (dorosła smoczyca), nauka (ruch, polowanie na
+  króliki, złoto, sen na skarbie i pierwsze ulepszenie), napad ludzi, matka porywa pisklę w szpony,
+  przelot nad światem (przerywnik), pościg jeźdźców gryfów i dowódcy — matka ginie przy nowym legowisku;
+  „Pomiń samouczek”; grób matki jako miejsce pamięci
+
 ## Faza 9 — Nowe pokolenie ⬜
 
 - ⬜ Składanie jaja, warianty smoka (ognisty / mroźny / burzowy / cieniowy), dziedzictwo

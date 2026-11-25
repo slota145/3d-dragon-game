@@ -19,7 +19,8 @@ const WATER_LEVEL := -1.2
 const LAKE_CENTER := Vector2(430.0, 270.0)
 const LAKE_RADIUS := 170.0
 ## Jeziora: [środek x, środek z, promień]. Pierwsze to jezioro przy łące (LAKE_CENTER).
-const LAKES := [[430.0, 270.0, 170.0], [-760.0, 1180.0, 250.0], [1350.0, -260.0, 210.0], [140.0, -1620.0, 160.0]]
+const LAKES := [[430.0, 270.0, 170.0], [-760.0, 1180.0, 250.0], [1350.0, -260.0, 210.0], [140.0, -1620.0, 160.0],
+	[1725.0, 470.0, 55.0], [252.0, -595.0, 60.0]]
 ## Wioski: [środek x, środek z, promień placu]. Plac jest wyrównany, wokół pola uprawne.
 const VILLAGES := [[160.0, 640.0, 70.0], [-640.0, 480.0, 65.0], [1150.0, 860.0, 70.0], [880.0, 120.0, 60.0],
 	[-260.0, 1450.0, 70.0], [-1300.0, -120.0, 60.0]]
@@ -36,10 +37,23 @@ const FIELDS := 80.0
 const RIVERS := [
 	[Vector2(250, -620), Vector2(290, -380), Vector2(310, -170), Vector2(345, -10), Vector2(395, 140), Vector2(430, 270)],
 	[Vector2(900, -1150), Vector2(1030, -860), Vector2(1180, -560), Vector2(1350, -260)],
-	[Vector2(-300, 420), Vector2(-480, 700), Vector2(-620, 950), Vector2(-760, 1180)],
+	[Vector2(-300, 420), Vector2(-390, 520), Vector2(-450, 640), Vector2(-410, 745), Vector2(-500, 830),
+		Vector2(-605, 875), Vector2(-585, 985), Vector2(-655, 1080), Vector2(-760, 1180)],
 ]
 const RIVER := [Vector2(250, -620), Vector2(290, -380), Vector2(310, -170), Vector2(345, -10),
 	Vector2(395, 140), Vector2(430, 270)]
+## Płaskowyże: [środek x, środek z, promień, wysokość szczytu (m n.p.m.), liczba pięter].
+## Jedno piętro = urwisty stołowy szczyt; więcej = schodki (każde piętro węższe).
+const MESAS := [[-1010.0, 170.0, 175.0, 66.0, 3], [1520.0, 470.0, 150.0, 84.0, 1], [-130.0, 1060.0, 125.0, 58.0, 1],
+	[760.0, 820.0, 70.0, 46.0, 2],
+	# ostańce na południowym wschodzie (kraina stołowych gór)
+	[1260.0, 1300.0, 60.0, 72.0, 1], [1520.0, 1080.0, 48.0, 90.0, 1], [1050.0, 1560.0, 55.0, 60.0, 2],
+	[1640.0, 1520.0, 80.0, 64.0, 2], [1380.0, 1700.0, 40.0, 82.0, 1]]
+## Wyżyna zachodnia (elipsa: środek, półosie) — przecina ją kanion rzeki (RIVERS[2]), nad jeziorem klify.
+const HIGHLAND := [-520.0, 870.0, 230.0, 310.0]
+## Wysokość wyżyny i półki w kanionie (m).
+const HIGHLAND_TOP := 48.0
+const CANYON_LEDGE := 20.0
 ## Gęstość siatki dla LOD 0/1/2/3 (kratki na bok chunka).
 const LOD_RES := [32, 16, 8, 4]
 ## Teren dalej niż tyle metrów od kamery nie jest rysowany (mgła i tak go zasłania).
@@ -54,6 +68,7 @@ static var _hills: FastNoiseLite
 static var _ridge: FastNoiseLite
 static var _detail: FastNoiseLite
 static var _forest: FastNoiseLite
+static var _terrace_n: FastNoiseLite
 static var _village_h: Dictionary = {}
 
 var _chunks: Dictionary = {}  # Vector2i -> {"mesh": MeshInstance3D, "lod": int, "body": StaticBody3D}
@@ -81,6 +96,9 @@ static func _init_noise() -> void:
 	_forest = FastNoiseLite.new()
 	_forest.seed = 99
 	_forest.frequency = 1.0 / 230.0
+	_terrace_n = FastNoiseLite.new()
+	_terrace_n.seed = 2718
+	_terrace_n.frequency = 1.0 / 520.0
 
 
 static func _smooth(a: float, b: float, x: float) -> float:
@@ -233,12 +251,29 @@ static func _raw_height(x: float, z: float) -> float:
 	# brzeg świata: wzgórza i turnie zamykające mapę
 	var edge := maxf(absf(x), absf(z))
 	h += smoothstep(HALF - 230.0, HALF - 30.0, edge) * (90.0 + 80.0 * ridge)
+	# pogórza: strefy grzbietów (do ~75 m) z dala od łąki — potem tarasowane
+	var hill_zone := smoothstep(0.0, 0.35, _terrace_n.get_noise_2d(x * 0.7 + 400.0, z * 0.7 - 250.0)) \
+		* smoothstep(520.0, 850.0, r) * (1.0 - north)
+	if hill_zone > 0.0:
+		var hn := clampf(_hills.get_noise_2d(x * 2.2 + 77.0, z * 2.2) * 0.8 + 0.5, 0.0, 1.0)
+		h += hill_zone * (pow(hn, 1.6) * 60.0 + 4.0)
+	# tarasy: część wzgórz (poza łąką i szczytami) schodzi stopniami z urwistymi progami
+	var tmask := smoothstep(-0.05, 0.25, _terrace_n.get_noise_2d(x, z)) * smoothstep(360.0, 620.0, r) \
+		* (1.0 - smoothstep(80.0, 130.0, h))
+	tmask = maxf(tmask, hill_zone * (1.0 - smoothstep(80.0, 130.0, h)))  # pogórza zawsze tarasowane
+	if tmask > 0.0:
+		h = lerpf(h, terrace(h, 12.0), tmask)
+	for m: Array in MESAS:
+		h = _mesa(h, x, z, m)
+	h = _highland(h, x, z)
 	# jeziora (postrzępiony brzeg)
 	var shore := _detail.get_noise_2d(x * 0.5, z * 0.5) * 30.0
+	# przy wyżynie brzeg jeziora jest urwisty (klify nad wodą), gdzie indziej łagodny
+	var steep := 1.0 - smoothstep(1.0, 1.3, Vector2((x - HIGHLAND[0]) / HIGHLAND[2], (z - HIGHLAND[1]) / HIGHLAND[3]).length())
 	for lk: Array in LAKES:
 		var ld := Vector2(x, z).distance_to(Vector2(lk[0], lk[1])) + shore
 		var lr: float = lk[2]
-		h = lerpf(h, -6.0, 1.0 - smoothstep(lr * 0.55, lr, ld))
+		h = lerpf(h, -6.0, 1.0 - smoothstep(lr * lerpf(0.55, 0.88, steep), lr, ld))
 	# rzeka: koryto wzdłuż łamanej (w górach głęboki wąwóz)
 	var rd := river_distance(x, z)
 	var width := 9.0 + 25.0 * smoothstep(-150.0, -460.0, z)
@@ -248,6 +283,61 @@ static func _raw_height(x: float, z: float) -> float:
 	var pd := Vector2(x - Lair.POSITION.x, z - Lair.POSITION.z).length()
 	h = lerpf(h, Lair.POSITION.y, 1.0 - smoothstep(Lair.RADIUS - 2.0, Lair.RADIUS + 28.0, pd))
 	return h
+
+
+## Schodki: wysokość zaokrąglona do pięter `step` z krótkim, stromym progiem między nimi.
+static func terrace(h: float, step: float) -> float:
+	var k := h / step
+	var f := k - floorf(k)
+	return (floorf(k) + smoothstep(0.7, 0.92, f)) * step
+
+
+## Płaskowyż: urwiste ściany (postrzępiony obrys), piarg u podnóża, płaski szczyt.
+static func _mesa(h: float, x: float, z: float, m: Array) -> float:
+	var R: float = m[2]
+	var d := Vector2(x - m[0], z - m[1]).length()
+	if d > R * 1.25 + 80.0:
+		return h
+	d += _detail.get_noise_2d(x * 0.5, z * 0.5) * R * 0.22
+	var top: float = m[3]
+	var tiers: int = m[4]
+	var out := maxf(h, lerpf(h, top * 0.3, 1.0 - smoothstep(R * 0.9, R + 60.0, d)))  # piarg
+	for t in tiers:
+		var rt := R * (1.0 - 0.3 * t)
+		var ht := top * float(t + 1) / tiers + _detail.get_noise_2d(x * 2.0, z * 2.0) * 1.0
+		out = maxf(out, lerpf(out, ht, 1.0 - smoothstep(rt - 9.0, rt + 3.0, d)))
+	return out
+
+
+## 0..1 — jak bardzo punkt leży na wyżynie zachodniej (obrys postrzępiony).
+static func highland_mask(x: float, z: float) -> float:
+	var e := Vector2((x - HIGHLAND[0]) / HIGHLAND[2], (z - HIGHLAND[1]) / HIGHLAND[3]).length()
+	if e > 1.4:
+		return 0.0
+	e += _detail.get_noise_2d(x * 0.4, z * 0.4) * 0.12
+	return 1.0 - smoothstep(0.96, 1.02, e)
+
+
+## Wyżyna: dwa piętra klifów na obrzeżu, szczyt na HIGHLAND_TOP; kanion rzeki z półką skalną.
+static func _highland(h: float, x: float, z: float) -> float:
+	var e := Vector2((x - HIGHLAND[0]) / HIGHLAND[2], (z - HIGHLAND[1]) / HIGHLAND[3]).length()
+	if e > 1.4:
+		return h
+	e += _detail.get_noise_2d(x * 0.4, z * 0.4) * 0.12
+	var low := 1.0 - smoothstep(1.06, 1.1, e)  # dolny stopień
+	var high := 1.0 - smoothstep(0.96, 1.0, e)
+	var top := HIGHLAND_TOP + _detail.get_noise_2d(x, z) * 2.0
+	var out := maxf(h, lerpf(h, CANYON_LEDGE + 2.0, low))
+	out = maxf(out, lerpf(out, top, high))
+	if high <= 0.0:
+		return out
+	# kanion: dno z rzeką, po bokach półka, wyżej ściany do szczytu wyżyny
+	var rd := river_distance(x, z) + _detail.get_noise_2d(x * 1.3, z * 1.3) * 5.0
+	var ledge := 1.0 - smoothstep(44.0, 50.0, rd)
+	var floor_k := 1.0 - smoothstep(22.0, 28.0, rd)
+	var carved := lerpf(out, CANYON_LEDGE + _detail.get_noise_2d(x * 2.0, z * 2.0) * 1.0, ledge)
+	carved = lerpf(carved, 0.6, floor_k)
+	return lerpf(out, minf(out, carved), high)
 
 
 static func river_distance(x: float, z: float) -> float:
@@ -501,11 +591,15 @@ static func _face_color(x: float, z: float, h: float, ny: float) -> Color:
 	if h < WATER_LEVEL + 0.8:
 		col = Color(0.88, 0.78, 0.52) if h > WATER_LEVEL - 1.0 else Color(0.5, 0.56, 0.4)  # piasek / dno
 	elif ny < 0.72:
-		col = Color(0.52, 0.49, 0.48)  # skała (ciepła szarość)
+		# skała: w górach chłodna szarość, na klifach płaskowyżów, tarasów i kanionu — piaskowiec
+		var mountain := smoothstep(-250.0, -420.0, z) * (1.0 - smoothstep(-1300.0, -1450.0, z)) \
+			+ smoothstep(110.0, 140.0, h)
+		var band := 0.04 * sin(h * 0.9)  # warstwy skalne
+		col = Color(0.72 + band, 0.55 + band, 0.4 + band).lerp(Color(0.52, 0.49, 0.48), clampf(mountain, 0.0, 1.0))
 	elif h > 150.0 and ny > 0.8:
 		col = Color(0.97, 0.98, 1.0)  # śnieg
-	elif h > 60.0:
-		col = Color(0.36, 0.54, 0.24).lerp(Color(0.55, 0.52, 0.5), clampf((h - 60.0) / 80.0, 0.0, 1.0))
+	elif h > 90.0:
+		col = Color(0.36, 0.54, 0.24).lerp(Color(0.55, 0.52, 0.5), clampf((h - 90.0) / 70.0, 0.0, 1.0))
 	elif road_distance(x, z) < ROAD_HALF_WIDTH * 0.7:
 		col = Color(0.55, 0.43, 0.28)  # podkład pod wstęgą drogi (Roads)
 	elif farmland(x, z) > 0.05 and farmland(x, z) < 0.95:

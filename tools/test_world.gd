@@ -54,6 +54,26 @@ func _init() -> void:
 		_check(Terrain.is_water(lk[0], lk[1]), "jezioro w (%.0f, %.0f)" % [lk[0], lk[1]])
 	_check(Terrain.height(0, -1700) < Terrain.height(0, -700), "za górami wyżyna (%.0f m)" % Terrain.height(0, -1700))
 
+	print("2b1) Rzeźba terenu: płaskowyże, kanion, wodospady, turnie")
+	for m: Array in Terrain.MESAS:
+		var top := Terrain.height(m[0], m[1])
+		var foot := Terrain.height(m[0] + m[2] * 1.4, m[1])
+		_check(top > foot + 25.0, "płaskowyż (%.0f, %.0f): szczyt %.0f m, podnóże %.0f m" % [m[0], m[1], top, foot])
+	var river: Array = Terrain.RIVERS[2]
+	var mid: Vector2 = river[5]
+	_check(Terrain.is_water(mid.x, mid.y), "rzeka w kanionie")
+	var rim: Vector2 = mid + ((river[6] as Vector2) - (river[4] as Vector2)).normalized().orthogonal() * 80.0
+	_check(Terrain.height(rim.x, rim.y) > Terrain.HIGHLAND_TOP - 8.0, "ściana kanionu: %.0f m nad rzeką" % Terrain.height(rim.x, rim.y))
+	var lf: Landforms = world.get_node("Landforms")
+	_check(lf.waterfalls().size() == Landforms.WATERFALLS.size(), "wodospady: %d" % lf.waterfalls().size())
+	for w: Dictionary in lf.waterfalls():
+		_check(float(w["height"]) > 15.0, "wodospad spada %.0f m" % w["height"])
+	_check(lf.spires().size() >= 12, "turnie: %d" % lf.spires().size())
+	var sp: Vector3 = lf.spires()[0]
+	var hit: Dictionary = (world as Node3D).get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(
+		sp + Vector3(30, 8, 0), sp + Vector3(-30, 8, 0)))
+	_check(not hit.is_empty(), "turnia ma kolizję")
+
 	print("2b2) Drogi i mosty")
 	var roads: Roads = world.get_node("Roads")
 	var bridges := roads.get_children().filter(func(n: Node) -> bool: return not String(n.name).begins_with("Road_"))

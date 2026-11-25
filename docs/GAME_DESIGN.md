@@ -130,6 +130,17 @@ Cel: świat jest **na tyle duży, żeby lot był przyjemnością**, ale **nigdy 
   uproszczone modele w oddali (LOD), drzewa i trawa rysowane zbiorczo (MultiMesh),
   mgła ukrywająca horyzont.
 
+## Początek gry: dolina rodzinna i matka
+
+- Pisklę wykluwa się w gnieździe matki — dorosłej smoczycy — w zamkniętej dolinie za górami na północy.
+- **Samouczek** w dolinie: ruch i skok, polowanie na króliki, jedzenie, pierwsze złoto, sen na skarbie
+  i pierwsze ulepszenie (matka leży obok, podpowiada).
+- **Napad**: do doliny wchodzą ludzie (rycerze z balistą). Matka ryczy, łapie pisklę w szpony i ucieka.
+- **Przelot** (przerywnik): kamera pokazuje świat z góry — wioski, zamek, kanion, cel na przyszłość.
+- **Pościg**: jeźdźcy gryfów z dowódcą ranią matkę; ta resztką sił dolatuje do nowej kryjówki (legowisko
+  w górze), kładzie pisklę i umiera. Jej grób zostaje miejscem pamięci; dowódca jeźdźców to cel zemsty.
+- Samouczek można pominąć (przy każdej nowej grze).
+
 ## Legowisko i skarb
 
 - **Jaskinia** w górach: sen = zapis gry + przejście do następnego dnia + leczenie.
