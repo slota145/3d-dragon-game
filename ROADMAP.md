@@ -187,7 +187,10 @@ rodzinnej za górami na północy; matkę w ucieczce zabijają jeźdźcy gryfów
   jeziorem), piaskowcowe klify (warstwy) poza górami, 4 wodospady (wstęga wody po terenie, łuk z krawędzi,
   mgiełka; wielki 300 m u źródła rzeki), Dolina Turni (18 kamiennych słupów z kolizją), drogi przeliczone;
   narzędzia: `tools/map_preview.gd` (mapa z góry), `tools/view_world.gd` (widoki z wolnej kamery)
-- ⬜ 0.21: legowisko wtopione w górę: szczelina w zboczu, łuk skalny i nawis, półka startowa nad doliną
+- ✅ 0.21.0: legowisko w zboczu gór (`Lair.POSITION` (0, 22, −230), `Terrain.lair_carve`): masyw wokół, komora
+  i tunel w środku (teren = podłoga, z góry otwór zakrywa „wieczko” — siatka zbocza z kolizją, `Lair._build_lid`),
+  wylot w urwisku przez łuk skalny z nawisem (`Lair_Arch` w `gen_lair.py`), przed wejściem półka 22 m nad łąką,
+  z niej ścieżka w dół (pisklę zejdzie i wróci pieszo), z przodu urwisko — pisklę może sfrunąć szybowaniem
 - ⬜ 0.22: samouczek w dolinie rodzinnej za górami: matka (dorosła smoczyca), nauka (ruch, polowanie na
   króliki, złoto, sen na skarbie i pierwsze ulepszenie), napad ludzi, matka porywa pisklę w szpony,
   przelot nad światem (przerywnik), pościg jeźdźców gryfów i dowódcy — matka ginie przy nowym legowisku;
