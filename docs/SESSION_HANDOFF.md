@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-11-25 — po wersji v0.19.0 (jeźdźcy gryfów, boss)
+
+```text
+Kontynuujemy pracę nad grą „3D Dragon Game” (Godot 4.7, Android, repo slota145/3d-dragon-game,
+gałąź main). Przeczytaj najpierw CLAUDE.md, docs/GAME_DESIGN.md i ROADMAP.md.
+
+Stan (v0.19.0, wydana, APK: releases/latest/download/DragonGame.apk; base_api 6).
+- Rdzeń jak w poprzednich wpisach (stadia, polowanie, legowisko, sen na skarbie, świat 4×4 km, wioski,
+  ogień, łapanie w locie, danina, drogi, wozy, zwierzyna 0.15, zamek 0.16, gryfy 0.17, rycerze 0.18), plus:
+  * 0.19.0 jeźdźcy gryfów (gryphon_rider.gd extends Gryphon, gryphon_riders.gd): gryf z rzędem (people.glb:
+    Tack) i rycerzem w siodle (Body/Rider). 2 jeźdźców na wieżach z balistami (Castle.rider_perch),
+    terytorium 230 m, szarża 10. Boss GryphonCommander (gryphon_commander.gd): wieża-gniazdo Castle_Eyrie
+    za donżonem (Castle.eyrie_top), zdrowie 260, szarża 16, can_flee = false, pancerz: smok < pradawnego
+    zadaje ARMOR_FACTOR 0.15; faza 2 (< 50%): szybszy, mocniejszy, reinforce() — 2 jeźdźców z wież.
+    Pasek zdrowia bossa w HUD (world._update_boss_bar), pokonany: skarb 900 zł („boss_loot”), +25 rozgłosu,
+    world.boss_defeated w zapisie (nie wraca). Rozgłos „Legenda”: send_hunters() — 2 łowców ściga smoka.
+- Testy: tools/check.sh + tools/test_{walk,flight,hunt,pause,lair,world,village,fire,catch,wildlife,
+  castle,gryphon,knights,riders}.gd — pełny zestaw ~65 min, w tle przez nohup (pętla po testach z logiem).
+
+Uwagi otwarte / do sprawdzenia przez właściciela:
+- Balans bossa (260 zdrowia, 16 obrażeń, pancerz 15%) i jeźdźców (26 / 10); rycerzy, balist, gryfów.
+- Pościg rycerzy jedzie po prostej — może utknąć za jeziorem.
+- Wydajność na telefonie: postacie z wielu MeshInstance (gryf z jeźdźcem ~15).
+- base_api 6 mimo nowych class_name (jak w 0.14–0.19) — jeśli łatka zepsuje grę, podbij.
+
+Następny krok wg ROADMAP: faza 9 — nowe pokolenie (składanie jaja, warianty smoka, dziedzictwo)
+albo faza 10 (dźwięk i muzyka, menu główne, optymalizacja). Zapytaj właściciela ankietą.
+
+Komunikacja z właścicielem po polsku. Po każdym zadaniu: testy, commit, push na main,
+a dla zmian w grze — wydanie (podbicie wersji) i link do APK.
+```
+
+---
+
 ## 2026-11-24 — po wersji v0.18.0 (rycerze na drogach)
 
 ```text
