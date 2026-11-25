@@ -35,6 +35,42 @@ func _init() -> void:
 	var d := player.global_position - lair.global_position
 	_check(Vector2(d.x, d.z).length() < Lair.SLEEP_RADIUS + 3.0, "nie przeszedł przez ścianę (%.1f m od gniazda)" % Vector2(d.x, d.z).length())
 
+	print("2a) Wyjście z jaskini na półkę i ścieżką w dół na łąkę (pisklę pieszo)")
+	player.global_position = lair.nest_position()
+	player.rotation.y = lair.exit_yaw()
+	player.velocity = Vector3.ZERO
+	player.reset_physics_interpolation()
+	Input.action_press("move_forward")
+	Input.action_press("dash")
+	var out_d := 0.0
+	for i in 120:
+		await _seconds(0.25)
+		out_d = player.global_position.z - lair.global_position.z
+		if out_d > Lair.LEDGE_START + 12.0:
+			break
+	Input.action_release("move_forward")
+	Input.action_release("dash")
+	_check(out_d > Lair.LEDGE_START + 8.0 and absf(player.global_position.y - Lair.POSITION.y) < 1.5,
+		"wyszedł tunelem na półkę (%.0f m od gniazda, wys. %.1f)" % [out_d, player.global_position.y])
+	# zejście: ścieżka wzdłuż +X przy krawędzi półki
+	var rz: float = (Lair.RAMP_Z[0] + Lair.RAMP_Z[1]) * 0.5
+	player.global_position = Lair.POSITION + Vector3(Lair.LEDGE_HALF - 14.0, 0.5, rz)
+	player.rotation.y = PI * 0.5  # w stronę +X
+	player.velocity = Vector3.ZERO
+	player.reset_physics_interpolation()
+	Input.action_press("move_forward")
+	Input.action_press("dash")
+	for i in 240:
+		await _seconds(0.25)
+		player.rotation.y = PI * 0.5
+		if player.global_position.x > Lair.POSITION.x + Lair.LEDGE_HALF + Lair.RAMP_LEN:
+			break
+	Input.action_release("move_forward")
+	Input.action_release("dash")
+	_check(player.global_position.y < Lair.POSITION.y - 12.0 and player.stats.health > 90.0,
+		"zszedł ścieżką na łąkę (x %.0f, wys. %.1f, zdrowie %.0f)" % [player.global_position.x - Lair.POSITION.x,
+		player.global_position.y, player.stats.health])
+
 	print("2b) Noc")
 	var dn: DayNight = world.get_node("DayNight")
 	dn.set_hour(22.5)
@@ -59,7 +95,7 @@ func _init() -> void:
 
 	print("4) Poza jaskinią nie można spać")
 	dn.set_hour(21.5)  # nocne ujęcie legowiska
-	player.global_position = Lair.POSITION + Vector3(0, 0, 70)
+	player.global_position = Lair.POSITION + Vector3(0, 0, 55)
 	player.reset_physics_interpolation()
 	await _frames(3)
 	_check(not world.can_sleep(), "na łące brak przycisku ŚPIJ")
@@ -85,7 +121,7 @@ func _init() -> void:
 	_check(absf((world.get_node("DayNight") as DayNight).hour - 19.3) < 0.2, "godzina po wczytaniu")
 	_check(absf(player.stats.size - 2.5) < 0.05, "rozmiar po wczytaniu: %.2f m" % player.stats.size)
 	_check(player.visible, "bez intro przy wczytaniu")
-	_check(player.global_position.distance_to(Lair.POSITION + Vector3(0, 0, 70)) < 2.0, "pozycja z zapisu")
+	_check(player.global_position.distance_to(Lair.POSITION + Vector3(0, 0, 55)) < 2.0, "pozycja z zapisu")
 
 	print("6) Łagodna śmierć: budzisz się w legowisku, wzrost zostaje")
 	player.stats.damage(1000.0)
@@ -131,7 +167,7 @@ func _init() -> void:
 	world.get_node("FollowCamera").snap_behind()
 	await _seconds(1.5)
 	await _shot("lair_pile.png")
-	player.global_position = Lair.POSITION + Vector3(0, 0, 70)
+	player.global_position = Lair.POSITION + Vector3(0, 0, 55)
 	player.reset_physics_interpolation()
 	player.stats.gold = 40
 	player.stats.damage(1000.0)

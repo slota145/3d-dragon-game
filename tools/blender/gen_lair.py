@@ -32,6 +32,8 @@ PALETTE = {
     "Lair_Floor": (0.075, 0.06, 0.045),
     "Lair_Nest": (0.36, 0.26, 0.12),
     "Lair_Stone": (0.12, 0.11, 0.1),
+    "Lair_Sand": (0.5, 0.3, 0.17),
+    "Lair_SandDark": (0.36, 0.21, 0.12),
 }
 CRYSTAL = (0.25, 0.7, 1.0)
 
@@ -113,6 +115,59 @@ def build_rock() -> bpy.types.Object:
     return hill
 
 
+def build_arch(mats) -> bpy.types.Object:
+    """Łuk skalny z nawisem nad wylotem tunelu: blok piaskowca wpasowany w urwisko masywu
+    (gra: Lair.MOUTH_Z), z otworem tunelu; górą sięga zbocza, przód wysunięty nad półkę."""
+    bpy.ops.mesh.primitive_cube_add(size=2.0, location=(0, 0, 0))
+    block = bpy.context.view_layer.objects.active
+    block.name = "Lair_Arch"
+    block.data.name = "Lair_Arch"
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.subdivide(number_cuts=7)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for v in block.data.vertices:
+        ux, uy, uz = v.co.x, v.co.y, v.co.z
+        t = (1.0 - uy) / 2.0  # 0 = tył (y = -10), 1 = przód (y = -37)
+        y = -10.0 - 27.0 * t
+        top = 44.0 - 10.0 * t
+        # nawis: przód bryły (przed ścianą urwiska) zaczyna się wyżej — spód to skos nad wylotem
+        bottom = -2.0 + 16.0 * max(0.0, (t - 0.76) / 0.24) ** 1.3
+        z = bottom + (top - bottom) * (uz + 1.0) / 2.0
+        x = 22.0 * ux * (1.0 + 0.08 * (z / 40.0))
+        v.co = Vector((x, y, z))
+    craggy(block, 1.6, 0.11, 6)
+    bm = bmesh.new()
+    bm.from_mesh(block.data)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(block.data)
+    bm.free()
+
+    bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=TUNNEL_R, depth=70.0,
+                                        location=(0, -25.0, TUNNEL_Z), rotation=(math.radians(90), 0, 0))
+    hole = bpy.context.view_layer.objects.active
+    hole.scale = (1.08, 1.0, 1.0)
+    apply_all(hole)
+    mod = block.modifiers.new("cut", "BOOLEAN")
+    mod.operation = "DIFFERENCE"
+    mod.solver = "EXACT"
+    mod.object = hole
+    apply_all(block)
+    bpy.data.objects.remove(hole)
+    bm = bmesh.new()
+    bm.from_mesh(block.data)
+    bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, -1.5),
+                           plane_no=(0, 0, 1), clear_inner=True)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(block.data)
+    bm.free()
+    block.data.materials.clear()  # odejmowanie dodało pusty slot z walca
+    block.data.materials.append(mats["Lair_Sand"])
+    block.data.materials.append(mats["Lair_SandDark"])
+    for f in block.data.polygons:  # warstwy skalne: pasy jasne / ciemne wg wysokości
+        f.material_index = 1 if int(f.center.z / 3.0) % 3 == 1 else 0
+    return block
+
+
 def build_floor(mats) -> bpy.types.Object:
     """Ciemna, ubita podłoga jaskini (komora + tunel) tuż nad ziemią świata."""
     b = MeshBuilder(["Lair_Floor"])
@@ -191,7 +246,10 @@ def build() -> list[bpy.types.Object]:
     floor = build_floor(mats)
     nest = build_nest(mats)
     crystals = build_crystals(mats)
-    objs = [rock, floor, nest, crystals]
+    arch = build_arch(mats)
+    face_color_variation(arch, 0.1, seed=7)
+    flat_shade(arch)
+    objs = [rock, floor, nest, crystals, arch]
     for o in objs[1:]:
         if not o.data.color_attributes.get("Col"):
             face_color_variation(o, 0.08, seed=3)

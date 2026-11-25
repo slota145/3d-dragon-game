@@ -234,7 +234,7 @@ static func farmland(x: float, z: float) -> float:
 	return -1.0
 
 
-static func _raw_height(x: float, z: float) -> float:
+static func _raw_height(x: float, z: float, interior: bool = true) -> float:
 	_init_noise()
 	var r := Vector2(x, z).length()
 	# wzgórza: łagodne w środku (łąka), wyraźne dalej; zupełnie płasko wokół startu
@@ -280,10 +280,68 @@ static func _raw_height(x: float, z: float) -> float:
 	var width := 9.0 + 25.0 * smoothstep(-150.0, -460.0, z)
 	var river := 1.0 - smoothstep(width * 0.5, width * 1.6, rd)
 	h = lerpf(h, minf(h, -3.0), river)
-	# plac pod legowiskiem
-	var pd := Vector2(x - Lair.POSITION.x, z - Lair.POSITION.z).length()
-	h = lerpf(h, Lair.POSITION.y, 1.0 - smoothstep(Lair.RADIUS - 2.0, Lair.RADIUS + 28.0, pd))
+	return lair_carve(h, x, z, interior)
+
+
+## Legowisko w zboczu: masyw wokół (za i po bokach), kopuła jaskini wystaje ze zbocza jak
+## skalny występ, wnętrze (komora + tunel) i półka przed wejściem na poziomie podłogi,
+## ścieżka z półki w dół na łąkę, z przodu urwisko.
+static func lair_carve(h: float, x: float, z: float, interior: bool = true) -> float:
+	var lx := x - Lair.POSITION.x
+	var lz := z - Lair.POSITION.z
+	if absf(lx) > 320.0 or lz > 140.0 or lz < -260.0:
+		return h
+	var floor_y := Lair.POSITION.y
+	var d := Vector2(lx, lz + 4.0).length()  # od środka kopuły (lekko za komorą)
+	var edge := _detail.get_noise_2d(x * 0.9, z * 0.9) * 4.0
+	# masyw: teren wypiętrzony za i po bokach legowiska (nie przed półką)
+	var front := smoothstep(78.0, 30.0, lz + edge)
+	h += 46.0 * (1.0 - smoothstep(50.0, 230.0, d)) * front
+	h = maxf(h, lerpf(h, floor_y + 30.0, front * (1.0 - smoothstep(60.0, 120.0, d))))
+	# półka przed wejściem (płaska, postrzępiony brzeg), z tyłu ściana masywu, z przodu urwisko
+	var ledge := (1.0 - smoothstep(Lair.LEDGE_HALF - 6.0, Lair.LEDGE_HALF, absf(lx) + edge)) \
+		* (1.0 - smoothstep(Lair.LEDGE_END - 3.0, Lair.LEDGE_END, lz + edge)) \
+		* smoothstep(Lair.LEDGE_START - 3.0, Lair.LEDGE_START, lz - edge * 0.5)
+	h = lerpf(h, floor_y, ledge)
+	# wnętrze: komora i tunel — podłoga (siatka terenu 4 m, więc z zapasem); otwór w zboczu
+	# nad nimi zakrywa „wieczko” (Lair._build_lid — siatka wysokości bez tego wycięcia)
+	if interior and in_lair_interior(lx, lz):
+		return floor_y
+	# ścieżka: z krawędzi półki wzdłuż +X w dół, do poziomu łąki
+	var rz: Array = Lair.RAMP_Z
+	var across := minf(lz - rz[0], rz[1] - lz)
+	if across > -4.0 and lx > Lair.LEDGE_HALF - 10.0 and lx < Lair.LEDGE_HALF + Lair.RAMP_LEN + 20.0:
+		var t := clampf((lx - Lair.LEDGE_HALF + 6.0) / Lair.RAMP_LEN, 0.0, 1.0)
+		var bottom := _raw_meadow(x, z)
+		var ramp_y := lerpf(floor_y, bottom, t)
+		var k := smoothstep(-4.0, 1.5, across) * (1.0 - smoothstep(Lair.RAMP_LEN + 6.0, Lair.RAMP_LEN + 20.0, lx - Lair.LEDGE_HALF))
+		h = lerpf(h, ramp_y, k)
 	return h
+
+
+## Czy punkt (lokalnie względem legowiska) leży we wnętrzu jaskini: komora + tunel do półki.
+static func in_lair_interior(lx: float, lz: float) -> bool:
+	return Vector2(lx, lz + 4.0).length() < 21.0 or (absf(lx) < 12.0 and lz > -2.0 and lz < 46.0)
+
+
+## Wysokość zbocza nad jaskinią (bez wycięcia wnętrza) — dla wieczka legowiska.
+static func lair_lid_height(x: float, z: float) -> float:
+	var h := height(x, z)
+	if not in_lair_interior(x - Lair.POSITION.x, z - Lair.POSITION.z):
+		return h
+	# height() zwróciło podłogę — policz zbocze bez wycięcia (te same kroki co _raw_height)
+	return _raw_height(x, z, false)
+
+
+## Wysokość terenu u końca ścieżki z legowiska (bez masywu) — przybliżenie poziomu łąki.
+static func _raw_meadow(x: float, z: float) -> float:
+	var end := Vector2(Lair.POSITION.x + Lair.LEDGE_HALF + Lair.RAMP_LEN + 10.0, Lair.POSITION.z + 56.0)
+	var r := end.length()
+	var hills := _hills.get_noise_2d(end.x, end.y) * 22.0 + 7.0 + _detail.get_noise_2d(end.x, end.y) * 1.5
+	var hh := hills * lerpf(0.1, 1.0, smoothstep(140.0, 420.0, r)) * smoothstep(55.0, 150.0, r)
+	var north := smoothstep(-150.0, -460.0, end.y)
+	var ridge := 1.0 - absf(_ridge.get_noise_2d(end.x, end.y))
+	return hh + north * (55.0 + 190.0 * ridge * ridge) + north * north * 50.0
 
 
 ## Schodki: wysokość zaokrąglona do pięter `step` z krótkim, stromym progiem między nimi.

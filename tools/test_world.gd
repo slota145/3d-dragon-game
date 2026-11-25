@@ -20,7 +20,22 @@ func _init() -> void:
 
 	print("1) Teren")
 	_check(absf(Terrain.height(0, 0)) < 0.01 and absf(Terrain.height(40, -30)) < 0.05, "łąka startowa płaska (y=0)")
-	_check(absf(Terrain.height(Lair.POSITION.x + 30, Lair.POSITION.z)) < 0.2, "plac pod legowiskiem płaski")
+	var lair_p := Lair.POSITION
+	_check(absf(Terrain.height(lair_p.x + 20, lair_p.z + 50) - lair_p.y) < 0.2 and absf(Terrain.height(lair_p.x - 20, lair_p.z + 40) - lair_p.y) < 0.2,
+		"półka przed legowiskiem płaska (%.0f m n.p.m.)" % lair_p.y)
+	_check(absf(Terrain.height(lair_p.x, lair_p.z) - lair_p.y) < 0.01, "podłoga jaskini na poziomie półki")
+	_check(Terrain.height(lair_p.x + 30, lair_p.z) > lair_p.y + 25.0, "jaskinia w zboczu: masyw obok (%.0f m)" % Terrain.height(lair_p.x + 30, lair_p.z))
+	_check(Terrain.height(lair_p.x, lair_p.z + Lair.LEDGE_END + 12.0) < lair_p.y - 10.0, "przed półką urwisko do łąki")
+	# ścieżka z półki na łąkę: bez stromych odcinków (pisklę zejdzie i wróci pieszo)
+	var rz: float = (Lair.RAMP_Z[0] + Lair.RAMP_Z[1]) * 0.5
+	var steepest := 0.0
+	var prev := Terrain.height(lair_p.x + Lair.LEDGE_HALF - 8.0, lair_p.z + rz)
+	for k in range(1, 70):
+		var x := lair_p.x + Lair.LEDGE_HALF - 8.0 + k * 2.0
+		var hh := Terrain.height(x, lair_p.z + rz)
+		steepest = maxf(steepest, absf(hh - prev) / 2.0)
+		prev = hh
+	_check(steepest < 0.45 and prev < lair_p.y - 12.0, "ścieżka w dół: max nachylenie %.2f, koniec %.0f m" % [steepest, prev])
 	_check(Terrain.height(0, -700) > 100.0, "góry na północy (%.0f m)" % Terrain.height(0, -700))
 	_check(Terrain.is_water(Terrain.LAKE_CENTER.x, Terrain.LAKE_CENTER.y), "jezioro")
 	var rv: Vector2 = Terrain.RIVER[3]

@@ -4,10 +4,21 @@ extends Node3D
 ## Pivot = środek komory na ziemi (gniazdo); wejście od strony +Z (lokalnie).
 ## Kolizja skały (trimesh) powstaje w _ready. W komorze można spać (DragonController w zasięgu).
 
-## Położenie legowiska w świecie (wejście patrzy na łąkę wokół (0, 0, 0)).
-const POSITION := Vector3(0.0, 0.0, -80.0)
-## Promień wzgórza (m) — tu nie stawiamy drzew, skał ani zwierząt.
+## Położenie legowiska w świecie: w zboczu gór na północ od łąki, wejście patrzy na łąkę
+## wokół (0, 0, 0). Przed wejściem półka skalna (LEDGE) nad doliną, z niej w dół ścieżka (RAMP).
+## Teren wokół (masyw, półkę, ścieżkę, wycięcie pod jaskinię) rzeźbi Terrain.lair_carve.
+const POSITION := Vector3(0.0, 22.0, -230.0)
+## Promień skalnej kopuły (m) — tu nie stawiamy drzew, skał ani zwierząt.
 const RADIUS := 50.0
+## Półka przed wejściem (lokalnie, +Z = na zewnątrz): połowa szerokości i koniec (krawędź urwiska).
+const LEDGE_HALF := 42.0
+const LEDGE_START := 31.0
+const LEDGE_END := 66.0
+## Wylot tunelu w ścianie urwiska (lokalnie z) — tu stoi łuk skalny.
+const MOUTH_Z := 33.0
+## Ścieżka z półki w dół: pas wzdłuż +X przy krawędzi półki [z od, z do], długość (m).
+const RAMP_Z := [50.0, 63.0]
+const RAMP_LEN := 120.0
 ## Promień komory, w której można spać (m).
 const SLEEP_RADIUS := 15.0
 const EGG_COLOR := Color(0.93, 0.88, 0.74)
@@ -26,6 +37,9 @@ func _ready() -> void:
 	var rock := model.find_child("Lair_Rock", true, false) as MeshInstance3D
 	if rock:
 		rock.create_trimesh_collision()
+	var arch := model.find_child("Lair_Arch", true, false) as MeshInstance3D
+	if arch:  # łuk skalny z nawisem nad wylotem tunelu
+		arch.create_trimesh_collision()
 	pile = TreasurePile.new()
 	pile.name = "TreasurePile"
 	pile.position = Vector3(0, 0, -9.5)
@@ -42,6 +56,70 @@ func _ready() -> void:
 	glow.light_energy = 0.9
 	glow.omni_range = 16.0
 	add_child(glow)
+	_build_lid()
+
+
+## Wieczko: zbocze nad komorą i tunelem. Teren (mapa wysokości) ma tam podłogę jaskini, więc
+## z góry byłby otwór — wieczko to siatka zbocza bez wycięcia (Terrain.lair_lid_height),
+## z kolorami terenu i kolizją (smok może wylądować na zboczu nad jaskinią).
+const LID_FRONT := 12.0
+
+
+func _build_lid() -> void:
+	const STEP := 2.0
+	var verts := PackedVector3Array()
+	var norms := PackedVector3Array()
+	var cols := PackedColorArray()
+	var p0 := global_position
+	for gz in range(-28, int(MOUTH_Z) - 1, int(STEP)):
+		for gx in range(-28, 28, int(STEP)):
+			var cx := float(gx) + STEP * 0.5
+			var cz := float(gz) + STEP * 0.5
+			# komórki nad wnętrzem (z marginesem — mapa wysokości ma oczka 4 m)
+			var near := false
+			for o: Vector2 in [Vector2(0, 0), Vector2(4, 0), Vector2(-4, 0), Vector2(0, 4), Vector2(0, -4)]:
+				if Terrain.in_lair_interior(cx + o.x, cz + o.y):
+					near = true
+			if not near or (cz > LID_FRONT and absf(cx) < 20.0):
+				continue  # dalej (nad wylotem tunelu) zbocze zakrywa łuk skalny z nawisem
+			var c: Array[Vector3] = []
+			for k: Vector2 in [Vector2(gx, gz), Vector2(gx + STEP, gz), Vector2(gx + STEP, gz + STEP), Vector2(gx, gz + STEP)]:
+				c.append(Vector3(k.x, Terrain.lair_lid_height(p0.x + k.x, p0.z + k.y) - p0.y + 0.25, k.y))
+			for tri: Array in [[c[0], c[2], c[1]], [c[0], c[3], c[2]]]:
+				var a: Vector3 = tri[0]
+				var b: Vector3 = tri[1]
+				var e: Vector3 = tri[2]
+				var n := (b - a).cross(e - a).normalized()
+				if n.y > 0.0:  # przód ścianki w Godocie: wierzchołki zgodnie z ruchem wskazówek
+					var t := b
+					b = e
+					e = t
+				else:
+					n = -n
+				var mid := (a + b + e) / 3.0
+				var col := Terrain._face_color(p0.x + mid.x, p0.z + mid.z, p0.y + mid.y, n.y)
+				for v: Vector3 in [a, b, e]:
+					verts.append(v)
+					norms.append(n)
+					cols.append(col)
+	if verts.is_empty():
+		return
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = norms
+	arrays[Mesh.ARRAY_COLOR] = cols
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var mat := StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.roughness = 1.0
+	mesh.surface_set_material(0, mat)
+	var mi := MeshInstance3D.new()
+	mi.name = "Lid"
+	mi.mesh = mesh
+	add_child(mi)
+	mi.create_trimesh_collision()
 
 
 ## Punkt startu / odrodzenia: gniazdo (globalnie).
